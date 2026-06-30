@@ -27,10 +27,6 @@ The flow:
 5. The Main Agent **reviews the code**. If edits are needed, it **sends feedback** to the Sidekick, which **fixes the bugs** and sends back.
 6. The fixed code becomes the **Final code** delivered to the user.
 
-## Built with opencode-fusion
-
-This repo was created using the opencode-fusion pattern itself. The main agent planned the structure, reviewed every change, and verified against real command output. The sidekick wrote all the files, ran git and gh commands, and reported back. Every commit on `main` went through the flow above.
-
 ## Requirements
 
 - [opencode](https://opencode.ai) installed
@@ -91,7 +87,9 @@ fix the lint errors in this project
 
 You should see the main agent delegate exploration to the sidekick, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself.
 
-If the main agent tries to edit files directly, something is wrong with the config - check that `edit: deny` is set in `agents/build.md`.
+## Built with opencode-fusion
+
+This repo was created using the opencode-fusion pattern itself. The main agent planned the structure, reviewed every change, and verified against real command output. The sidekick wrote all the files, ran git and gh commands, and reported back. Every commit on `main` went through the flow above.
 
 ## Customize
 
@@ -141,13 +139,9 @@ Check that `task: allow` is set in `agents/build.md`. If the `task` permission i
 
 The model ID may have changed. Run `progrok models --detail` to see the live list of available models, then update the `model` field in `agents/sidekick.md`.
 
-### The proxy is not running
+### The proxy is not running or connection refused on port 18645
 
-`progrok proxy` must be left running in a terminal. If you closed it, start it again. The proxy serves at `http://127.0.0.1:18645/v1`. Check it with `progrok status`.
-
-### Connection refused on port 18645
-
-The proxy is not running, or it crashed. Restart it with `progrok proxy`. If the port is already in use, stop the existing process first.
+`progrok proxy` must be left running in a terminal. If you closed it or it crashed, restart it with `progrok proxy`. Check it with `progrok status`. If the port is already in use, stop the existing process first, then restart.
 
 ## Files
 
