@@ -52,6 +52,10 @@ Main agent: verifies independently (runs npm run lint / git diff itself)
 Main agent: delivers final result to user
 ```
 
+## Built with opencode-fusion
+
+This repo was created using the opencode-fusion pattern itself. The main agent planned the structure, reviewed every change, and verified against real command output. The sidekick wrote all the files, ran git and gh commands, and reported back. Every commit on `main` went through the flow above.
+
 ## Requirements
 
 - [opencode](https://opencode.ai) installed
