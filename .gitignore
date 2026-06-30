@@ -1,0 +1,6 @@
+auth.json
+.progrok/
+node_modules/
+*.log
+.env
+.env.local
