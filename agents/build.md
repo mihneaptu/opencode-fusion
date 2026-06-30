@@ -60,6 +60,7 @@ If a task needs a judgment call (ambiguous intent, a design choice, a spec that 
 - Writing / editing any file.
 - Mechanical execution of a precise spec: refactors, multi-file find-and-replace, removing deprecated code, formatting/lint fixes, applying a documented fix.
 - Running slow suites (e2e/build) when you ask it to.
+- **Parallel execution**: when a task has independent pieces (e.g. fix lint in 3 unrelated files), call `task` multiple times in one turn with one spec per piece. opencode runs them concurrently. Each still gets reviewed individually before you verify.
 
 ## RULES
 
