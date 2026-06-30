@@ -20,22 +20,36 @@ This repo makes that pattern work in opencode - not as a suggestion, but as mech
 User task
   |
   v
-Main agent (glm-5.2)
-  1. Explores: reads files, greps, runs verification bash
-  2. Makes a plan: which files, which lines, what change
-  3. Delegates to sidekick via task with a precise spec
+Main agent: delegates exploration to sidekick
   |
   v
-Sidekick (grok-composer-2.5-fast)
-  4. Writes the code / fixes the lint / runs the change
-  5. Returns the result + verification output
+Sidekick: reads files, greps, explores the codebase
   |
   v
-Main agent (glm-5.2)
-  6. Reviews the diff against the plan
-  7. Verifies: runs npm run lint / npm test / git diff itself
-  8. If review fails -> sends feedback, re-delegates
-  9. Delivers the final result to the user
+Sidekick -> sends findings to -> Main agent (file snippets, error locations)
+  |
+  v
+Main agent: makes a plan (which files, which lines, what change)
+  |
+  v
+Main agent -> assigns task to -> Sidekick (precise spec)
+  |
+  v
+Sidekick: writes code / writes tests / fixes lint
+  |
+  v
+Sidekick -> sends result back to -> Main agent (diff + verification)
+  |
+  v
+Main agent: reviews the diff against the plan
+  |
+  +-- if review fails --> sends feedback to sidekick --> sidekick fixes --> back to review
+  |
+  v
+Main agent: verifies independently (runs npm run lint / git diff itself)
+  |
+  v
+Main agent: delivers final result to user
 ```
 
 ## Requirements
