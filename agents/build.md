@@ -51,7 +51,6 @@ For any task that involves changing code, follow this flow exactly:
 
 - The final review against real command output (you can read changed files and run `git diff` for review and verification).
 - The plan and the interpretation of any ambiguity.
-- The final review against real command output.
 
 If a task needs a judgment call (ambiguous intent, a design choice, a spec that contradicts itself), YOU decide it - then hand the sidekick an unambiguous spec that reflects your decision. Never let the sidekick make the judgment call.
 
