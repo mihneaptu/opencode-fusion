@@ -63,6 +63,8 @@ Copy-Item opencode.json $env:USERPROFILE\.config\opencode\opencode.json
 Copy-Item -Recurse agents $env:USERPROFILE\.config\opencode\agents
 ```
 
+opencode reads global agents from BOTH `~/.config/opencode/agent/` (singular) and `~/.config/opencode/agents/` (plural). These commands target the plural form, which matches opencode's own docs example. If you already have an `agent/` (singular) directory with a `build.md` or `sidekick.md` in it, either delete that file first or copy into `agent/` instead - having the same agent name in both dirs is undefined behavior.
+
 ### 3. Connect your main model provider
 
 In opencode, run:
