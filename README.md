@@ -102,7 +102,9 @@ If the main agent tries to edit files directly, something is wrong with the conf
 
 ### Swap the main model
 
-Edit `opencode.json` and change the `model` field:
+The easiest way is to run `/models` in opencode and pick a different model. This swaps the active model for the current session.
+
+To change the persistent default, edit `opencode.json` and change the `model` field:
 
 ```json
 "model": "anthropic/claude-opus-4-8"
