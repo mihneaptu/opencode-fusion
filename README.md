@@ -1,5 +1,7 @@
 # opencode-fusion
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai).
 
 Two agents run together: a **main agent** that plans and reviews, and a **sidekick** that executes. The main agent cannot edit files - it is mechanically forced to delegate all file changes to the sidekick. This keeps frontier intelligence in charge of the significant decisions (the plan, the interpretation of ambiguity, the final review) while a cheaper, faster model does the mechanical work.
@@ -132,6 +134,28 @@ The sidekick should be cheaper/faster than the main agent - that is the whole po
 
 The main agent's bash is restricted to verification commands. Edit `agents/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default.
 
+## Troubleshooting
+
+### The main agent edits files directly
+
+The config was not loaded. Fully quit and restart opencode - it loads the config at startup, not mid-session. Then check that `edit: deny` is set in `agents/build.md`.
+
+### The sidekick is not being invoked
+
+Check that `task: allow` is set in `agents/build.md`. If the `task` permission is missing or set to `deny`, the main agent cannot delegate.
+
+### The sidekick model returns 404 or 400
+
+The model ID may have changed. Run `progrok models --detail` to see the live list of available models, then update the `model` field in `agents/sidekick.md`.
+
+### The proxy is not running
+
+`progrok proxy` must be left running in a terminal. If you closed it, start it again. The proxy serves at `http://127.0.0.1:18645/v1`. Check it with `progrok status`.
+
+### Connection refused on port 18645
+
+The proxy is not running, or it crashed. Restart it with `progrok proxy`. If the port is already in use, stop the existing process first.
+
 ## Files
 
 | File | Purpose |
@@ -139,6 +163,10 @@ The main agent's bash is restricted to verification commands. Edit `agents/build
 | `opencode.json` | Provider config (progrok proxy) + main model |
 | `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed |
 | `agents/sidekick.md` | Sidekick: Composer 2.5 Fast, full edit + bash access |
+
+## Disclaimer
+
+This project is not affiliated with, endorsed by, or built by the OpenCode team. [opencode](https://opencode.ai) is a separate project by [Anomaly](https://anoma.ly). This repo provides configuration that works with opencode but is not part of it.
 
 ## Credit
 
