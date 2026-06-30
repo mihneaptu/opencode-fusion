@@ -40,7 +40,7 @@ Main agent (glm-5.2)
 
 - [opencode](https://opencode.ai) installed
 - A [SuperGrok](https://x.ai/grok) subscription (for the sidekick model)
-- A main model provider - defaults to [OpenCode Go](https://opencode.ai/docs/providers#opencode-go) ($5/mo, includes glm-5.2)
+- A main model provider - defaults to [OpenCode Go](https://opencode.ai/docs/providers#opencode-go) ($5 first month, then $10/month, includes glm-5.2)
 
 ## Setup
 
@@ -121,7 +121,7 @@ model: progrok/grok-build-0.1
 Or use a completely different provider:
 
 ```yaml
-model: openai/gpt-4.1-mini
+model: openai/gpt-5.4-mini
 ```
 
 The sidekick should be cheaper/faster than the main agent - that is the whole point.
