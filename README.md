@@ -40,7 +40,7 @@ Main agent (glm-5.2)
 
 - [opencode](https://opencode.ai) installed
 - A [SuperGrok](https://x.ai/grok) subscription (for the sidekick model)
-- A main model provider - defaults to [OpenCode Go](https://opencode.ai/docs/providers#opencode-go) ($5 first month, then $10/month, includes glm-5.2)
+- A main model provider - defaults to [OpenCode Go](https://opencode.ai/docs/providers#opencode-go) ($5 first month, includes glm-5.2)
 
 ## Setup
 
