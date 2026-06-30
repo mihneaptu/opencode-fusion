@@ -16,41 +16,16 @@ This repo makes that pattern work in opencode - not as a suggestion, but as mech
 
 ## How it works
 
-```
-User task
-  |
-  v
-Main agent: delegates exploration to sidekick
-  |
-  v
-Sidekick: reads files, greps, explores the codebase
-  |
-  v
-Sidekick -> sends findings to -> Main agent (file snippets, error locations)
-  |
-  v
-Main agent: makes a plan (which files, which lines, what change)
-  |
-  v
-Main agent -> assigns task to -> Sidekick (precise spec)
-  |
-  v
-Sidekick: writes code / writes tests / fixes lint
-  |
-  v
-Sidekick -> sends result back to -> Main agent (diff + verification)
-  |
-  v
-Main agent: reviews the diff against the plan
-  |
-  +-- if review fails --> sends feedback to sidekick --> sidekick fixes --> back to review
-  |
-  v
-Main agent: verifies independently (runs npm run lint / git diff itself)
-  |
-  v
-Main agent: delivers final result to user
-```
+![System architecture: a two-column swimlane showing the flow between the Main Agent (left) and Sidekick (right)](flow-diagram.png)
+
+The flow:
+
+1. **User task** triggers the Main Agent, which delegates **Code exploration** to the Sidekick.
+2. The Sidekick explores and **sends data back** as file snippets.
+3. The Main Agent uses those snippets to make a **Plan**, then **assigns the task** to the Sidekick (write code / write tests / fix lint).
+4. The Sidekick writes the code and **sends it back** for review.
+5. The Main Agent **reviews the code**. If edits are needed, it **sends feedback** to the Sidekick, which **fixes the bugs** and sends back.
+6. The fixed code becomes the **Final code** delivered to the user.
 
 ## Built with opencode-fusion
 
