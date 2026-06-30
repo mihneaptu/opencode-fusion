@@ -89,7 +89,7 @@ Open a project with some lint errors and ask:
 fix the lint errors in this project
 ```
 
-You should see the main agent explore the code, make a plan, then delegate to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself.
+You should see the main agent delegate exploration to the sidekick, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself.
 
 If the main agent tries to edit files directly, something is wrong with the config - check that `edit: deny` is set in `agents/build.md`.
 
