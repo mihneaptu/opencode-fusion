@@ -45,7 +45,7 @@ progrok login        # browser OAuth with your xAI account
 progrok proxy        # leave this running in a terminal
 ```
 
-The proxy serves at `http://127.0.0.1:18645/v1`. It injects your xAI OAuth token into requests, so no API key is needed - any non-empty placeholder works.
+The proxy serves at `http://127.0.0.1:18645/v1`. It injects your xAI OAuth token into requests, so no real API key is needed; `opencode.json` ships with `"apiKey": "anything"`, which progrok replaces with your OAuth token before forwarding to xAI.
 
 ### 2. Copy the config files
 
@@ -100,26 +100,26 @@ The easiest way is to run `/models` in opencode and pick a different model. This
 To change the persistent default, edit `opencode.json` and change the `model` field:
 
 ```json
-"model": "anthropic/claude-opus-4-8"
+"model": "anthropic/claude-sonnet-4-6"
 ```
 
-Any provider you have connected via `/connect` works. The main agent just needs to be smart enough to plan and review.
+Use a real model id from a provider you have connected via `/connect` - run `/models` to see what's available. The main agent just needs to be smart enough to plan and review.
 
 ### Swap the sidekick model
 
-Edit `agents/sidekick.md` and change the `model` in the frontmatter:
+Edit `agents/sidekick.md` and change the `model` in the frontmatter. Another progrok coding model works out of the box:
 
 ```yaml
 model: progrok/grok-build-0.1
 ```
 
-Or use a completely different provider:
+Or use a completely different provider - the id must match a model you can access via `/connect`:
 
 ```yaml
-model: openai/gpt-5.4-mini
+model: anthropic/claude-sonnet-4-6
 ```
 
-The sidekick should be cheaper/faster than the main agent - that is the whole point.
+Whichever you pick, the sidekick should be cheaper/faster than the main agent - that is the whole point.
 
 ### Adjust the bash allowlist
 
@@ -137,7 +137,7 @@ Check that `task: allow` is set in `agents/build.md`. If the `task` permission i
 
 ### The sidekick model returns 404 or 400
 
-The model ID may have changed. Run `progrok models --detail` to see the live list of available models, then update the `model` field in `agents/sidekick.md`.
+The model ID may have changed. Run `progrok models --detail` to see the live list of available models. Note: the composer coding models (`grok-composer-2.5-fast`, `grok-composer-2.5`) are callable on `/v1/chat/completions` but intentionally not listed in `/v1/models` yet - so don't assume the sidekick model id is wrong just because it's missing from the list. If it really has changed, update the `model` field in `agents/sidekick.md`.
 
 ### The proxy is not running or connection refused on port 18645
 

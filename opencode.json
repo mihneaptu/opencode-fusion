@@ -6,7 +6,8 @@
       "npm": "@ai-sdk/openai-compatible",
       "name": "Grok (progrok)",
       "options": {
-        "baseURL": "http://127.0.0.1:18645/v1"
+        "baseURL": "http://127.0.0.1:18645/v1",
+        "apiKey": "anything"
       },
       "models": {
         "grok-composer-2.5-fast": {
