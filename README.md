@@ -174,7 +174,7 @@ The model needs `attachment: true` and `modalities.input` including `"image"` in
 | File | Purpose |
 |------|---------|
 | `opencode.json` | Provider config (progrok proxy), main model, explore agent override |
-| `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed, exploration rule |
+| `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed, exploration + parallelization rules |
 | `agents/sidekick.md` | Sidekick: Composer 2.5 Fast, full edit + bash access |
 | `agents/vision.md` | Vision agent: Grok 4.3, reads images/screenshots |
 | `.opencode/agents/vision.md` | Project-local copy of vision agent (loads automatically) |
