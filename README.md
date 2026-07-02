@@ -6,6 +6,8 @@ A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https
 
 Two agents run together: a **main agent** that plans and reviews, and a **sidekick** that executes. The main agent cannot edit files - it is mechanically forced to delegate all file changes to the sidekick. This keeps frontier intelligence in charge of the significant decisions (the plan, the interpretation of ambiguity, the final review) while a cheaper, faster model does the mechanical work.
 
+The repo also ships two supporting agents: an **explore** agent (same Composer 2.5 model as the sidekick) for fast read-only codebase exploration, and a **vision** agent (Grok 4.3) that reads images and screenshots - useful when the main agent's model lacks image input.
+
 ## Why
 
 From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
@@ -26,6 +28,8 @@ The flow:
 4. The Sidekick writes the code and **sends it back** for review.
 5. The Main Agent **reviews the code**. If edits are needed, it **sends feedback** to the Sidekick, which **fixes the bugs** and sends back.
 6. The fixed code becomes the **Final code** delivered to the user.
+
+**Supporting agents:** When the main agent needs to explore the codebase, it delegates to the **explore** agent (Composer 2.5) instead of reading files itself. When the user shares an image the main agent cannot see, it delegates to the **vision** agent (Grok 4.3) to transcribe and describe it. Both are spawned via the `task` tool and can run in parallel.
 
 ## Requirements
 
@@ -65,6 +69,8 @@ Copy-Item -Recurse agents $env:USERPROFILE\.config\opencode\agents
 
 opencode reads global agents from BOTH `~/.config/opencode/agent/` (singular) and `~/.config/opencode/agents/` (plural). These commands target the plural form, which matches opencode's own docs example. If you already have an `agent/` (singular) directory with a `build.md` or `sidekick.md` in it, either delete that file first or copy into `agent/` instead - having the same agent name in both dirs is undefined behavior.
 
+The vision agent is also installed project-locally in `.opencode/agents/vision.md`, so it works without the global copy when you open this project in opencode.
+
 ### 3. Connect your main model provider
 
 In opencode, run:
@@ -87,7 +93,7 @@ Open a project with some lint errors and ask:
 fix the lint errors in this project
 ```
 
-You should see the main agent delegate exploration to the sidekick, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself.
+You should see the main agent delegate exploration to the explore agent or sidekick, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself.
 
 ## Built with opencode-fusion
 
@@ -123,6 +129,20 @@ model: anthropic/claude-sonnet-4-6
 
 Whichever you pick, the sidekick should be cheaper/faster than the main agent - that is the whole point.
 
+### Swap the explore or vision model
+
+The explore agent defaults to Composer 2.5 Fast (same as the sidekick) via the `agent.explore` override in `opencode.json`. To use a different model for exploration, change it there:
+
+```json
+"agent": {
+  "explore": {
+    "model": "progrok/grok-build-0.1"
+  }
+}
+```
+
+The vision agent uses Grok 4.3 (the only progrok model with documented image input support). To use a different vision model, edit `agents/vision.md` and change the `model` in the frontmatter. The model must have `"attachment": true` and `"modalities": { "input": ["text", "image"] }` set in the provider config, or opencode will reject image reads with "this model does not support image input."
+
 ### Adjust the bash allowlist
 
 The main agent's bash is restricted to verification commands. Edit `agents/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default.
@@ -141,6 +161,10 @@ Check that `task: allow` is set in `agents/build.md`. If the `task` permission i
 
 The model ID may have changed. Run `progrok models --detail` to see the live list of available models. Note: the composer coding models (`grok-composer-2.5-fast`, `grok-composer-2.5`) are callable on `/v1/chat/completions` but intentionally not listed in `/v1/models` yet - so don't assume the sidekick model id is wrong just because it's missing from the list. If it really has changed, update the `model` field in `agents/sidekick.md`.
 
+### The vision agent says "this model does not support image input"
+
+The model needs `attachment: true` and `modalities.input` including `"image"` in its provider config entry. Check `opencode.json` under `provider.progrok.models` - the `grok-4.3` entry should have these set. Note that `grok-composer-2.5-fast` does **not** support image input (xAI's API rejects it), so only `grok-4.3` or another vision-capable model works for the vision agent.
+
 ### The proxy is not running or connection refused on port 18645
 
 `progrok proxy` must be left running in a terminal. If you closed it or it crashed, restart it with `progrok proxy`. Check it with `progrok status`. If the port is already in use, stop the existing process first, then restart.
@@ -149,9 +173,13 @@ The model ID may have changed. Run `progrok models --detail` to see the live lis
 
 | File | Purpose |
 |------|---------|
-| `opencode.json` | Provider config (progrok proxy) + main model |
-| `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed |
+| `opencode.json` | Provider config (progrok proxy), main model, explore agent override |
+| `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed, exploration rule |
 | `agents/sidekick.md` | Sidekick: Composer 2.5 Fast, full edit + bash access |
+| `agents/vision.md` | Vision agent: Grok 4.3, reads images/screenshots |
+| `.opencode/agents/vision.md` | Project-local copy of vision agent (loads automatically) |
+| `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
+| `LICENSE` | MIT license |
 
 ## Disclaimer
 
