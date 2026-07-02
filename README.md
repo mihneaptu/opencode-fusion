@@ -145,7 +145,7 @@ The vision agent uses Grok 4.3 (the only progrok model with documented image inp
 
 ### Adjust the bash allowlist
 
-The main agent's bash is restricted to verification commands. Edit `agents/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default.
+The main agent's bash is allowlisted to verification and git commit commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`, `git commit`, `git push`). Edit `agents/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default.
 
 ## Troubleshooting
 
