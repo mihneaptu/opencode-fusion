@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-opus-4-1",
+  "agent": {
+    "build": {
+      "model": "anthropic/claude-opus-4-1",
+      "prompt": { "file": "agent/build.md" },
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "*": "deny",
+          "npm run lint*": "allow",
+          "npm test*": "allow",
+          "npm run build*": "allow",
+          "npx tsc --noEmit*": "allow",
+          "npx vitest run*": "allow",
+          "git diff*": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "node --version*": "allow",
+          "npm --version*": "allow"
+        },
+        "task": "allow"
+      }
+    },
+    "explore": { "model": "opencode-go/glm-5.2" },
+    "sidekick": { "model": "opencode-go/glm-5.2" }
+  }
+}

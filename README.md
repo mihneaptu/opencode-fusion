@@ -31,13 +31,67 @@ The flow:
 
 **Supporting agents:** When the main agent needs to explore the codebase, it delegates to the **explore** agent (Composer 2.5) instead of reading files itself. When the user shares an image the main agent cannot see, it delegates to the **vision** agent (Grok 4.3) to transcribe and describe it. Both are spawned via the `task` tool and can run in parallel.
 
+| Agent | Role | Model (in `opencode.json`) |
+|-------|------|------------------------------|
+| `build` | Main: plan, delegate, review | `agent.build.model` |
+| `sidekick` | Execute edits and commands | `agent.sidekick.model` |
+| `explore` | Fast read-only exploration | `agent.explore.model` |
+| `vision` | Images and screenshots | `agent.vision.model` |
+
+## Quick Setup
+
+### Option A: Interactive (Windows / PowerShell)
+
+```powershell
+git clone https://github.com/mihneaptu/opencode-fusion.git
+cd opencode-fusion
+./setup.ps1
+```
+
+The script asks which models you want for each agent role, writes the global config, copies agent prompts, and tells you which providers to connect.
+
+### Option B: Preset-based (macOS / Linux / Git Bash)
+
+```bash
+git clone https://github.com/mihneaptu/opencode-fusion.git
+cd opencode-fusion
+chmod +x setup.sh
+./setup.sh
+```
+
+Choose from three presets (see [Config Presets](#config-presets) below).
+
+### Option C: Manual
+
+See [Manual Setup](#manual-setup) below.
+
+## Config Presets
+
+Ready-made configurations in `configs/`. Copy one to `~/.config/opencode/opencode.json` or let `setup.sh` do it for you.
+
+| Preset | Main | Sidekick | Vision | Requires |
+|--------|------|----------|--------|----------|
+| `default.json` | GLM 5.2 (free) | Grok Composer 2.5 (fast) | Grok 4.3 | SuperGrok + progrok proxy |
+| `opus-glm.json` | Claude Opus 4.1 (powerful) | GLM 5.2 (free) | built-in | Anthropic /connect |
+| `sonnet-composer.json` | Claude Sonnet 4.6 (balanced) | Grok Composer 2.5 (fast) | Grok 4.3 | Anthropic + SuperGrok |
+
+To use a preset manually:
+```bash
+cp configs/default.json ~/.config/opencode/opencode.json
+```
+Then copy the agent prompts:
+```bash
+mkdir -p ~/.config/opencode/agent
+cp agents/*.md ~/.config/opencode/agent/
+```
+
 ## Requirements
 
 - [opencode](https://opencode.ai) installed
 - A [SuperGrok](https://x.ai/grok) subscription (for the sidekick model)
 - A main model provider - defaults to [OpenCode Go](https://opencode.ai/docs/providers#opencode-go) ($5 first month, includes glm-5.2)
 
-## Setup
+## Manual Setup
 
 ### 1. Install and start the progrok proxy
 
@@ -57,17 +111,19 @@ The proxy serves at `http://127.0.0.1:18645/v1`. It injects your xAI OAuth token
 
 ```bash
 cp opencode.json ~/.config/opencode/opencode.json
-cp -r agents/ ~/.config/opencode/agents/
+mkdir -p ~/.config/opencode/agent
+cp agents/*.md ~/.config/opencode/agent/
 ```
 
 **Windows (PowerShell):**
 
 ```powershell
+New-Item -ItemType Directory -Force $env:USERPROFILE\.config\opencode\agent
 Copy-Item opencode.json $env:USERPROFILE\.config\opencode\opencode.json
-Copy-Item -Recurse agents $env:USERPROFILE\.config\opencode\agents
+Copy-Item agents\*.md $env:USERPROFILE\.config\opencode\agent\
 ```
 
-opencode reads global agents from BOTH `~/.config/opencode/agent/` (singular) and `~/.config/opencode/agents/` (plural). These commands target the plural form, which matches opencode's own docs example. If you already have an `agent/` (singular) directory with a `build.md` or `sidekick.md` in it, either delete that file first or copy into `agent/` instead - having the same agent name in both dirs is undefined behavior.
+opencode reads global agents from `~/.config/opencode/agent/`. The `setup.ps1` and `setup.sh` scripts use this path automatically. If you previously copied agents to `~/.config/opencode/agents/` (plural), move them to `agent/` (singular) or remove the duplicate to avoid conflicts.
 
 The vision agent is also installed project-locally in `.opencode/agents/vision.md`, so it works without the global copy when you open this project in opencode.
 
@@ -101,47 +157,22 @@ This repo was created using the opencode-fusion pattern itself. The main agent p
 
 ## Customize
 
-### Swap the main model
+### Swap Models
 
-The easiest way is to run `/models` in opencode and pick a different model. This swaps the active model for the current session.
+All agent models are configured in one place: `opencode.json` under `agent`:
 
-To change the persistent default, edit `opencode.json` and change the `model` field:
+| Agent | Config key | Example |
+|-------|-----------|---------|
+| Main (build) | `agent.build.model` | `"anthropic/claude-opus-4-1"` |
+| Sidekick | `agent.sidekick.model` | `"opencode-go/glm-5.2"` |
+| Explore | `agent.explore.model` | `"progrok/grok-composer-2.5-fast"` |
+| Vision | `agent.vision.model` | `"progrok/grok-4.3"` |
 
-```json
-"model": "anthropic/claude-sonnet-4-6"
-```
+Or just re-run `./setup.ps1` to pick new models interactively.
 
-Use a real model id from a provider you have connected via `/connect` - run `/models` to see what's available. The main agent just needs to be smart enough to plan and review.
+You can also run `/models` in opencode to swap the active model for the current session. For a persistent default main model, change the top-level `model` field in `opencode.json`. Use a real model id from a provider you have connected via `/connect`. The sidekick should stay cheaper/faster than the main agent when possible.
 
-### Swap the sidekick model
-
-Edit `agents/sidekick.md` and change the `model` in the frontmatter. Another progrok coding model works out of the box:
-
-```yaml
-model: progrok/grok-build-0.1
-```
-
-Or use a completely different provider - the id must match a model you can access via `/connect`:
-
-```yaml
-model: anthropic/claude-sonnet-4-6
-```
-
-Whichever you pick, the sidekick should be cheaper/faster than the main agent - that is the whole point.
-
-### Swap the explore or vision model
-
-The explore agent defaults to Composer 2.5 Fast (same as the sidekick) via the `agent.explore` override in `opencode.json`. To use a different model for exploration, change it there:
-
-```json
-"agent": {
-  "explore": {
-    "model": "progrok/grok-build-0.1"
-  }
-}
-```
-
-The vision agent uses Grok 4.3 (the only progrok model with documented image input support). To use a different vision model, edit `agents/vision.md` and change the `model` in the frontmatter. The model must have `"attachment": true` and `"modalities": { "input": ["text", "image"] }` set in the provider config, or opencode will reject image reads with "this model does not support image input."
+Vision models must have `"attachment": true` and `"modalities": { "input": ["text", "image"] }` in the provider config, or opencode will reject image reads with "this model does not support image input."
 
 ### Adjust the bash allowlist
 
@@ -159,7 +190,7 @@ Check that `task: allow` is set in `agents/build.md`. If the `task` permission i
 
 ### The sidekick model returns 404 or 400
 
-The model ID may have changed. Run `progrok models --detail` to see the live list of available models. Note: the composer coding models (`grok-composer-2.5-fast`, `grok-composer-2.5`) are callable on `/v1/chat/completions` but intentionally not listed in `/v1/models` yet - so don't assume the sidekick model id is wrong just because it's missing from the list. If it really has changed, update the `model` field in `agents/sidekick.md`.
+The model ID may have changed. Run `progrok models --detail` to see the live list of available models. Note: the composer coding models (`grok-composer-2.5-fast`, `grok-composer-2.5`) are callable on `/v1/chat/completions` but intentionally not listed in `/v1/models` yet - so don't assume the sidekick model id is wrong just because it's missing from the list. If it really has changed, update `agent.sidekick.model` (and `agent.explore.model` if needed) in `opencode.json`.
 
 ### The vision agent says "this model does not support image input"
 
@@ -173,10 +204,15 @@ The model needs `attachment: true` and `modalities.input` including `"image"` in
 
 | File | Purpose |
 |------|---------|
-| `opencode.json` | Provider config (progrok proxy), main model, explore agent override |
+| `setup.ps1` | Interactive setup script (Windows) |
+| `setup.sh` | Preset-based setup script (macOS/Linux) |
+| `configs/default.json` | GLM 5.2 + Grok preset |
+| `configs/opus-glm.json` | Opus + GLM preset |
+| `configs/sonnet-composer.json` | Sonnet + Composer preset |
+| `opencode.json` | Provider config (progrok proxy), all agent models under `agent` |
 | `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed, exploration + parallelization rules |
-| `agents/sidekick.md` | Sidekick: Composer 2.5 Fast, full edit + bash access |
-| `agents/vision.md` | Vision agent: Grok 4.3, reads images/screenshots |
+| `agents/sidekick.md` | Sidekick prompt (model in `opencode.json`) |
+| `agents/vision.md` | Vision agent prompt (model in `opencode.json`) |
 | `.opencode/agents/vision.md` | Project-local copy of vision agent (loads automatically) |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
