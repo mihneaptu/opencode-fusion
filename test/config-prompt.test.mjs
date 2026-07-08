@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
 
@@ -16,7 +16,11 @@ function readText(path) {
 }
 
 function configJsonPaths() {
-  const paths = [join(repoRoot, "opencode.json")];
+  const paths = [];
+  const rootConfig = join(repoRoot, "opencode.json");
+  if (existsSync(rootConfig)) {
+    paths.push(rootConfig);
+  }
   const configsDir = join(repoRoot, "configs");
 
   for (const entry of readdirSync(configsDir)) {

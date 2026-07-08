@@ -1,16 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode-go/glm-5.2",
+  "model": "opencode/big-pickle",
   "provider": {
     "opencode": {
       "models": {
+        "big-pickle": { "name": "Big Pickle" },
+        "mimo-v2.5-free": { "name": "MiMo V2.5 Free" },
         "deepseek-v4-flash-free": { "name": "DeepSeek V4 Flash Free" }
       }
     }
   },
   "agent": {
     "build": {
-      "model": "opencode-go/glm-5.2",
+      "model": "opencode/big-pickle",
       "prompt": "{file:agent/build.md}",
       "permission": {
         "edit": "deny",
@@ -35,6 +37,6 @@
       }
     },
     "explore": { "model": "opencode/deepseek-v4-flash-free" },
-    "sidekick": { "model": "opencode/deepseek-v4-flash-free" }
+    "sidekick": { "model": "opencode/mimo-v2.5-free" }
   }
 }

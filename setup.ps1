@@ -42,6 +42,7 @@ Write-Host "    anthropic    - paid: claude-opus-4-8, claude-sonnet-5, claude-ha
 Write-Host "    openai       - paid: gpt-5.5, gpt-5.4-mini" -ForegroundColor DarkGray
 Write-Host "    opencode     - Zen: deepseek-v4-flash-free (free), many others" -ForegroundColor DarkGray
 Write-Host "    progrok      - Grok via local proxy, needs SuperGrok" -ForegroundColor DarkGray
+Write-Host "    kiro         - Claude via local Kiro gateway, needs Kiro" -ForegroundColor DarkGray
 Write-Host ""
 
 $mainModel     = Ask "Main agent (planner/reviewer)" "opencode-go/glm-5.2"
@@ -56,6 +57,13 @@ $proxyUrl = "http://127.0.0.1:18645/v1"
 if ($needsProgrok) {
   Write-Host ""
   $proxyUrl = Ask "progrok proxy URL" $proxyUrl
+}
+
+$needsKiro = ($mainModel,$sidekickModel,$exploreModel,$visionModel | Where-Object { $_ -like "kiro/*" }).Count -gt 0
+$kiroUrl = "http://127.0.0.1:9000/v1"
+if ($needsKiro) {
+  Write-Host ""
+  $kiroUrl = Ask "Kiro gateway URL" $kiroUrl
 }
 
 # --- build config ---
@@ -119,6 +127,26 @@ if ($needsProgrok) {
   }
 }
 
+if ($needsKiro) {
+  $kiroModels = [ordered]@{}
+  if (($mainModel,$sidekickModel,$exploreModel,$visionModel) -like "kiro/claude-opus-4-8") {
+    $kiroModels["claude-opus-4-8"] = [ordered]@{
+      name       = "Opus 4.8"
+      attachment = $true
+      modalities = @{ input = @("text","image") }
+    }
+  }
+  if (($mainModel,$sidekickModel,$exploreModel,$visionModel) -like "kiro/claude-sonnet-5") {
+    $kiroModels["claude-sonnet-5"] = @{ name = "Sonnet 5" }
+  }
+  $config.provider["kiro"] = [ordered]@{
+    npm     = "@ai-sdk/openai-compatible"
+    name    = "Kiro Gateway (Claude)"
+    options = [ordered]@{ baseURL = $kiroUrl; apiKey = "kiro-local-proxy-key" }
+    models  = $kiroModels
+  }
+}
+
 # --- write config ---
 
 $cfgDir  = Join-Path $env:USERPROFILE ".config\opencode"
@@ -172,6 +200,9 @@ if ($connect) {
 }
 if ($needsProgrok) {
   Write-Host "    3. Make sure progrok proxy is running at $proxyUrl"
+}
+if ($needsKiro) {
+  Write-Host "    4. Make sure the Kiro gateway is running at $kiroUrl"
 }
 Write-Host ""
 Write-Host "  Change models later: edit $cfgPath" -ForegroundColor DarkGray

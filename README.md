@@ -6,6 +6,8 @@ A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https
 
 Two agents run together: a **main agent** that plans and reviews, and a **sidekick** that executes. The main agent cannot edit files - it is mechanically forced to delegate all file changes to the sidekick. This keeps frontier intelligence in charge of the significant decisions (the plan, the interpretation of ambiguity, the final review) while a cheaper, faster model does the mechanical work.
 
+This project implements the [Devin Fusion](https://cognition.com/blog/devin-fusion) pattern described by Cognition: a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. Cognition found this pattern maintains frontier-level performance at 35% lower cost, and 41% lower cost with Claude Fable 5.
+
 The repo also ships two supporting agents: an **explore** agent (same Composer 2.5 model as the sidekick) for fast read-only codebase exploration, and a **vision** agent (Grok 4.3) that reads images and screenshots - useful when the main agent's model lacks image input.
 
 ## Why
@@ -59,7 +61,7 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-Choose from three presets (see [Config Presets](#config-presets) below).
+Choose from the presets in `configs/` (see [Config Presets](#config-presets) below).
 
 ### Option C: Manual
 
@@ -71,9 +73,9 @@ Ready-made configurations in `configs/`. Copy one to `~/.config/opencode/opencod
 
 | Preset | Main | Sidekick | Vision | Requires |
 |--------|------|----------|--------|----------|
-| `default.json` | GLM 5.2 (free) | Grok Composer 2.5 (fast) | Grok 4.3 | SuperGrok + progrok proxy |
-| `opus-glm.json` | Claude Opus 4.1 (powerful) | GLM 5.2 (free) | built-in | Anthropic /connect |
-| `sonnet-composer.json` | Claude Sonnet 4.6 (balanced) | Grok Composer 2.5 (fast) | Grok 4.3 | Anthropic + SuperGrok |
+| `default.json` | GLM 5.2 (free) | Grok Composer 2.5 (fast) | Grok 4.3 | OpenCode Go + SuperGrok/progrok |
+| `gpt55-mini.json` | GPT-5.5 (powerful) | GPT-5.4 mini (fast) | built-in | OpenAI /connect |
+| `free.json` | GLM 5.2 (free) | DeepSeek V4 Flash Free | none | OpenCode Go + OpenCode Zen |
 
 To use a preset manually:
 ```bash
@@ -163,7 +165,7 @@ All agent models are configured in one place: `opencode.json` under `agent`:
 
 | Agent | Config key | Example |
 |-------|-----------|---------|
-| Main (build) | `agent.build.model` | `"anthropic/claude-opus-4-1"` |
+| Main (build) | `agent.build.model` | `"anthropic/claude-opus-4-8"` |
 | Sidekick | `agent.sidekick.model` | `"opencode-go/glm-5.2"` |
 | Explore | `agent.explore.model` | `"progrok/grok-composer-2.5-fast"` |
 | Vision | `agent.vision.model` | `"progrok/grok-4.3"` |
@@ -207,8 +209,8 @@ The model needs `attachment: true` and `modalities.input` including `"image"` in
 | `setup.ps1` | Interactive setup script (Windows) |
 | `setup.sh` | Preset-based setup script (macOS/Linux) |
 | `configs/default.json` | GLM 5.2 + Grok preset |
-| `configs/opus-glm.json` | Opus + GLM preset |
-| `configs/sonnet-composer.json` | Sonnet + Composer preset |
+| `configs/gpt55-mini.json` | GPT-5.5 + GPT-5.4 mini preset |
+| `configs/free.json` | GLM 5.2 + DeepSeek V4 Flash Free preset |
 | `opencode.json` | Provider config (progrok proxy), all agent models under `agent` |
 | `agents/build.md` | Main agent: edit denied, bash allowlisted, task allowed, exploration + parallelization rules |
 | `agents/sidekick.md` | Sidekick prompt (model in `opencode.json`) |

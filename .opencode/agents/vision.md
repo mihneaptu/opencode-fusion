@@ -21,7 +21,7 @@ Operating rules:
 - If an image is in the clipboard rather than a file, use bash (PowerShell) to save it to a file first, then read that file:
     Add-Type -AssemblyName System.Windows.Forms
     $img = [System.Windows.Forms.Clipboard]::GetImage()
-    if ($img) { $img.Save("C:\Users\Home\AppData\Local\Temp\opencode\clip.png") }
+    if ($img) { $img.Save("$env:TEMP\opencode-clip.png") }
 - Report back: the file path(s) you read, and a detailed text transcription/description of each image's contents.
 - Be thorough and literal. The main agent relies on your transcription to make decisions.
 - Output ONLY ASCII characters. Use ` - ` instead of em-dashes, straight quotes instead of smart quotes, `...` instead of ellipsis characters, and ASCII alternatives for any other non-ASCII glyph.

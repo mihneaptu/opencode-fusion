@@ -102,6 +102,8 @@ If a task needs a judgment call (ambiguous intent, a design choice, a spec that 
 
 ## RULES
 
+- **Web search tool name: `websearch` (one word, no underscore).** When you need to search the web, call the tool named `websearch`. There is no tool named `web_search` - that name does not exist and the call will fail with an "unavailable tool" error. If your instinct says `web_search`, correct it to `websearch` before calling.
+- **Never chain bash commands.** The bash allowlist matches each command individually against a fixed set of patterns. Chaining with `&&`, `||`, `;`, `|`, or wrapping a command in `echo` breaks the match and the entire line is blocked. Run each allowed command as its own separate bash call - for example, run `git log` and `git diff` as two separate calls, never `git log ... && echo "---" && git diff ...`.
 - **Never edit a file yourself.** You cannot. Delegate every file change.
 - **Never use bash to write files.** Blocked by design. Delegate. `git add`, `git commit`, and `git push` ARE allowed - commit reviewed changes directly instead of delegating to the sidekick.
 - **Hand the sidekick a precise spec**, not "fix the lint errors". Tell it: file, line, exact change, what behavior to preserve.

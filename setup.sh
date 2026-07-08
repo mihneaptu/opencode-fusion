@@ -13,20 +13,18 @@ echo ""
 
 echo "  Choose a configuration:"
 echo "    1) Default       - GLM 5.2 main + Grok Composer sidekick + Grok 4.3 vision"
-echo "    2) Opus + Sonnet - Claude Opus 4.8 main + Claude Sonnet 5 sidekick"
-echo "    3) Opus + GLM    - Claude Opus 4.8 main + GLM 5.2 sidekick"
-echo "    4) GPT-5.5+Mini  - GPT-5.5 main + GPT-5.4 mini sidekick"
-echo "    5) Free          - GLM 5.2 main + DeepSeek V4 Flash Free sidekick"
+echo "    2) GPT-5.5+Mini  - GPT-5.5 main + GPT-5.4 mini sidekick"
+echo "    3) Free          - Big Pickle main + MiMo sidekick + DeepSeek explore (all free on Zen)"
+echo "    4) Trial         - Kiro Opus 4.8 main + Kiro Sonnet 5 sidekick + Grok explore (needs Kiro + SuperGrok trials)"
 echo ""
-read -rp "  Select 1-5 [1]: " choice
+read -rp "  Select 1-4 [1]: " choice
 choice="${choice:-1}"
 
 case "$choice" in
   1) preset="default" ;;
-  2) preset="opus-sonnet" ;;
-  3) preset="opus-glm" ;;
-  4) preset="gpt55-mini" ;;
-  5) preset="free" ;;
+  2) preset="gpt55-mini" ;;
+  3) preset="free" ;;
+  4) preset="trial" ;;
   *) echo "  Invalid choice. Please run again."; exit 1 ;;
 esac
 
@@ -72,9 +70,6 @@ echo "    1. Restart opencode"
 
 # Tell user which providers to connect
 case "$preset" in
-  opus-sonnet|opus-glm)
-    echo "    2. Run /connect and connect: anthropic"
-    ;;
   gpt55-mini)
     echo "    2. Run /connect and connect: openai"
     ;;
@@ -86,6 +81,10 @@ esac
 # Tell user if progrok is needed
 case "$preset" in
   default)
+    echo "    3. Make sure progrok proxy is running at http://127.0.0.1:18645/v1"
+    ;;
+  trial)
+    echo "    2. Make sure the Kiro gateway is running at http://127.0.0.1:9000/v1"
     echo "    3. Make sure progrok proxy is running at http://127.0.0.1:18645/v1"
     ;;
 esac
