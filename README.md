@@ -8,7 +8,7 @@ Two agents run together: a **main agent** that plans and reviews, and a **sideki
 
 Cognition describes the pattern in [Devin Fusion](https://cognition.com/blog/devin-fusion): a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. They found it maintains frontier-level performance at meaningfully lower cost.
 
-A third agent, **explore**, handles fast read-only codebase search so the main agent never has to read files itself. When the main model supports image input (most frontier models do), it reads screenshots directly - no separate vision agent needed.
+Around that core pair sits a small team of specialist subagents the main agent can delegate to: **explore** for fast read-only codebase search, plus optional **research** (external web/doc lookups), **design** (frontend/UI implementation), and **reviewer** (auditing a diff before commit). Each specialist runs on a model you pick independently - so you can put whichever model you think designs best on `design`, and a different one you trust for review on `reviewer`. When the main model supports image input (most frontier models do), it reads screenshots directly - no separate vision agent needed.
 
 ## Why
 
@@ -31,11 +31,14 @@ The flow:
 5. The Main Agent **reviews the code**. If edits are needed, it **sends feedback** to the sidekick, which **fixes the issues** and sends back.
 6. The reviewed code becomes the **final result** delivered to the user.
 
-| Agent | Role | Config key |
-|-------|------|------------|
-| `build` | Main: plan, delegate, review | `agent.build.model` |
-| `sidekick` | Execute edits and commands | `agent.sidekick.model` |
-| `explore` | Fast read-only exploration | `agent.explore.model` |
+| Agent | Role | Config key | Required? |
+|-------|------|------------|-----------|
+| `build` | Main: plan, delegate, review | `agent.build.model` | core |
+| `sidekick` | Execute edits and commands | `agent.sidekick.model` | core |
+| `explore` | Fast read-only exploration | `agent.explore.model` | core |
+| `research` | Read-only external research (web, docs) | `agent.research.model` | optional |
+| `design` | Frontend/UI implementation | `agent.design.model` | optional |
+| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional |
 
 ## Setup
 
@@ -49,7 +52,7 @@ This repo ships a skill, `fusion-setup`, that configures everything conversation
 set up fusion
 ```
 
-The agent asks which model you want for each role (main, sidekick, explore) and which provider each uses, then writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)).
+The agent asks which model you want for each role (main, sidekick, explore, and the optional research/design/reviewer specialists) and which provider each uses, then writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)).
 
 To make the skill available, place the `fusion-setup` folder from this repo's `.opencode/skills/` into your global skills directory `~/.config/opencode/skills/`. opencode discovers it on the next start.
 
@@ -100,6 +103,8 @@ If you would rather configure by hand, write `~/.config/opencode/opencode.json` 
 }
 ```
 
+The three specialists are optional. To add them, give each its own agent file and a model entry alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, and `agent/reviewer.md`.
+
 Then install the agent prompts so `{file:agent/build.md}` resolves:
 
 ```bash
@@ -142,6 +147,9 @@ All agent models live in one place: `~/.config/opencode/opencode.json` under `ag
 | Main (build) | `agent.build.model` | `"kiro/claude-opus-4-8"` |
 | Sidekick | `agent.sidekick.model` | `"kiro/claude-sonnet-5"` |
 | Explore | `agent.explore.model` | `"progrok/grok-composer-2.5-fast"` |
+| Research | `agent.research.model` | `"kiro/claude-sonnet-5"` |
+| Design | `agent.design.model` | `"kiro/claude-sonnet-5"` |
+| Reviewer | `agent.reviewer.model` | `"kiro/claude-opus-4-8"` |
 
 Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
 
@@ -173,6 +181,9 @@ The allowlist matches whole commands against fixed patterns. Chaining with `&&`,
 |------|---------|
 | `agent/build.md` | Main agent: edit denied, search denied, bash allowlisted, task allowed, exploration + parallelization rules |
 | `agent/sidekick.md` | Sidekick prompt (model set in `opencode.json`) |
+| `agent/research.md` | Optional research specialist: read-only, web + docs |
+| `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
+| `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
 | `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts |
 | `opencode.json` | Reference config for this repo (Opus main, Sonnet sidekick, Composer explore) |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |

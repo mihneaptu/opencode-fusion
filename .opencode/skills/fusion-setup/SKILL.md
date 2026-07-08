@@ -12,8 +12,14 @@ This skill configures the Fusion two-agent workflow by writing the user's GLOBAL
 Fusion splits work across agents with asymmetric permissions:
 
 - `build` (main, primary): a strong model that plans, makes judgment calls, and reviews. It CANNOT edit files, search the codebase, or run arbitrary shell. Its only path to changing files is delegating to the sidekick via the `task` tool.
+- `plan` (primary): plan mode - the same planning brain as build. Produces a reviewed plan and delegates exploration, but does not execute; switch to build to carry it out. Overrides opencode's built-in plan agent so plan mode stays Fusion-aware.
 - `sidekick` (subagent): a cheaper, fast model with full `edit` and `bash` access. It executes precise specs handed to it by the main agent.
 - `explore` (subagent): a cheap model used for read-only codebase exploration.
+- `research` (subagent): read-only external research - web search and docs. No edit access.
+- `design` (subagent): frontend/UI implementation. Loads design skills, edits files, runs the dev/build tooling.
+- `reviewer` (subagent): audits a diff before commit (correctness, scope, security). Read-only plus lint/test; no edit access.
+
+The core roles (build/plan/sidekick/explore) are required. The research/design/reviewer specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
 
 The asymmetry is enforced by the permission layer, not by convention. Preserving the exact permission block below is what makes Fusion work.
 
@@ -24,6 +30,11 @@ Ask the user which model to use for each role. Do not assume; let them choose th
 1. Main/build model (a strong model - e.g. an Opus/GPT-class model).
 2. Sidekick model (a fast, cheaper coding model).
 3. Explore model (cheap; can be the same as sidekick).
+4. Research model (read-only external research; a solid general model).
+5. Design model (frontend/UI work; pick whichever model does design best in your opinion).
+6. Reviewer model (audits diffs; often a strong model, and deliberately can differ from the main model).
+
+Roles 4-6 are optional specialists. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent (plan mode) reuses the main/build model by default, so it needs no separate question.
 
 For each distinct provider the chosen models use, collect the connection details:
 - provider id (e.g. `kiro`, `progrok`, `anthropic`, `openai`)
@@ -98,8 +109,32 @@ Write the global config using this exact structure. Replace the `<...>` placehol
         "task": "allow"
       }
     },
+    "plan": {
+      "mode": "primary",
+      "model": "<main-provider>/<main-model-id>",
+      "prompt": "{file:agent/plan.md}",
+      "permission": {
+        "edit": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "bash": {
+          "*": "deny",
+          "npm run lint*": "allow",
+          "npm test*": "allow",
+          "git diff*": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git show*": "allow"
+        },
+        "task": "allow"
+      }
+    },
     "explore": { "model": "<explore-provider>/<explore-model-id>" },
-    "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" }
+    "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" },
+    "research": { "model": "<research-provider>/<research-model-id>" },
+    "design": { "model": "<design-provider>/<design-model-id>" },
+    "reviewer": { "model": "<reviewer-provider>/<reviewer-model-id>" }
   }
 }
 ```
@@ -111,17 +146,21 @@ Notes:
 
 ## Step 4 - Install the agent prompt files
 
-Copy the two prompt files bundled with this skill into the global agent folder:
+Copy the prompt files bundled with this skill into the global agent folder (one per role you configured):
 
 - `<this-skill-dir>/agent/build.md` -> `~/.config/opencode/agent/build.md`
+- `<this-skill-dir>/agent/plan.md` -> `~/.config/opencode/agent/plan.md`
 - `<this-skill-dir>/agent/sidekick.md` -> `~/.config/opencode/agent/sidekick.md`
+- `<this-skill-dir>/agent/research.md` -> `~/.config/opencode/agent/research.md`
+- `<this-skill-dir>/agent/design.md` -> `~/.config/opencode/agent/design.md`
+- `<this-skill-dir>/agent/reviewer.md` -> `~/.config/opencode/agent/reviewer.md`
 
-These carry the full operating instructions for each role. The sidekick file's frontmatter also sets its `mode`, `permission` (edit+bash allow), and can set its `model`; keep that intact.
+These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode`, `permission`, and a default `model`; the model in opencode.json (Step 3) takes precedence when present. Install only the files for the roles you configured - if the user skipped research/design/reviewer, skip those.
 
 ## Step 5 - Validate and finish
 
 1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
-2. Confirm both agent prompt files exist under `~/.config/opencode/agent/`.
+2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured).
 3. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later
