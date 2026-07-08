@@ -12,17 +12,21 @@ echo "  ========================"
 echo ""
 
 echo "  Choose a configuration:"
-echo "    1) Default      - GLM 5.2 main + Grok Composer sidekick + Grok 4.3 vision"
-echo "    2) Opus + GLM   - Claude Opus main + GLM 5.2 sidekick"
-echo "    3) Sonnet + C.  - Claude Sonnet main + Grok Composer sidekick"
+echo "    1) Default       - GLM 5.2 main + Grok Composer sidekick + Grok 4.3 vision"
+echo "    2) Opus + Sonnet - Claude Opus 4.8 main + Claude Sonnet 5 sidekick"
+echo "    3) Opus + GLM    - Claude Opus 4.8 main + GLM 5.2 sidekick"
+echo "    4) GPT-5.5+Mini  - GPT-5.5 main + GPT-5.4 mini sidekick"
+echo "    5) Free          - GLM 5.2 main + DeepSeek V4 Flash Free sidekick"
 echo ""
-read -rp "  Select 1-3 [1]: " choice
+read -rp "  Select 1-5 [1]: " choice
 choice="${choice:-1}"
 
 case "$choice" in
   1) preset="default" ;;
-  2) preset="opus-glm" ;;
-  3) preset="sonnet-composer" ;;
+  2) preset="opus-sonnet" ;;
+  3) preset="opus-glm" ;;
+  4) preset="gpt55-mini" ;;
+  5) preset="free" ;;
   *) echo "  Invalid choice. Please run again."; exit 1 ;;
 esac
 
@@ -48,6 +52,16 @@ for f in build.md sidekick.md vision.md; do
 done
 echo "  Agents copied:   $AGENT_DIR"
 
+# --- copy agents to project (for project-level opencode.json) ---
+PROJECT_AGENT_DIR="$REPO_ROOT/agent"
+mkdir -p "$PROJECT_AGENT_DIR"
+for f in build.md sidekick.md vision.md; do
+  if [ -f "$REPO_ROOT/agents/$f" ]; then
+    cp "$REPO_ROOT/agents/$f" "$PROJECT_AGENT_DIR/$f"
+  fi
+done
+echo "  Project agents:  $PROJECT_AGENT_DIR"
+
 # --- next steps ---
 
 echo ""
@@ -56,17 +70,25 @@ echo ""
 echo "  Next steps:"
 echo "    1. Restart opencode"
 
-if [ "$preset" != "default" ] && [ "$preset" != "opus-glm" ]; then
-  echo "    2. Run /connect and connect: anthropic"
-fi
+# Tell user which providers to connect
+case "$preset" in
+  opus-sonnet|opus-glm)
+    echo "    2. Run /connect and connect: anthropic"
+    ;;
+  gpt55-mini)
+    echo "    2. Run /connect and connect: openai"
+    ;;
+  free)
+    echo "    2. Run /connect and connect: opencode (Zen) - for free DeepSeek sidekick"
+    ;;
+esac
 
-if [ "$preset" != "opus-glm" ]; then
-  echo "    3. Make sure progrok proxy is running at http://127.0.0.1:18645/v1"
-fi
-
-if [ "$preset" = "opus-glm" ]; then
-  echo "    2. Run /connect and connect: anthropic"
-fi
+# Tell user if progrok is needed
+case "$preset" in
+  default)
+    echo "    3. Make sure progrok proxy is running at http://127.0.0.1:18645/v1"
+    ;;
+esac
 
 echo ""
 echo "  Change models later: edit $CONFIG_PATH"

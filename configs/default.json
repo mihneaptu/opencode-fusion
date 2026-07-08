@@ -24,7 +24,7 @@
   "agent": {
     "build": {
       "model": "opencode-go/glm-5.2",
-      "prompt": { "file": "agent/build.md" },
+      "prompt": "{file:agent/build.md}",
       "permission": {
         "edit": "deny",
         "bash": {

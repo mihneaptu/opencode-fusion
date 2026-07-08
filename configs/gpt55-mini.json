@@ -1,9 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "anthropic/claude-opus-4-8",
+  "model": "openai/gpt-5.5",
   "agent": {
     "build": {
-      "model": "anthropic/claude-opus-4-8",
+      "model": "openai/gpt-5.5",
       "prompt": "{file:agent/build.md}",
       "permission": {
         "edit": "deny",
@@ -27,7 +27,7 @@
         "task": "allow"
       }
     },
-    "explore": { "model": "opencode-go/glm-5.2" },
-    "sidekick": { "model": "opencode-go/glm-5.2" }
+    "explore": { "model": "openai/gpt-5.4-mini" },
+    "sidekick": { "model": "openai/gpt-5.4-mini" }
   }
 }

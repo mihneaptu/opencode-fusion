@@ -36,9 +36,11 @@ function Ask($label, $default) {
 Write-Host "  Choose models for each agent role." -ForegroundColor Yellow
 Write-Host "  Press Enter to accept the [default]." -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Common providers:" -ForegroundColor DarkGray
-Write-Host "    opencode-go  - free, built-in (glm-5.2)" -ForegroundColor DarkGray
-Write-Host "    anthropic    - paid, /connect required (claude-opus, claude-sonnet)" -ForegroundColor DarkGray
+Write-Host "  Common providers and models:" -ForegroundColor DarkGray
+Write-Host "    opencode-go  - free: glm-5.2" -ForegroundColor DarkGray
+Write-Host "    anthropic    - paid: claude-opus-4-8, claude-sonnet-5, claude-haiku-4-5" -ForegroundColor DarkGray
+Write-Host "    openai       - paid: gpt-5.5, gpt-5.4-mini" -ForegroundColor DarkGray
+Write-Host "    opencode     - Zen: deepseek-v4-flash-free (free), many others" -ForegroundColor DarkGray
 Write-Host "    progrok      - Grok via local proxy, needs SuperGrok" -ForegroundColor DarkGray
 Write-Host ""
 
@@ -83,7 +85,7 @@ $config = [ordered]@{
   agent      = [ordered]@{
     build     = [ordered]@{
       model      = $mainModel
-      prompt     = @{ file = "agent/build.md" }
+      prompt     = "{file:agent/build.md}"
       permission = [ordered]@{ edit = "deny"; bash = $bashAllow; task = "allow" }
     }
     explore   = @{ model = $exploreModel }
@@ -142,6 +144,15 @@ foreach ($f in @("build.md","sidekick.md","vision.md")) {
   if (Test-Path $src) { Copy-Item $src (Join-Path $agentDir $f) -Force }
 }
 Write-Host "  Agents copied:   $agentDir" -ForegroundColor Green
+
+# --- copy agents to project (for project-level opencode.json) ---
+$projectAgentDir = Join-Path $root "agent"
+if (-not (Test-Path $projectAgentDir)) { New-Item -ItemType Directory -Path $projectAgentDir -Force | Out-Null }
+foreach ($f in @("build.md","sidekick.md","vision.md")) {
+  $src = Join-Path $root "agents\$f"
+  if (Test-Path $src) { Copy-Item $src (Join-Path $projectAgentDir $f) -Force }
+}
+Write-Host "  Project agents:  $projectAgentDir" -ForegroundColor Green
 
 # --- next steps ---
 

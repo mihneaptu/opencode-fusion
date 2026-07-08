@@ -27,7 +27,7 @@
         "task": "allow"
       }
     },
-    "explore": { "model": "opencode-go/glm-5.2" },
-    "sidekick": { "model": "opencode-go/glm-5.2" }
+    "explore": { "model": "anthropic/claude-sonnet-5" },
+    "sidekick": { "model": "anthropic/claude-sonnet-5" }
   }
 }
