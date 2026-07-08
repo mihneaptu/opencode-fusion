@@ -43,6 +43,9 @@
       "prompt": "{file:agent/build.md}",
       "permission": {
         "edit": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
         "bash": {
           "*": "deny",
           "npm run lint*": "allow",
