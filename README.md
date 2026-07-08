@@ -8,7 +8,7 @@ Two agents run together: a **main agent** that plans and reviews, and a **sideki
 
 Cognition describes the pattern in [Devin Fusion](https://cognition.com/blog/devin-fusion): a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. They found it maintains frontier-level performance at meaningfully lower cost.
 
-Around that core pair sits a small team of specialist subagents the main agent can delegate to: **explore** for fast read-only codebase search, plus optional **research** (external web/doc lookups), **design** (frontend/UI implementation), and **reviewer** (auditing a diff before commit). Each specialist runs on a model you pick independently - so you can put whichever model you think designs best on `design`, and a different one you trust for review on `reviewer`. When the main model supports image input (most frontier models do), it reads screenshots directly - no separate vision agent needed.
+Around that core pair sits a small team of specialist subagents the main agent can delegate to: **explore** for fast read-only codebase search, plus optional **research** (external web/doc lookups), **design** (frontend/UI implementation), and **reviewer** (auditing a diff before commit). Each specialist runs on a model you pick independently - so you can put whichever model you think designs best on `design`, and a different one you trust for review on `reviewer`. Think of the repo as a catalog of roles: the core is required, and the optional specialists are pieces you add only if your workflow needs them. When the main model supports image input (most frontier models do), it reads screenshots directly; if it cannot, add the optional **vision** agent to transcribe images.
 
 ## Why
 
@@ -34,11 +34,13 @@ The flow:
 | Agent | Role | Config key | Required? |
 |-------|------|------------|-----------|
 | `build` | Main: plan, delegate, review | `agent.build.model` | core |
+| `plan` | Plan mode: same brain as build, plans but does not execute | `agent.plan.model` | core |
 | `sidekick` | Execute edits and commands | `agent.sidekick.model` | core |
 | `explore` | Fast read-only exploration | `agent.explore.model` | core |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional |
 | `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional |
+| `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional |
 
 ## Setup
 
@@ -103,7 +105,7 @@ If you would rather configure by hand, write `~/.config/opencode/opencode.json` 
 }
 ```
 
-The three specialists are optional. To add them, give each its own agent file and a model entry alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, and `agent/reviewer.md`.
+The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, `agent/reviewer.md`, and `agent/vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model.
 
 Then install the agent prompts so `{file:agent/build.md}` resolves:
 
@@ -180,10 +182,12 @@ The allowlist matches whole commands against fixed patterns. Chaining with `&&`,
 | File | Purpose |
 |------|---------|
 | `agent/build.md` | Main agent: edit denied, search denied, bash allowlisted, task allowed, exploration + parallelization rules |
+| `agent/plan.md` | Plan-mode agent: read-only inspection plus delegation, cannot execute or commit |
 | `agent/sidekick.md` | Sidekick prompt (model set in `opencode.json`) |
 | `agent/research.md` | Optional research specialist: read-only, web + docs |
 | `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
 | `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
+| `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
 | `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts |
 | `opencode.json` | Reference config for this repo (Opus main, Sonnet sidekick, Composer explore) |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |

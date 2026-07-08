@@ -6,7 +6,7 @@ Not an application - an opencode *configuration* project implementing the Devin 
 
 ## Source of truth and the sync trap
 
-The agent prompts (`build.md`, `plan.md`, `sidekick.md`, `research.md`, `design.md`, `reviewer.md`) exist in up to four places. Editing one does NOT update the others - keep them in sync by hand:
+The agent prompts (`build.md`, `plan.md`, `sidekick.md`, `research.md`, `design.md`, `reviewer.md`, `vision.md`) exist in up to four places. Editing one does NOT update the others - keep them in sync by hand:
 
 - `agent/*.md` - canonical, repo root.
 - `.opencode/skills/fusion-setup/agent/*.md` - bundled in the skill for distribution.
@@ -20,7 +20,8 @@ When you change a prompt or the skill, update the repo copy AND re-mirror to `~/
 - `opencode.json` is **gitignored** - `git diff`/`git status` never show it. Inspect it with the read tool, not git.
 - opencode loads config once at **startup**. After editing `opencode.json`, any `agent/*.md`, or the skill, the user must fully quit and restart opencode. Nothing hot-reloads.
 - Current reference config: build `kiro/claude-opus-4-8`, plan `kiro/claude-opus-4-8`, sidekick `kiro/claude-sonnet-5`, explore `progrok/grok-composer-2.5-fast`, and optional specialists research `kiro/claude-sonnet-5`, design `kiro/claude-sonnet-5`, reviewer `kiro/claude-opus-4-8`. No vision agent - the main model reads images directly.
-- The team: `build` and `plan` are primary (Fusion-aware, cannot edit); `sidekick` executes; `explore`/`research` are read-only; `design` edits UI; `reviewer` audits diffs read-only. All subagents carry `task: allow`, but nested delegation (a subagent spawning another subagent) is UNVERIFIED at runtime - confirm after a restart before relying on it.
+- The team: `build` and `plan` are primary (Fusion-aware, cannot edit); `sidekick` executes; `explore`/`research` are read-only; `design` edits UI; `reviewer` audits diffs read-only. Most subagents carry `task: allow`, but `vision` is a deliberate leaf (`task: deny`). Nested delegation (a subagent spawning another subagent) is UNVERIFIED at runtime - confirm after a restart before relying on it.
+- `vision` is an optional catalog piece, not in the reference config: the reference main model (Opus) reads images directly, so `vision` is omitted. It exists in `agent/vision.md` for anyone whose main model lacks image input; the skill installs it only when asked. It keeps `bash: allow` for the clipboard-capture snippet.
 - `plan.md` overrides opencode's built-in plan agent so plan mode stays Fusion-aware (delegates exploration, does not execute, cannot commit). Without it, plan mode would be vanilla opencode.
 
 ## Testing (how we verify changes here)

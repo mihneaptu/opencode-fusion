@@ -18,8 +18,9 @@ Fusion splits work across agents with asymmetric permissions:
 - `research` (subagent): read-only external research - web search and docs. No edit access.
 - `design` (subagent): frontend/UI implementation. Loads design skills, edits files, runs the dev/build tooling.
 - `reviewer` (subagent): audits a diff before commit (correctness, scope, security). Read-only plus lint/test; no edit access.
+- `vision` (subagent): reads images/screenshots the main model cannot see and reports them as text. Only needed when the main model lacks image input.
 
-The core roles (build/plan/sidekick/explore) are required. The research/design/reviewer specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
+Think of the repo as a catalog of roles: the core (build/plan/sidekick/explore) is required, and the rest are optional pieces you install only if your workflow needs them. The research/design/reviewer/vision specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
 
 The asymmetry is enforced by the permission layer, not by convention. Preserving the exact permission block below is what makes Fusion work.
 
@@ -33,8 +34,9 @@ Ask the user which model to use for each role. Do not assume; let them choose th
 4. Research model (read-only external research; a solid general model).
 5. Design model (frontend/UI work; pick whichever model does design best in your opinion).
 6. Reviewer model (audits diffs; often a strong model, and deliberately can differ from the main model).
+7. Vision model (reads images) - ONLY ask this if the user's main/build model does not support image input. Most frontier models read images directly, so skip this question unless the main model cannot. The vision model must be one that accepts image input.
 
-Roles 4-6 are optional specialists. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent (plan mode) reuses the main/build model by default, so it needs no separate question.
+Roles 4-7 are optional a-la-carte pieces. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent (plan mode) reuses the main/build model by default, so it needs no separate question. Do not offer `vision` when the main model already reads images.
 
 For each distinct provider the chosen models use, collect the connection details:
 - provider id (e.g. `kiro`, `progrok`, `anthropic`, `openai`)
@@ -143,6 +145,7 @@ Notes:
 - `{file:agent/build.md}` resolves relative to `~/.config/opencode/`, so the prompt file must be installed at `~/.config/opencode/agent/build.md` (Step 4).
 - The sidekick's prompt is set by its agent file (Step 4), so it does not need a `prompt` field here.
 - If the user already has a `~/.config/opencode/opencode.json`, first back it up (copy to `opencode.json.backup.<timestamp>`), then merge or overwrite per the user's wishes. Never silently discard an existing config.
+- Add `"vision": { "model": "<vision-provider>/<vision-model-id>" }` to the `agent` block ONLY if the user configured a vision role (main model lacks image input). Omit it otherwise.
 
 ## Step 4 - Install the agent prompt files
 
@@ -154,8 +157,9 @@ Copy the prompt files bundled with this skill into the global agent folder (one 
 - `<this-skill-dir>/agent/research.md` -> `~/.config/opencode/agent/research.md`
 - `<this-skill-dir>/agent/design.md` -> `~/.config/opencode/agent/design.md`
 - `<this-skill-dir>/agent/reviewer.md` -> `~/.config/opencode/agent/reviewer.md`
+- `<this-skill-dir>/agent/vision.md` -> `~/.config/opencode/agent/vision.md` (only if a vision role was configured)
 
-These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode`, `permission`, and a default `model`; the model in opencode.json (Step 3) takes precedence when present. Install only the files for the roles you configured - if the user skipped research/design/reviewer, skip those.
+These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode`, `permission`, and a default `model`; the model in opencode.json (Step 3) takes precedence when present. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
 
 ## Step 5 - Validate and finish
 
