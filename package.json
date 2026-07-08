@@ -1,0 +1,10 @@
+{
+  "name": "opencode-fusion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Devin Fusion sidekick setup for opencode",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test"
+  }
+}

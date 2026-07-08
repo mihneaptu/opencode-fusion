@@ -4,3 +4,6 @@ node_modules/
 *.log
 .env
 .env.local
+
+# Local machine config (not versioned; see agent/*.md and .opencode/skills/ for the versioned surface)
+opencode.json
