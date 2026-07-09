@@ -1,5 +1,5 @@
 /* =========================================================================
-   opencode Fusion - landing page styles
+   Sidekick Fusion - landing page styles
    Light Apple-product-page aesthetic + GitHub dark mode. All color values
    flow from tokens. System fonts only. No network requests.
    ========================================================================= */
@@ -93,6 +93,14 @@
   --theme-dur: 0.4s;        /* color-mode crossfade */
   --stagger-step: 0.07s;    /* per-child cascade delay for grouped reveals */
 
+  /* Hero brand word colors (documented product accents).
+     opencode: warm near-black #201d1d
+     codex:    OpenAI-style product blue
+     Claude:   Anthropic accent orange #d97757 */
+  --brand-opencode: #201d1d;
+  --brand-codex: #0080ff;
+  --brand-claude: #d97757;
+
   color-scheme: light;
 }
 
@@ -132,6 +140,11 @@ html[data-theme="dark"] {
   --shadow-sm: 0 1px 2px rgba(1, 4, 9, 0.4);
   --shadow-md: 0 6px 24px -8px rgba(1, 4, 9, 0.55);
   --shadow-lg: 0 24px 60px -28px rgba(1, 4, 9, 0.7);
+
+  /* opencode brand is near-black — lift to warm light grey on dark canvas. */
+  --brand-opencode: #c8c6c4;
+  --brand-codex: #3d9eff;
+  --brand-claude: #e08b6d;
 
   color-scheme: dark;
 }
@@ -612,10 +625,115 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   margin-bottom: var(--space-md);
 }
 .hero-title {
+  /* Tall enough for the "p" descender in "opencode"; JS may override in px. */
+  --hero-word-h: 1.3em;
   font-size: var(--step-5);
   letter-spacing: -0.035em;
   font-weight: 600;
+  line-height: var(--hero-word-h);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: baseline;
+}
+
+/* Vertical brand-word swap: opencode → codex → Claude Code → (loop).
+   Each word is paint-clipped to its slot so the "p" descender cannot bleed
+   into the next row. Track translate + rotator width are px keyframes from JS. */
+.hero-title-rotator {
+  --hero-w-0: 8.2ch;   /* opencode — fallback until JS measures */
+  --hero-w-1: 5.2ch;   /* codex */
+  --hero-w-2: 11.2ch;  /* Claude Code */
+  display: inline-block;
+  vertical-align: baseline;
+  width: var(--hero-w-0);
+  max-width: 100%;
+  will-change: width;
+  /* Same duration + easing as the vertical track so width and slide stay locked. */
+  animation: hero-word-width 8.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.hero-title-rotator-viewport {
+  display: block;
+  width: 100%;
+  height: var(--hero-word-h);
+  overflow: hidden;
+  isolation: isolate;
+  /* Hard clip — kills antialiased glyph fringes (e.g. bottom of "p"). */
+  clip-path: inset(0);
+  -webkit-clip-path: inset(0);
+  /* Extra safety on engines that still paint outside overflow:hidden. */
+  contain: paint;
+}
+.hero-title-rotator-track {
+  display: flex;
+  flex-direction: column;
+  /* Critical: do NOT stretch every word to the widest label. */
+  align-items: flex-start;
+  width: max-content;
+  will-change: transform;
+  animation: hero-word-cycle 8.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.hero-title-rotator-word {
+  /* Flex-center glyphs inside a fixed slot; overflow clips descenders so
+     the "p" in opencode cannot paint into the codex row. */
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  height: var(--hero-word-h);
+  min-height: var(--hero-word-h);
+  max-height: var(--hero-word-h);
   line-height: 1;
+  white-space: nowrap;
+  width: fit-content;
+  overflow: hidden;
+  contain: paint;
+}
+.hero-title-rotator-word.is-opencode { color: var(--brand-opencode); }
+.hero-title-rotator-word.is-codex { color: var(--brand-codex); }
+.hero-title-rotator-word.is-claude { color: var(--brand-claude); }
+.hero-title-suffix {
+  white-space: nowrap;
+}
+
+/* Fallback vertical steps (em). JS replaces with integer px for pixel-lock. */
+@keyframes hero-word-cycle {
+  0%,
+  22% {
+    transform: translate3d(0, 0, 0);
+  }
+  30%,
+  52% {
+    transform: translate3d(0, calc(var(--hero-word-h) * -1), 0);
+  }
+  60%,
+  82% {
+    transform: translate3d(0, calc(var(--hero-word-h) * -2), 0);
+  }
+  90%,
+  100% {
+    transform: translate3d(0, calc(var(--hero-word-h) * -3), 0);
+  }
+}
+
+/* Fallback width keyframes (ch). JS replaces this with measured px. */
+@keyframes hero-word-width {
+  0%,
+  22% {
+    width: var(--hero-w-0);
+  }
+  30%,
+  52% {
+    width: var(--hero-w-1);
+  }
+  60%,
+  82% {
+    width: var(--hero-w-2);
+  }
+  90%,
+  100% {
+    width: var(--hero-w-0);
+  }
 }
 .hero-tagline {
   margin-top: var(--space-lg);
@@ -1203,5 +1321,17 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   /* Prefer the static poster over a looping video when motion is reduced. */
   .hero-video {
     display: none !important;
+  }
+  /* Static first word — no vertical ticker or width pulse. */
+  .hero-title-rotator {
+    animation: none !important;
+    width: var(--hero-w-0) !important;
+  }
+  .hero-title-rotator-track {
+    animation: none !important;
+    transform: none !important;
+  }
+  .hero-title-rotator-word:not(:first-child) {
+    display: none;
   }
 }

@@ -1,5 +1,5 @@
 /* =========================================================================
-   opencode Fusion - interactions
+   Sidekick Fusion - interactions
    Classic script (no modules). Runs from file:// with zero network access.
    ========================================================================= */
 (function () {
@@ -341,6 +341,112 @@
     else doSwap();
   }
 
+  /* Measure harness label width + slot height; inject px keyframes so
+     "Fusion" tracks width and the "p" descender never bleeds between rows. */
+  function initHeroTitleRotator() {
+    var title = document.getElementById('hero-title');
+    var rotator = document.querySelector('.hero-title-rotator');
+    if (!title || !rotator) return;
+
+    var words = rotator.querySelectorAll('.hero-title-rotator-word');
+    if (words.length < 3) return;
+
+    var styleEl = document.getElementById('hero-rotator-kf');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'hero-rotator-kf';
+      document.head.appendChild(styleEl);
+    }
+
+    function wordWidth(el) {
+      var w = el.scrollWidth;
+      if (!w) w = el.getBoundingClientRect().width;
+      return Math.ceil(w);
+    }
+
+    var track = rotator.querySelector('.hero-title-rotator-track');
+    var lastKey = '';
+
+    function restartAnims() {
+      /* Restart width + vertical together so they stay phase-locked. */
+      rotator.style.animation = 'none';
+      if (track) track.style.animation = 'none';
+      void rotator.offsetWidth;
+      rotator.style.animation = '';
+      if (track) track.style.animation = '';
+    }
+
+    function measure() {
+      /* Slot height: full glyph box of the tallest label (covers "p" descender). */
+      var slotH = 0;
+      for (var i = 0; i < words.length; i++) {
+        var gh = Math.ceil(words[i].getBoundingClientRect().height);
+        if (gh > slotH) slotH = gh;
+      }
+      /* Range measure catches ink that extends past the line box. */
+      try {
+        for (var r = 0; r < 3; r++) {
+          var range = document.createRange();
+          range.selectNodeContents(words[r]);
+          var rr = range.getBoundingClientRect();
+          var ink = Math.ceil(rr.height);
+          if (ink > slotH) slotH = ink;
+          range.detach && range.detach();
+        }
+      } catch (e) { /* ignore */ }
+
+      /* A little padding so "p" sits fully inside the clip at rest. */
+      if (slotH > 0) {
+        slotH = Math.ceil(slotH + 2);
+        title.style.setProperty('--hero-word-h', slotH + 'px');
+      }
+
+      /* First three unique labels (4th is a seamless-loop duplicate). */
+      var widths = [];
+      for (var j = 0; j < 3; j++) {
+        var w = wordWidth(words[j]);
+        if (w < 1) return;
+        widths.push(w);
+        rotator.style.setProperty('--hero-w-' + j, w + 'px');
+      }
+      var w0 = widths[0];
+      var w1 = widths[1];
+      var w2 = widths[2];
+      /* Guard: if all three match, words are still stretched — skip inject. */
+      if (w0 === w1 && w1 === w2) return;
+
+      var h = slotH || Math.ceil(words[0].getBoundingClientRect().height);
+      if (h < 1) return;
+
+      var key = w0 + ',' + w1 + ',' + w2 + ',' + h;
+      if (key === lastKey) return;
+      lastKey = key;
+
+      /* Integer px steps — no subpixel em drift that leaves a "p" sliver. */
+      styleEl.textContent =
+        '@keyframes hero-word-width{' +
+        '0%,22%{width:' + w0 + 'px}' +
+        '30%,52%{width:' + w1 + 'px}' +
+        '60%,82%{width:' + w2 + 'px}' +
+        '90%,100%{width:' + w0 + 'px}' +
+        '}' +
+        '@keyframes hero-word-cycle{' +
+        '0%,22%{transform:translate3d(0,0,0)}' +
+        '30%,52%{transform:translate3d(0,' + (-h) + 'px,0)}' +
+        '60%,82%{transform:translate3d(0,' + (-h * 2) + 'px,0)}' +
+        '90%,100%{transform:translate3d(0,' + (-h * 3) + 'px,0)}' +
+        '}';
+      restartAnims();
+    }
+
+    measure();
+    /* Fonts may settle after first paint; remeasure once they are ready. */
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measure).catch(function () {});
+    }
+    window.addEventListener('resize', measure);
+  }
+
   function init() {
     initTheme(); // also loads the matching hero video
     initReveal();
@@ -348,6 +454,7 @@
     initNav();
     initSmoothScroll();
     initHeaderScroll();
+    initHeroTitleRotator();
   }
 
   if (document.readyState === 'loading') {

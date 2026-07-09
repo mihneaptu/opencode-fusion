@@ -1,12 +1,29 @@
-# opencode-fusion
+# sidekick-fusion
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**.
+A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**.
 
 The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at **35% lower cost** on their FrontierCode benchmark.
 
 The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
+
+## Supported harnesses
+
+| Harness | Status | Notes |
+|---------|--------|--------|
+| **[OpenCode](https://opencode.ai)** | **Supported (v1 reference)** | Full Fusion: edit denied, bash allowlist, setup skill |
+| **[Claude Code](https://code.claude.com)** | **v1 target** | Full-enough Fusion via custom agents + restricted main |
+| **[Codex](https://developers.openai.com/codex)** | **Planned (v1.1)** | Thin port first; main “cannot edit” may be softer |
+| Cursor, Gemini CLI, others | Not planned for v1 | Only if demand is clear later |
+
+**v1.0:** OpenCode + Claude Code. Codex next. Details and build order: [ROADMAP.md](ROADMAP.md).
+
+| Want… | Go to |
+|-------|--------|
+| OpenCode setup | [Setup (OpenCode)](#setup-opencode) below, or [harnesses/opencode](harnesses/opencode/README.md) |
+| Claude Code setup | [Setup (Claude Code)](#setup-claude-code) below, or [harnesses/claude-code](harnesses/claude-code/README.md) |
+| Edit role behavior | [`core/roles/`](core/README.md) then `npm run assemble` |
 
 ## Why it works
 
@@ -39,7 +56,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 
 Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.5`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
 
-## Setup
+## Setup (OpenCode)
 
 Fusion lives entirely in your **global** opencode config at `~/.config/opencode/` (Windows: `%USERPROFILE%\.config\opencode\`). There is no build step and nothing to clone into your projects.
 
@@ -129,6 +146,40 @@ The proxy serves at `http://127.0.0.1:18645/v1`. Point a provider block at that 
 
 </details>
 
+## Setup (Claude Code)
+
+1. Assemble agent files (if you changed core prompts):
+
+```bash
+npm run assemble
+```
+
+2. Install agents (user-global):
+
+```bash
+# macOS / Linux
+mkdir -p ~/.claude/agents
+cp harnesses/claude-code/agents/*.md ~/.claude/agents/
+```
+
+```powershell
+# Windows PowerShell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\agents" | Out-Null
+Copy-Item harnesses\claude-code\agents\*.md "$env:USERPROFILE\.claude\agents\" -Force
+```
+
+Or copy into a project’s `.claude/agents/` to share with the team.
+
+3. Run the Fusion main agent:
+
+```bash
+claude --agent build
+```
+
+4. Restart Claude Code once if `~/.claude/agents` was newly created.
+
+Full notes, model defaults, and gaps vs OpenCode: [harnesses/claude-code/README.md](harnesses/claude-code/README.md).
+
 ## Verify it works
 
 Open a project with some lint errors and ask:
@@ -137,7 +188,11 @@ Open a project with some lint errors and ask:
 fix the lint errors in this project
 ```
 
-You should see the main agent delegate exploration, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself before reporting back.
+**OpenCode:** the main agent delegates via the `task` tool; the sidekick edits; the main agent runs `npm run lint` itself.
+
+**Claude Code:** start with `claude --agent build`. The main agent should spawn the **sidekick** (Agent tool), not Write/Edit itself, then verify with lint.
+
+This repo’s `test-playground/` is a convenient lint fixture: `npm --prefix test-playground run lint`.
 
 ## Customize
 
@@ -212,29 +267,28 @@ Two optional extras ship with the skill:
 
 | File | Purpose |
 |------|---------|
-| `agent/build.md` | Main agent: edit denied, search denied, bash allowlisted, task allowed, exploration + parallelization rules |
-| `agent/plan.md` | Plan-mode agent: read-only inspection plus delegation, cannot execute or commit |
-| `agent/sidekick.md` | Sidekick prompt (model set in `opencode.json`) |
-| `agent/research.md` | Optional research specialist: read-only, web + docs |
-| `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
-| `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
-| `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
-| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, command, and plugin |
-| `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
-| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
-| `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
+| `ROADMAP.md` | Harness support plan, v1 scope, and build order |
+| `core/roles/` | Portable role bodies (edit here, then `npm run assemble`) |
+| `harnesses/opencode/` | OpenCode frontmatter, addenda, docs |
+| `harnesses/claude-code/` | Claude Code frontmatter, addenda, assembled agents, docs |
+| `scripts/assemble-agents.mjs` | Builds `agent/` + skill bundle + Claude Code agents |
+| `agent/*.md` | **Generated** OpenCode agent prompts (do not hand-edit; edit core/harness pieces) |
+| `.opencode/skills/fusion-setup/` | OpenCode setup skill + bundled agent copies |
+| `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command |
+| `.opencode/plugins/fusion-audit.js` | Optional delegation-tree audit plugin |
+| `opencode.json` | Reference config (gitignored) |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
 
 </details>
 
-## Built with opencode-fusion
+## Built with sidekick-fusion
 
 This repo was configured using the Fusion pattern itself. The main agent planned the structure, reviewed every change, and verified against real command output. The sidekick wrote the files and ran the commands. Every change went through the flow above.
 
 ## Disclaimer
 
-This project is not affiliated with, endorsed by, or built by the opencode team. [opencode](https://opencode.ai) is a separate project by [Anomaly](https://anoma.ly). This repo provides configuration that works with opencode but is not part of it.
+This project is not affiliated with, endorsed by, or built by the OpenCode, Anthropic, OpenAI, or Cognition teams. [opencode](https://opencode.ai) is a separate project by [Anomaly](https://anoma.ly). This repo provides configuration that implements the Fusion sidekick pattern but is not part of any of those products.
 
 ## Credit
 
