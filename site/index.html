@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="opencode Fusion is a two-agent setup for opencode: a planning-and-review main agent that never edits, paired with a sidekick that does the editing. Frontier-level quality at roughly 35-41% lower cost.">
+  <title>opencode Fusion - a two-agent setup for opencode</title>
+  <!-- Progressive-enhancement flag, set before paint to avoid a reveal flash. No network access. -->
+  <script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="wordmark" href="#hero" aria-label="opencode Fusion, back to top">
+        <span class="wordmark-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="3.2"/>
+            <circle cx="16" cy="16" r="3.2"/>
+            <path d="M10.3 10.3 13.7 13.7"/>
+          </svg>
+        </span>
+        <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+      </a>
+
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+        <span class="nav-toggle-bars" aria-hidden="true"></span>
+      </button>
+
+      <nav class="nav" id="nav-menu" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="#how-it-works">How it works</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#cost">Cost</a></li>
+          <li><a href="#footer">GitHub</a></li>
+        </ul>
+        <a class="btn btn-primary btn-sm" href="#get-started">Get started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- HERO -->
+    <section id="hero" class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero-inner">
+          <p class="hero-kicker reveal">Two agents, one workflow</p>
+          <h1 id="hero-title" class="hero-title reveal">opencode&nbsp;Fusion</h1>
+          <p class="hero-tagline reveal">A planning-and-review main agent that never edits, paired with a sidekick that does the editing.</p>
+          <p class="hero-subline reveal">Frontier-level quality at roughly <strong>35-41% lower cost</strong>.</p>
+          <div class="hero-actions reveal">
+            <a class="btn btn-primary" href="#get-started">Get started</a>
+            <a class="btn btn-ghost" href="#">
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+              </span>
+              View on GitHub
+            </a>
+          </div>
+        </div>
+
+        <!-- Decorative flow diagram: the main/sidekick loop, built with HTML + CSS. Mirrored in prose below, so hidden from assistive tech. -->
+        <figure class="hero-diagram reveal" aria-hidden="true">
+          <div class="diag-flow">
+            <div class="diag-node diag-node-main">
+              <span class="diag-role">Main agent</span>
+              <span class="diag-desc">Plans and reviews</span>
+              <span class="pill pill-main">cannot edit</span>
+            </div>
+            <div class="diag-link">
+              <span class="diag-link-label">writes spec</span>
+              <svg class="diag-link-arrow" viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h40"/><path d="M36 2.5 42 7l-6 4.5"/></svg>
+            </div>
+            <div class="diag-node diag-node-side">
+              <span class="diag-role">Sidekick</span>
+              <span class="diag-desc">Applies the edits</span>
+              <span class="pill pill-side">edits files</span>
+            </div>
+            <div class="diag-link">
+              <span class="diag-link-label">returns diff</span>
+              <svg class="diag-link-arrow" viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h40"/><path d="M36 2.5 42 7l-6 4.5"/></svg>
+            </div>
+            <div class="diag-node diag-node-verify">
+              <span class="diag-role">Main agent</span>
+              <span class="diag-desc">Runs tests, reviews the diff</span>
+              <span class="pill pill-ok">verified</span>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- PROBLEM -->
+    <section id="problem" class="section problem" aria-labelledby="problem-title">
+      <div class="container measure">
+        <h2 id="problem-title" class="section-title reveal">Strong models are expensive. Weak models cut corners.</h2>
+        <p class="lead reveal">Running a top-tier model for every edit and every token gets costly fast. Running a cheaper model on its own tends to drop quality on real, multi-step work.</p>
+        <p class="lead reveal">Fusion splits the roles. You pay the premium only where judgment matters, and let a cheaper model handle the high-volume editing.</p>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="section how" aria-labelledby="how-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="how-title" class="section-title reveal">How it works</h2>
+          <p class="section-intro reveal">The main agent plans and reviews but cannot edit files. The sidekick does all the editing. That asymmetry is the whole idea.</p>
+        </div>
+
+        <ol class="flow">
+          <li class="flow-step reveal">
+            <div class="flow-card">
+              <span class="flow-num" aria-hidden="true">01</span>
+              <span class="flow-role flow-role-neutral">You</span>
+              <h3 class="flow-title">Describe the task</h3>
+              <p class="flow-desc">Hand the main agent a goal in plain language.</p>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <div class="flow-card flow-card-main">
+              <span class="flow-num" aria-hidden="true">02</span>
+              <span class="flow-role flow-role-main">Main agent</span>
+              <h3 class="flow-title">Plan and spec</h3>
+              <p class="flow-desc">It explores, decides, and writes a precise spec. It directs the work but cannot edit files.</p>
+              <span class="pill pill-main">cannot edit</span>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <div class="flow-card flow-card-side">
+              <span class="flow-num" aria-hidden="true">03</span>
+              <span class="flow-role flow-role-side">Sidekick</span>
+              <h3 class="flow-title">Execute the edits</h3>
+              <p class="flow-desc">A cheaper agent applies the changes from that spec across the codebase.</p>
+              <span class="pill pill-side">edits files</span>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <div class="flow-card flow-card-main">
+              <span class="flow-num" aria-hidden="true">04</span>
+              <span class="flow-role flow-role-main">Main agent</span>
+              <h3 class="flow-title">Verify and iterate</h3>
+              <p class="flow-desc">It runs tests and lint, reviews the diff, and loops until the work is right.</p>
+              <span class="pill pill-ok">reviews diff</span>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section id="features" class="section features" aria-labelledby="features-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="features-title" class="section-title reveal">Built for cost and quality</h2>
+          <p class="section-intro reveal">Every part of the setup earns its place. Nothing is there for decoration.</p>
+        </div>
+
+        <ul class="feature-grid">
+          <li class="feature-item feature-item-lead reveal">
+            <span class="feature-icon feature-icon-accent" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="6.5" rx="7" ry="3"/>
+                <path d="M5 6.5v5c0 1.66 3.13 3 7 3s7-1.34 7-3v-5"/>
+                <path d="M5 11.5v5c0 1.66 3.13 3 7 3s7-1.34 7-3v-5"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Cost discipline</h3>
+            <p class="feature-desc">The expensive model spends its tokens on judgment: plans, specs, and reviews. The cheaper model handles the high-volume editing, so you pay the premium only where it changes the outcome.</p>
+          </li>
+
+          <li class="feature-item reveal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="12" r="6"/>
+                <circle cx="15" cy="12" r="6"/>
+                <path d="M9.7 12.2 11.3 13.8 14.4 10.4"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Cross-vendor review</h3>
+            <p class="feature-desc">Main and sidekick come from different model families, so each tends to catch the mistakes the other's family makes.</p>
+          </li>
+
+          <li class="feature-item reveal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 3h8l4 4v14H6z"/>
+                <path d="M14 3v4h4"/>
+                <path d="M9 12h6"/>
+                <path d="M9 15.5h6"/>
+                <path d="M9 8.5h2"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Precise spec hand-off</h3>
+            <p class="feature-desc">Work crosses to the sidekick as an explicit spec: objective, files, interfaces, constraints, and how to verify. Not a vague goal.</p>
+          </li>
+
+          <li class="feature-item reveal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="5" cy="12" r="2"/>
+                <circle cx="19" cy="6" r="2"/>
+                <circle cx="19" cy="12" r="2"/>
+                <circle cx="19" cy="18" r="2"/>
+                <path d="M7 12h3"/>
+                <path d="M10 12V6h7"/>
+                <path d="M10 12h7"/>
+                <path d="M10 12v6h7"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Parallel sidekicks</h3>
+            <p class="feature-desc">Independent edits fan out to several sidekick runs at once, so unrelated work does not queue behind a single thread.</p>
+          </li>
+
+          <li class="feature-item reveal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="10.5" cy="10.5" r="6.5"/>
+                <path d="M15.5 15.5 21 21"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Read-only exploration</h3>
+            <p class="feature-desc">Searching and reading the codebase is delegated to cheap read-only agents, keeping the main agent's context lean.</p>
+          </li>
+
+          <li class="feature-item feature-item-wide reveal">
+            <span class="feature-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/>
+                <rect x="9.5" y="11" width="5" height="4.2" rx="0.6"/>
+                <path d="M10.6 11V9.6a1.4 1.4 0 0 1 2.8 0V11"/>
+              </svg>
+            </span>
+            <h3 class="feature-title">Least-privilege permissions</h3>
+            <p class="feature-desc">The main agent's file edits and destructive commands are denied at the permission layer. Safety comes from tooling, not just prompt wording.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- COST -->
+    <section id="cost" class="section cost" aria-labelledby="cost-title">
+      <div class="container">
+        <div class="section-head">
+          <h2 id="cost-title" class="section-title reveal">Where the savings come from</h2>
+        </div>
+
+        <div class="cost-panel reveal">
+          <p class="cost-flag">Illustrative - not a measured benchmark</p>
+
+          <div class="bars">
+            <div class="bar-row">
+              <div class="bar-label">
+                <span class="bar-name">All frontier model</span>
+                <span class="bar-value">100%</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill bar-baseline" style="--pct: 100%;" role="img" aria-label="All frontier model: 100 percent relative cost, the baseline."></div>
+              </div>
+            </div>
+
+            <div class="bar-row">
+              <div class="bar-label">
+                <span class="bar-name">Fusion</span>
+                <span class="bar-value bar-value-accent">~62%</span>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill bar-fusion" style="--pct: 62%;" role="img" aria-label="Fusion: about 62 percent of baseline relative cost."></div>
+              </div>
+            </div>
+          </div>
+
+          <p class="cost-caption">Figures are illustrative and for explanation only, not a benchmark we ran. Cognition has reported the Fusion pattern reaching roughly 35-41% lower cost.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- GET STARTED -->
+    <section id="get-started" class="section cta" aria-labelledby="cta-title">
+      <div class="container cta-inner">
+        <h2 id="cta-title" class="section-title reveal">Set up Fusion in your opencode config</h2>
+        <p class="lead reveal">One command scaffolds the agents, permissions, and model wiring into your global opencode configuration.</p>
+
+        <div class="command reveal">
+          <span class="command-label" aria-hidden="true">terminal</span>
+          <pre class="command-pre"><code id="install-cmd">npx opencode-fusion setup</code></pre>
+          <button class="copy-btn" type="button" data-copy-target="install-cmd" aria-label="Copy install command to clipboard">
+            <span class="copy-btn-text">Copy</span>
+          </button>
+          <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>
+        </div>
+
+        <div class="hero-actions cta-actions reveal">
+          <a class="btn btn-primary" href="#">
+            <span class="btn-icon" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            </span>
+            View on GitHub
+          </a>
+          <a class="btn btn-ghost" href="#">Read the docs</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="footer" aria-labelledby="footer-title">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="wordmark" href="#hero" aria-label="opencode Fusion, back to top">
+          <span class="wordmark-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="8" cy="8" r="3.2"/>
+              <circle cx="16" cy="16" r="3.2"/>
+              <path d="M10.3 10.3 13.7 13.7"/>
+            </svg>
+          </span>
+          <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+        </a>
+        <p id="footer-title" class="footer-desc">A two-agent setup for opencode: the main agent plans and reviews, the sidekick edits.</p>
+      </div>
+
+      <nav class="footer-links" aria-label="Footer">
+        <h3 class="footer-links-title">Project</h3>
+        <ul>
+          <li><a href="#">GitHub</a></li>
+          <li><a href="#">Docs</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="container footer-bottom">
+      <p class="footer-disclaimer">opencode Fusion is an independent, open-source project inspired by Cognition's Devin Fusion. It is not affiliated with or endorsed by Cognition or Devin.</p>
+      <p class="footer-copyright">&copy; 2026 opencode Fusion contributors. Open source.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
