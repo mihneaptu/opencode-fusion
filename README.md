@@ -4,7 +4,7 @@
 
 A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**.
 
-The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at **35-41% lower cost** on their FrontierCode benchmark.
+The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at **35% lower cost** on their FrontierCode benchmark.
 
 The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
 
@@ -26,16 +26,18 @@ This repo turns that into a hard constraint: the main agent's edit, search, and 
 
 The diagram shows one delegation cycle: the main agent delegates exploration, plans from what comes back, hands the sidekick a spec, reviews the returned diff, loops until it passes, then delivers the result.
 
-| Agent | Role | Config key | Required | Example model |
-|-------|------|------------|----------|---------------|
-| `build` | Main: plan, delegate, review | `agent.build.model` | core | `kirocc/claude-opus-4-8` |
+| Agent | Role | Config key | Required | Suggested model (2026) |
+|-------|------|------------|----------|------------------------|
+| `build` | Main: plan, delegate, review | `agent.build.model` | core | `claude-fable-5` |
 | `plan` | Plan mode: same brain as build, plans but does not execute | `agent.plan.model` | core | reuses main model |
-| `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `progrok/grok-4.5` |
-| `explore` | Fast read-only exploration | `agent.explore.model` | core | `progrok/grok-4.5` |
-| `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `kirocc/claude-sonnet-5` |
-| `design` | Frontend/UI implementation | `agent.design.model` | optional | `kirocc/claude-sonnet-5` |
-| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `kirocc/claude-opus-4-8` |
-| `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `kirocc/claude-sonnet-5` |
+| `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `grok-4.5` |
+| `explore` | Fast read-only exploration | `agent.explore.model` | core | `gemini-3.5-flash` |
+| `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
+| `design` | Frontend/UI implementation | `agent.design.model` | optional | `glm-5.2` |
+| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.5` |
+| `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `gemini-3.5-flash` |
+
+Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.5`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
 
 ## Setup
 
@@ -141,7 +143,7 @@ You should see the main agent delegate exploration, receive the findings, make a
 
 ### Swap models
 
-All agent models live in one place: `~/.config/opencode/opencode.json` under `agent` - one `model` value per agent (keys and example models are in the [table above](#how-it-works)).
+All agent models live in one place: `~/.config/opencode/opencode.json` under `agent` - one `model` value per agent (keys and suggested models are in the [table above](#how-it-works)).
 
 Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
 
