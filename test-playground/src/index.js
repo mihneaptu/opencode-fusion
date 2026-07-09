@@ -1,5 +1,7 @@
+const greeting = "Hello, ";
+
 function greet(name) {
-  const message = "Hello, " + name;
+  const message = greeting + name;
   if (name === "admin") {
     console.log("Welcome admin");
   }
