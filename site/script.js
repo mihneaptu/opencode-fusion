@@ -174,7 +174,175 @@
     update();
   }
 
+  /* ---- Theme (light / GitHub dark) ------------------------------------ */
+  var THEME_KEY = 'theme';
+
+  function currentTheme() {
+    var t = document.documentElement.getAttribute('data-theme');
+    return t === 'dark' ? 'dark' : 'light';
+  }
+
+  function updateThemeToggleLabel(theme) {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    var next = theme === 'dark' ? 'light' : 'dark';
+    btn.setAttribute('aria-label', 'Switch to ' + next + ' mode');
+    btn.setAttribute('title', 'Switch to ' + next + ' mode');
+  }
+
+  // Apply theme to the DOM only. Does NOT write localStorage - persistence
+  // is reserved for explicit user toggles. Behavior: initial = system until
+  // first click, then sticky light/dark (no UI path back to "follow OS").
+  function applyTheme(theme, options) {
+    var opts = options || {};
+    var next = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    updateThemeToggleLabel(next);
+    if (opts.syncVideo !== false) syncHeroVideo(next);
+  }
+
+  function initTheme() {
+    // Head script already set data-theme; re-assert from storage/system and
+    // enable smooth color transitions only after the first paint.
+    // Stored value wins only if the user explicitly chose light/dark; otherwise
+    // follow the OS preference without writing it to storage.
+    var stored = null;
+    try { stored = localStorage.getItem(THEME_KEY); } catch (e) { stored = null; }
+    var theme = (stored === 'light' || stored === 'dark')
+      ? stored
+      : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light');
+    applyTheme(theme, { syncVideo: true });
+
+    // Defer theme-ready so the initial theme does not animate in.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        document.documentElement.classList.add('theme-ready');
+      });
+    });
+
+    var btn = document.getElementById('theme-toggle');
+    if (btn) {
+      btn.addEventListener('click', function () {
+        var next = currentTheme() === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        // Persist only on explicit user action so OS preference can still win
+        // until the user has chosen.
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* private mode / file:// quirks */ }
+      });
+    }
+
+    // Follow OS changes only when the user has not picked a theme.
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var onChange = function (e) {
+        var userPick = null;
+        try { userPick = localStorage.getItem(THEME_KEY); } catch (err) { userPick = null; }
+        if (userPick === 'light' || userPick === 'dark') return;
+        applyTheme(e.matches ? 'dark' : 'light');
+      };
+      if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+      else if (typeof mq.addListener === 'function') mq.addListener(onChange);
+    }
+  }
+
+  /* ---- Hero ambient video --------------------------------------------- */
+  function tryPlayVideo(video) {
+    var p = video.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(function () { /* leave poster visible */ });
+    }
+  }
+
+  function markVideoReady(video) {
+    video.classList.remove('is-swapping');
+    video.classList.add('is-ready');
+    tryPlayVideo(video);
+  }
+
+  // Generation token: each syncHeroVideo call bumps this so stale loadeddata /
+  // timeout callbacks from a previous swap bail out instead of fighting opacity.
+  var heroVideoGen = 0;
+
+  function syncHeroVideo(theme) {
+    var video = document.getElementById('hero-video') || document.querySelector('.hero-video');
+    if (!video) return;
+
+    var gen = ++heroVideoGen;
+
+    if (reduceMotion) {
+      video.pause();
+      video.classList.remove('is-ready', 'is-swapping');
+      video.removeAttribute('autoplay');
+      video.removeAttribute('src');
+      while (video.firstChild) video.removeChild(video.firstChild);
+      video.load();
+      return;
+    }
+
+    var isDark = theme === 'dark';
+    var src = video.getAttribute(isDark ? 'data-src-dark' : 'data-src-light');
+    var poster = video.getAttribute(isDark ? 'data-poster-dark' : 'data-poster-light');
+    if (!src) return;
+
+    if (poster) video.setAttribute('poster', poster);
+
+    // Already on the right file - just ensure playback.
+    var current = '';
+    var sourceEl = video.querySelector('source');
+    if (sourceEl && sourceEl.getAttribute('src')) current = sourceEl.getAttribute('src');
+    else if (video.getAttribute('src')) current = video.getAttribute('src');
+
+    if (current === src) {
+      if (gen === heroVideoGen) markVideoReady(video);
+      return;
+    }
+
+    // Soft crossfade: fade out, swap source, fade back in when ready.
+    var themed = document.documentElement.classList.contains('theme-ready');
+    if (themed) {
+      video.classList.add('is-swapping');
+      video.classList.remove('is-ready');
+    }
+
+    var doSwap = function () {
+      if (gen !== heroVideoGen) return;
+      while (video.firstChild) video.removeChild(video.firstChild);
+      var next = document.createElement('source');
+      next.setAttribute('src', src);
+      next.setAttribute('type', 'video/mp4');
+      video.appendChild(next);
+
+      // Attach listeners before load() so a cached/warm load cannot fire
+      // loadeddata before we subscribe (would leave opacity at 0 forever).
+      function onReady() {
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('error', onError);
+        if (gen !== heroVideoGen) return;
+        markVideoReady(video);
+      }
+      function onError() {
+        video.removeEventListener('loadeddata', onReady);
+        video.removeEventListener('error', onError);
+        if (gen !== heroVideoGen) return;
+        // Failed fetch: clear swap fade so the CSS poster remains visible.
+        video.classList.remove('is-swapping', 'is-ready');
+      }
+      video.addEventListener('loadeddata', onReady);
+      video.addEventListener('error', onError);
+      video.load();
+
+      // Already-ready from cache: loadeddata may not fire again.
+      if (video.readyState >= 2) onReady();
+    };
+
+    if (themed) setTimeout(doSwap, 180);
+    else doSwap();
+  }
+
   function init() {
+    initTheme(); // also loads the matching hero video
     initReveal();
     initCopy();
     initNav();

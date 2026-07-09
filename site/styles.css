@@ -1,35 +1,44 @@
 /* =========================================================================
    opencode Fusion - landing page styles
-   Light, Apple-product-page aesthetic. All values flow from the tokens in
-   :root. System fonts only. No network requests.
+   Light Apple-product-page aesthetic + GitHub dark mode. All color values
+   flow from tokens. System fonts only. No network requests.
    ========================================================================= */
 
 /* ---- Design tokens ---------------------------------------------------- */
 :root {
-  /* Color: near-white canvas + white surface + one warm-grey elevation.
-     Borders are hairline alpha-black so they stay quiet on any surface. */
-  --bg: #fbfbfd;            /* page canvas */
-  --surface: #ffffff;       /* raised surface */
-  --surface-2: #f5f5f7;     /* soft grey tile (Apple-style) */
+  /* Light: near-white canvas + white surface + warm-grey elevation. */
+  --bg: #fbfbfd;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
   --border: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(0, 0, 0, 0.14);
 
-  /* Accent: a single restrained blue, used only at key moments. */
+  /* Accent: restrained blue for key moments. */
   --accent: #0066cc;
-  --accent-strong: #0058b0; /* hover / stronger text */
-  --accent-ink: #ffffff;    /* text on accent fills (AA on --accent) */
+  --accent-strong: #0058b0;
+  --accent-ink: #ffffff;
   --accent-soft: rgba(0, 102, 204, 0.08);
   --accent-line: rgba(0, 102, 204, 0.22);
 
-  /* Secondary semantic hue (warm amber) - only to mark the "edits" role. */
+  /* Secondary semantic hue (warm amber) - "edits" role. */
   --secondary: #9a5b00;
   --secondary-soft: rgba(154, 91, 0, 0.08);
   --secondary-line: rgba(154, 91, 0, 0.22);
 
-  /* Text emphasis levels (all AA+ on --bg / --surface / --surface-2) */
   --text-high: #1d1d1f;
   --text-mid: #4a4a4f;
   --text-low: #6e6e73;
+
+  /* Glass header + hero blend (tied to --bg so themes stay coherent). */
+  --header-bg: rgba(251, 251, 253, 0.72);
+  --header-bg-scrolled: rgba(251, 251, 253, 0.82);
+  --hero-veil-0: rgba(251, 251, 253, 0.55);
+  --hero-veil-1: rgba(251, 251, 253, 0.28);
+  --hero-veil-2: rgba(251, 251, 253, 0.5);
+  --hero-veil-3: rgba(251, 251, 253, 0.92);
+  --hero-veil-solid: #fbfbfd;
+  --hero-blend-mid: rgba(251, 251, 253, 0.65);
+  --hero-poster: url("assets/hero-poster.jpg");
 
   /* Type: system stacks only (SF on Apple platforms, Segoe on Windows) */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -64,6 +73,14 @@
   --radius-lg: 24px;
   --radius-pill: 980px;
 
+  /* Floating header island: side inset + corner radius (flush to top edge). */
+  --header-offset: clamp(0.5rem, 0.35rem + 0.7vw, 1rem);
+  --header-radius: 18px;
+  /* Must be >= tallest rendered header height (~62px mobile: toggle + padding + border).
+     Pulls hero media under the sticky header so no --bg strip shows at the top.
+     Hero content position is independent of this value (neg margin and +band padding cancel). */
+  --header-band: 64px;
+
   /* Shadows: soft, diffuse, tinted just off pure black */
   --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.05);
   --shadow-md: 0 6px 24px -8px rgba(17, 24, 39, 0.12);
@@ -73,9 +90,83 @@
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --dur: 0.6s;
   --dur-fast: 0.22s;
+  --theme-dur: 0.4s;        /* color-mode crossfade */
   --stagger-step: 0.07s;    /* per-child cascade delay for grouped reveals */
 
   color-scheme: light;
+}
+
+/* GitHub dark (Primer dark_default): canvas #0d1117, surfaces #161b22/#21262d,
+   borders #30363d, accent blues #1f6feb/#58a6ff, attention amber #d29922. */
+html[data-theme="dark"] {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-2: #21262d;
+  --border: rgba(240, 246, 252, 0.1);
+  --border-strong: #30363d;
+
+  --accent: #1f6feb;
+  --accent-strong: #58a6ff;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(56, 139, 253, 0.15);
+  --accent-line: rgba(56, 139, 253, 0.4);
+
+  --secondary: #d29922;
+  --secondary-soft: rgba(210, 153, 34, 0.15);
+  --secondary-line: rgba(210, 153, 34, 0.4);
+
+  --text-high: #e6edf3;
+  --text-mid: #9198a1;
+  --text-low: #6e7681;
+
+  --header-bg: rgba(13, 17, 23, 0.72);
+  --header-bg-scrolled: rgba(13, 17, 23, 0.88);
+  --hero-veil-0: rgba(13, 17, 23, 0.55);
+  --hero-veil-1: rgba(13, 17, 23, 0.28);
+  --hero-veil-2: rgba(13, 17, 23, 0.5);
+  --hero-veil-3: rgba(13, 17, 23, 0.92);
+  --hero-veil-solid: #0d1117;
+  --hero-blend-mid: rgba(13, 17, 23, 0.65);
+  --hero-poster: url("assets/hero-poster-dark.jpg");
+
+  --shadow-sm: 0 1px 2px rgba(1, 4, 9, 0.4);
+  --shadow-md: 0 6px 24px -8px rgba(1, 4, 9, 0.55);
+  --shadow-lg: 0 24px 60px -28px rgba(1, 4, 9, 0.7);
+
+  color-scheme: dark;
+}
+
+/* Smooth theme switch: only after first paint (html.theme-ready), so load
+   does not flash-animate from system default.
+   .header-inner is intentionally omitted here: its own transition (min-height,
+   padding-block, background, border, box-shadow) must stay intact so the
+   scrolled-island compaction still eases. Theme colors on the header still
+   crossfade via those shared properties in .header-inner's own list. */
+/* Color properties only on surfaces that do not own micro-interaction
+   motion. Interactive controls (.btn, .theme-toggle, .copy-btn, .feature-item)
+   keep their own transition lists (which already include theme colors +
+   transform) so hover/press feedback is not clobbered after first paint. */
+html.theme-ready body,
+html.theme-ready .pill,
+html.theme-ready .flow-card,
+html.theme-ready .cost-panel,
+html.theme-ready .hero-diagram,
+html.theme-ready .command,
+html.theme-ready .site-footer,
+html.theme-ready .feature-icon,
+html.theme-ready .bar-track,
+html.theme-ready .bar-fill {
+  transition:
+    background-color var(--theme-dur) var(--ease),
+    border-color var(--theme-dur) var(--ease),
+    color var(--theme-dur) var(--ease),
+    box-shadow var(--theme-dur) var(--ease),
+    fill var(--theme-dur) var(--ease),
+    stroke var(--theme-dur) var(--ease);
+}
+html.theme-ready .hero-media::after,
+html.theme-ready .hero::after {
+  transition: background var(--theme-dur) var(--ease), opacity var(--theme-dur) var(--ease);
 }
 
 /* ---- Reset / base ----------------------------------------------------- */
@@ -87,7 +178,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 5rem; /* offset sticky header for anchor jumps */
+  scroll-padding-top: calc(var(--header-band) + var(--space-lg)); /* sticky header height for anchor jumps */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -163,9 +254,9 @@ strong { color: var(--text-high); font-weight: 600; }
   padding-block: var(--section-pad);
 }
 
-/* A single quiet hairline separates major movements of the page. */
-.section + .section,
-.problem { border-top: 1px solid var(--border); }
+/* A single quiet hairline separates major movements of the page.
+   .problem is excluded: it blends out of the hero instead of a hard edge. */
+.section + .section { border-top: 1px solid var(--border); }
 
 .section-head {
   max-width: 42rem;
@@ -208,10 +299,10 @@ strong { color: var(--text-high); font-weight: 600; }
   cursor: pointer;
   white-space: nowrap;
   transition: transform var(--dur-fast) var(--ease),
-              background-color var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              color var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease);
+              background-color var(--theme-dur) var(--ease),
+              border-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease),
+              box-shadow var(--theme-dur) var(--ease);
 }
 .btn-sm { padding: 0.5rem 1rem; font-size: var(--step--1); }
 
@@ -257,32 +348,82 @@ strong { color: var(--text-high); font-weight: 600; }
 .pill-ok { color: var(--accent-strong); border-color: var(--accent-line); background: var(--accent-soft); }
 
 /* ---- Header / nav ----------------------------------------------------- */
+/* Sticky full-width bar flush to the top; .header-inner is the frosted capsule
+   with side inset only (no top gap). pointer-events stay on the capsule so the
+   transparent side strips never eat clicks. */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background-color: rgba(251, 251, 253, 0.72);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--border);
-  transition: box-shadow var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              background-color var(--dur-fast) var(--ease);
-}
-/* Subtle elevation once the page scrolls under the sticky header. */
-.site-header.is-scrolled {
-  background-color: rgba(251, 251, 253, 0.82);
-  border-bottom-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
+  padding-inline: var(--header-offset);
+  background-color: transparent;
+  pointer-events: none;
 }
 
+/* The floating capsule. Also carries .container (max-width + centering), so it
+   stays <= --container wide and centered. Frosted glass + hairline ring + soft
+   shadow, all lifted off the old full-width bar onto this island. */
 .header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
   min-height: 56px;
+  padding-block: var(--space-xs);
+  padding-inline: var(--space-lg);
+  background-color: var(--header-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-radius: var(--header-radius);
+  box-shadow: var(--shadow-sm);
+  pointer-events: auto;
+  transition: background-color var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease),
+              min-height var(--dur-fast) var(--ease),
+              padding-block var(--dur-fast) var(--ease);
 }
+
+/* Subtle elevation + a hair of contraction once the page scrolls under the
+   island. JS toggles .is-scrolled on .site-header at scrollY > 8. */
+.site-header.is-scrolled .header-inner {
+  min-height: 52px;
+  padding-block: var(--space-2xs);
+  background-color: var(--header-bg-scrolled);
+  box-shadow: var(--shadow-md);
+}
+
+/* Theme toggle (sun / moon). Icon shows the mode you switch *to*. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-high);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease),
+              background-color var(--theme-dur) var(--ease),
+              border-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease);
+}
+.theme-toggle:hover {
+  border-color: var(--text-low);
+  background: var(--surface-2);
+}
+.theme-toggle:active { transform: scale(0.96); }
+.theme-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
 .wordmark {
   display: inline-flex;
@@ -310,7 +451,7 @@ strong { color: var(--text-high); font-weight: 600; }
 .nav-list {
   display: flex;
   align-items: center;
-  gap: var(--space-lg);
+  gap: var(--space-2xs);
   list-style: none;
   padding: 0;
 }
@@ -318,10 +459,15 @@ strong { color: var(--text-high); font-weight: 600; }
   color: var(--text-mid);
   font-size: var(--step-0);
   font-weight: 450;
-  padding: var(--space-3xs) 0;
-  transition: color var(--dur-fast) var(--ease);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-fast) var(--ease),
+              background-color var(--dur-fast) var(--ease);
 }
-.nav-list a:hover { color: var(--text-high); }
+.nav-list a:hover {
+  color: var(--text-high);
+  background-color: var(--surface-2);
+}
 
 .nav-toggle {
   display: none;
@@ -352,10 +498,108 @@ strong { color: var(--text-high); font-weight: 600; }
 
 /* ---- Hero ------------------------------------------------------------- */
 .hero {
-  padding-top: clamp(3.5rem, 2rem + 6vw, 7rem);
+  position: relative;      /* anchor media + veil layers */
+  isolation: isolate;      /* keep media/veil in their own stack, behind content */
+  overflow: hidden;        /* clip video so it never bleeds into the next section
+                              or adds horizontal scroll (diagram shadow sits well
+                              inside padding-bottom, so it is safe) */
+  /* Sticky .site-header sits above #hero in flow and shows body --bg through its
+     transparent wrapper. Pull the hero up by the header's in-flow height so
+     .hero-media fills the viewport from the top edge (behind the floating
+     capsule). Compensating padding keeps content clearing the bar. */
+  margin-top: calc(-1 * var(--header-band));
+  padding-top: calc(var(--header-band) + clamp(3.5rem, 2rem + 6vw, 7rem));
   padding-bottom: var(--section-pad);
   text-align: center;
 }
+
+/* Full-bleed ambient video (blue/amber fusion light). Decorative only.
+   Poster + soft canvas veil keep text readable if the file is slow or paused.
+   Mask fades the media into the page canvas so the handoff into .problem
+   reads as a soft blend, not a hard crop line. */
+.hero-media {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  /* Static fallback while the video loads (or if it never does). */
+  background-color: var(--bg);
+  background-image: var(--hero-poster);
+  background-size: cover;
+  background-position: center;
+  /* Opaque through most of the hero, then dissolve over the lower third. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+}
+.hero-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  /* Stay on the themed poster until the matching video is ready. */
+  opacity: 0;
+  transition: opacity var(--theme-dur) var(--ease);
+}
+.hero-video.is-ready { opacity: 1; }
+.hero-video.is-swapping { opacity: 0; }
+/* Soft canvas veil: protects AA contrast on title/tagline without crushing
+   the blue/amber motion. Tokens swap with the theme so light/dark both blend. */
+.hero-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      var(--hero-veil-0) 0%,
+      var(--hero-veil-1) 36%,
+      var(--hero-veil-2) 68%,
+      var(--hero-veil-3) 88%,
+      var(--hero-veil-solid) 100%
+    ),
+    radial-gradient(
+      120% 80% at 50% 28%,
+      var(--hero-veil-1) 0%,
+      transparent 70%
+    );
+}
+
+/* Extra bottom blend layer above the media (under content): catches any
+   remaining edge and eases into the problem section's flat canvas. */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(5rem, 10vw, 9rem);
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--hero-blend-mid) 45%,
+    var(--hero-veil-solid) 100%
+  );
+}
+
+/* Lift the hero content (text + diagram) above the media + blend.
+   z-index 2 keeps the diagram above the bottom fade so it stays crisp. */
+.hero > .container { position: relative; z-index: 2; }
 .hero-inner {
   max-width: 46rem;
   margin-inline: auto;
@@ -518,7 +762,10 @@ strong { color: var(--text-high); font-weight: 600; }
   background: var(--surface-2);
   border-radius: var(--radius-lg);
   transition: transform var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease);
+              box-shadow var(--dur-fast) var(--ease),
+              background-color var(--theme-dur) var(--ease),
+              border-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease);
 }
 .feature-item:hover { transform: translateY(-3px) scale(1.008); box-shadow: var(--shadow-md); }
 .feature-item-lead {
@@ -666,9 +913,9 @@ strong { color: var(--text-high); font-weight: 600; }
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease),
-              background-color var(--dur-fast) var(--ease),
-              border-color var(--dur-fast) var(--ease),
-              color var(--dur-fast) var(--ease);
+              background-color var(--theme-dur) var(--ease),
+              border-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease);
 }
 .copy-btn:hover { border-color: var(--text-low); background: var(--surface-2); }
 .copy-btn:active { transform: scale(0.98); }
@@ -694,48 +941,96 @@ strong { color: var(--text-high); font-weight: 600; }
 .cta-actions { justify-content: center; margin-top: var(--space-xl); }
 
 /* ---- Footer ----------------------------------------------------------- */
+/* Single calm band: hairline top, page canvas, no heavy grey block.
+   Brand + inline nav, then a quiet meta row. */
 .site-footer {
+  position: relative;
   border-top: 1px solid var(--border);
-  background: var(--surface-2);
-  padding-block: var(--space-2xl) var(--space-xl);
+  background: var(--bg);
+  padding-block: clamp(2.5rem, 1.5rem + 3vw, 4rem) clamp(1.75rem, 1.2rem + 1.5vw, 2.5rem);
 }
-.footer-inner {
+.footer-shell {
   display: grid;
-  gap: var(--space-xl);
-  padding-bottom: var(--space-xl);
-  border-bottom: 1px solid var(--border);
+  gap: clamp(1.75rem, 1.2rem + 1.5vw, 2.5rem);
 }
-.footer-desc {
-  margin-top: var(--space-md);
-  color: var(--text-mid);
-  max-width: 42ch;
+.footer-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-xl) var(--space-2xl);
+}
+.footer-brand {
+  max-width: 28rem;
+}
+.footer-wordmark .wordmark-text {
   font-size: var(--step-0);
 }
-.footer-links-title {
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.footer-desc {
+  margin-top: var(--space-sm);
   color: var(--text-low);
-  margin-bottom: var(--space-sm);
-  font-weight: 600;
+  max-width: 36ch;
+  font-size: var(--step--1);
+  line-height: 1.5;
 }
-.footer-links ul { list-style: none; padding: 0; display: grid; gap: var(--space-xs); }
-.footer-links a {
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+}
+.footer-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
   color: var(--text-mid);
-  transition: color var(--dur-fast) var(--ease);
-}
-.footer-links a:hover { color: var(--accent); }
-.footer-bottom { padding-top: var(--space-lg); display: grid; gap: var(--space-xs); }
-.footer-disclaimer {
   font-size: var(--step--1);
-  color: var(--text-low);
-  max-width: 80ch;
-  line-height: 1.55;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  transition: color var(--dur-fast) var(--ease),
+              background-color var(--dur-fast) var(--ease);
+}
+.footer-nav a:hover {
+  color: var(--text-high);
+  background: var(--surface-2);
+}
+.footer-nav a:focus-visible {
+  outline-offset: 2px;
+}
+.footer-nav-ext svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease),
+              transform var(--dur-fast) var(--ease);
+}
+.footer-nav-ext:hover svg {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+.footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-xl);
+  padding-top: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  border-top: 1px solid var(--border);
 }
 .footer-copyright {
-  font-size: var(--step--1);
+  font-size: 0.75rem;
   color: var(--text-low);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.footer-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-low);
+  max-width: 52ch;
+  line-height: 1.5;
+  opacity: 0.85;
 }
 
 /* ---- Scroll-reveal ---------------------------------------------------- */
@@ -786,7 +1081,12 @@ strong { color: var(--text-high); font-weight: 600; }
   .feature-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  .footer-inner { grid-template-columns: 1.5fr 1fr; }
+  .footer-meta {
+    flex-wrap: nowrap;
+  }
+  .footer-disclaimer {
+    text-align: right;
+  }
 }
 
 @media (min-width: 900px) {
@@ -815,17 +1115,26 @@ strong { color: var(--text-high); font-weight: 600; }
 /* Mobile nav: collapse below 820px */
 @media (max-width: 819px) {
   .nav-toggle { display: inline-flex; }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-left: auto;
+  }
   .nav {
     position: absolute;
-    top: 100%;
+    top: calc(100% + var(--space-2xs));
     left: 0;
     right: 0;
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-sm);
-    padding: var(--space-md) var(--container-pad) var(--space-lg);
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+    background: var(--header-bg-scrolled);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--border);
+    border-radius: var(--header-radius);
     box-shadow: var(--shadow-md);
     /* hidden by default; JS toggles .is-open */
     display: none;
@@ -837,10 +1146,19 @@ strong { color: var(--text-high); font-weight: 600; }
     gap: 0;
   }
   .nav-list li { border-bottom: 1px solid var(--border); }
-  .nav-list a { display: block; padding: var(--space-sm) 0; }
+  .nav-list a { display: block; padding: var(--space-sm); border-radius: 0; }
+  .nav-list a:hover { background-color: transparent; }
   .nav .btn { margin-top: var(--space-sm); justify-content: center; }
-  .site-header { position: sticky; }
+  /* Anchor the absolute dropdown to the floating capsule. */
   .header-inner { position: relative; }
+}
+
+/* Desktop: theme toggle sits after the nav (wordmark | nav | toggle). */
+@media (min-width: 820px) {
+  .header-actions { display: contents; }
+  .wordmark { order: 0; }
+  .nav { order: 1; }
+  .theme-toggle { order: 2; }
 }
 
 /* Stack the hero diagram vertically on narrow screens */
@@ -881,5 +1199,9 @@ strong { color: var(--text-high); font-weight: 600; }
   .copy-btn.is-copied .copy-btn-check path {
     animation: none !important;
     stroke-dashoffset: 0;
+  }
+  /* Prefer the static poster over a looping video when motion is reduced. */
+  .hero-video {
+    display: none !important;
   }
 }
