@@ -70,6 +70,22 @@ For each provider, build a block under `provider`. OpenAI-compatible template:
 
 Only include `attachment`/`modalities` for models that actually support image input. A main model with image input means no separate vision agent is needed.
 
+The template above shows the OpenAI-compatible shape (`@ai-sdk/openai-compatible`). If a provider is a native vendor rather than an OpenAI-compatible gateway, use that vendor's adapter instead - for example `@ai-sdk/anthropic` for an Anthropic-style endpoint or `@ai-sdk/openai` for OpenAI. Only the `npm` value changes; the rest of the block shape is the same.
+
+If two roles use different models from the SAME provider (for example a main model and a cheaper research model both on provider `kirocc`), do NOT emit two provider blocks with the same id - that is a duplicate key. Emit ONE block for that provider with BOTH models listed under its `models` object, like this:
+
+```json
+"kirocc": {
+  "npm": "@ai-sdk/anthropic",
+  "name": "Kirocc",
+  "options": { "baseURL": "<baseURL>", "apiKey": "<apiKey>" },
+  "models": {
+    "claude-opus-4-8": { "name": "Opus", "attachment": true, "modalities": { "input": ["text", "image"] } },
+    "claude-sonnet-5": { "name": "Sonnet" }
+  }
+}
+```
+
 ## Step 3 - Write ~/.config/opencode/opencode.json
 
 Write the global config using this exact structure. Replace the `<...>` placeholders with the user's choices. Model references are always `provider-id/model-id`. Keep the build agent's `permission` block EXACTLY as shown - it is the core of Fusion and must not be loosened.
@@ -79,7 +95,8 @@ Write the global config using this exact structure. Replace the `<...>` placehol
   "$schema": "https://opencode.ai/config.json",
   "model": "<main-provider>/<main-model-id>",
   "provider": {
-    "<provider blocks from Step 2>": {}
+    "<main-provider-id>": { "npm": "...", "options": {}, "models": {} },
+    "<sidekick-provider-id>": { "npm": "...", "options": {}, "models": {} }
   },
   "agent": {
     "build": {
@@ -142,6 +159,7 @@ Write the global config using this exact structure. Replace the `<...>` placehol
 ```
 
 Notes:
+- Replace the two `"<...-provider-id>": { ... }` placeholder lines under `provider` with the ACTUAL provider block(s) you built in Step 2. If your main and sidekick share one provider, that is a single block (see Step 2 on merging models); if they use different providers, include one block each. The placeholder shape shown is not valid config on its own - it must be filled in.
 - `{file:agent/build.md}` resolves relative to `~/.config/opencode/`, so the prompt file must be installed at `~/.config/opencode/agent/build.md` (Step 4).
 - The sidekick's prompt is set by its agent file (Step 4), so it does not need a `prompt` field here.
 - If the user already has a `~/.config/opencode/opencode.json`, first back it up (copy to `opencode.json.backup.<timestamp>`), then merge or overwrite per the user's wishes. Never silently discard an existing config.
@@ -149,7 +167,7 @@ Notes:
 
 ## Step 4 - Install the agent prompt files
 
-Copy the prompt files bundled with this skill into the global agent folder (one per role you configured):
+Copy the prompt files bundled with this skill into the global agent folder (one per role you configured). `<this-skill-dir>` is the directory this SKILL.md lives in - its bundled prompts are in the `agent/` subfolder next to this file. Every configured role except `explore` needs its prompt file installed (explore is model-only in the JSON); in particular the sidekick DOES need its `agent/sidekick.md` file even though its JSON entry has no `prompt` field:
 
 - `<this-skill-dir>/agent/build.md` -> `~/.config/opencode/agent/build.md`
 - `<this-skill-dir>/agent/plan.md` -> `~/.config/opencode/agent/plan.md`
