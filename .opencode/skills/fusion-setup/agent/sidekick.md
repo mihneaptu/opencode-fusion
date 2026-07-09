@@ -5,7 +5,15 @@ model: progrok/grok-4.5
 temperature: 0.2
 permission:
   edit: allow
-  bash: allow
+  bash:
+    "*": allow
+    "git push --force*": deny
+    "git push -f*": deny
+    "git reset --hard*": ask
+    "git clean -f*": ask
+    "rm -rf *": ask
+    "cat *.env*": deny
+    "Get-Content *.env*": deny
   task:
     "*": deny
     "explore": allow

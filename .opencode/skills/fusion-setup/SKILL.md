@@ -164,6 +164,11 @@ Notes:
 - The sidekick's prompt is set by its agent file (Step 4), so it does not need a `prompt` field here.
 - If the user already has a `~/.config/opencode/opencode.json`, first back it up (copy to `opencode.json.backup.<timestamp>`), then merge or overwrite per the user's wishes. Never silently discard an existing config.
 - Add `"vision": { "model": "<vision-provider>/<vision-model-id>" }` to the `agent` block ONLY if the user configured a vision role (main model lacks image input). Omit it otherwise.
+- OPTIONAL top-level hardening keys (documented opencode fields; add if the user wants a tighter, cheaper, more private local setup):
+  - `"small_model": "<cheap-provider>/<cheap-model-id>"` - opencode uses a small model for background tasks like title generation; if unset it may fall back to a remote default. Pin it to one of the user's own cheap local models to keep everything on their providers.
+  - `"enabled_providers": ["<provider-a>", "<provider-b>"]` - allowlist of providers to load; keeps the model picker deterministic and ignores any other credentials present.
+  - `"compaction": { "prune": true }` - drops stale tool outputs when compacting context, which cuts main-agent token cost in a delegation-heavy Fusion flow.
+  - Per custom model, an optional `"limit": { "context": <n>, "output": <n> }` inside the model block lets opencode track remaining context accurately (models on models.dev supply this automatically; custom local gateways do not). Use the real context/output window for that model; do not guess.
 
 ## Step 4 - Install the agent prompt files
 
@@ -179,10 +184,17 @@ Copy the prompt files bundled with this skill into the global agent folder (one 
 
 These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode`, `permission`, and a default `model`; the model in opencode.json (Step 3) takes precedence when present. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
 
+## Step 4b - Install the optional slash command and audit plugin
+
+The skill bundles two optional extras next to it. Install them if the user wants them:
+
+- Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
+- Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/task tool calls) via opencode's logger for auditing. It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
+
 ## Step 5 - Validate and finish
 
 1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
-2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured).
+2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the command or plugin, confirm `~/.config/opencode/commands/fusion-setup.md` and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
 3. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later

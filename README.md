@@ -167,6 +167,16 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 
 The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`, `git commit`, `git push`). Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default. Note that the allowlist matches each command individually - do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
+### Optional hardening
+
+These documented opencode config keys make a local Fusion setup cheaper, more private, and more deterministic. All optional:
+
+- `"small_model": "<provider>/<cheap-model>"` (top level) - opencode runs background tasks like session-title generation on a small model; if you do not set this it can fall back to a remote default. Pin it to one of your own cheap local models to keep everything on your providers.
+- `"enabled_providers": ["..."]` (top level) - allowlist the providers opencode loads, so a stray credential elsewhere cannot add models to the picker.
+- `"compaction": { "prune": true }` (top level) - drops stale tool outputs when compacting, cutting main-agent token cost in a delegation-heavy flow.
+- `"limit": { "context": <n>, "output": <n> }` (inside a custom model block) - lets opencode track remaining context for models not on models.dev, such as local gateways. Use the model's real window; do not guess.
+- Sidekick bash denylist - the sidekick has full `bash`, but its prompt frontmatter denies force-push and blocks reading `.env`, and asks before `git reset --hard`, `git clean`, and `rm -rf`. Defense-in-depth on your least-careful, most-powerful agent.
+
 ## Limitations
 
 - **No dynamic mid-session routing.** Devin Fusion's second technique - swapping the active model mid-task during context compaction - needs Devin's closed harness and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
@@ -191,6 +201,13 @@ The model id may be wrong or changed. Confirm the exact `provider-id/model-id` a
 
 The allowlist matches whole commands against fixed patterns. Chaining with `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
 
+## Slash command and audit plugin
+
+Two optional extras ship with the skill:
+
+- **`/fusion-setup` command** (`commands/fusion-setup.md`) - a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
+- **`fusion-audit` plugin** (`plugins/fusion-audit.js`) - logs the delegation tree (subagent spawns and edit/write/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer - the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
+
 ## Files
 
 | File | Purpose |
@@ -202,7 +219,9 @@ The allowlist matches whole commands against fixed patterns. Chaining with `&&`,
 | `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
 | `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
-| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts |
+| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, command, and plugin |
+| `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
+| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
