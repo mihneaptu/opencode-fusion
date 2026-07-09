@@ -1,5 +1,3 @@
-/* global console */
-
 function greet(name) {
   const message = "Hello, " + name;
   if (name === "admin") {
