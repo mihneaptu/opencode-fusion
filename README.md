@@ -6,7 +6,7 @@ A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https
 
 Two agents run together: a **main agent** that plans and reviews, and a **sidekick** that executes. The main agent cannot edit files - it is mechanically forced to delegate all file changes to the sidekick. This keeps frontier intelligence in charge of the significant decisions (the plan, the interpretation of ambiguity, the final review) while a cheaper, faster model does the mechanical work.
 
-Cognition describes the pattern in [Devin Fusion](https://cognition.com/blog/devin-fusion): a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. They found it maintains frontier-level performance at meaningfully lower cost.
+Cognition describes the pattern in [Devin Fusion](https://cognition.com/blog/devin-fusion): a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. On their FrontierCode benchmark it held frontier-level performance at 35-41% lower cost.
 
 Around that core pair sits a small team of specialist subagents the main agent can delegate to: **explore** for fast read-only codebase search, plus optional **research** (external web/doc lookups), **design** (frontend/UI implementation), and **reviewer** (auditing a diff before commit). Each specialist runs on a model you pick independently - so you can put whichever model you think designs best on `design`, and a different one you trust for review on `reviewer`. Think of the repo as a catalog of roles: the core is required, and the optional specialists are pieces you add only if your workflow needs them. When the main model supports image input (most frontier models do), it reads screenshots directly; if it cannot, add the optional **vision** agent to transcribe images.
 
@@ -17,6 +17,14 @@ From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
 > the main agent should take minimal actions, and only read what is absolutely necessary. By default it should delegate and monitor, while making the significant decisions: the plan, the interpretation of ambiguity, the final review.
 
 This repo makes that pattern work in opencode - not as a suggestion, but as mechanical enforcement. The main agent's `edit` permission is `deny`, its `grep`/`glob`/`list` are `deny`, and its `bash` is allowlisted to verification and git commands only. The only path to changing a file is the `task` tool, which delegates to the sidekick.
+
+## Cost and cross-vendor review
+
+Two payoffs fall out of the split:
+
+**Lower cost.** On Cognition's FrontierCode benchmark, the sidekick pattern held frontier-level quality at 35-41% lower cost. The saving comes from token volume: implementation mechanics are most of a session's tokens, and a cheaper sidekick handles them at near-parity while the expensive main model spends its tokens only on judgment - the plan, the spec, the review. The main agent's prompt enforces this discipline: emit judgment not volume, keep context lean, reason once then hand off.
+
+**Cross-vendor review, for free.** When the main agent and sidekick are different model families - for example Opus reviewing Grok - every diff gets an independent second-family read before it lands. Models from one family share blind spots; a reviewer from a different lineage catches what same-family review misses. You get this just by picking a main and sidekick from different vendors.
 
 ## How it works
 
@@ -111,7 +119,7 @@ Then install the agent prompts so `{file:agent/build.md}` resolves:
 
 ```bash
 mkdir -p ~/.config/opencode/agent
-cp agent/build.md agent/sidekick.md ~/.config/opencode/agent/
+cp agent/build.md agent/plan.md agent/sidekick.md ~/.config/opencode/agent/
 ```
 
 Model references are always `provider-id/model-id`. If a model uses a provider opencode does not know yet, add a `provider` block for it (see the OpenAI-compatible template in the `fusion-setup` skill). Restart opencode after writing the config - it loads config once at startup, not mid-session.
@@ -159,6 +167,12 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 
 The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`, `git commit`, `git push`). Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default. Note that the allowlist matches each command individually - do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
+## Limitations
+
+- **No dynamic mid-session routing.** Devin Fusion's second technique - swapping the active model mid-task during context compaction - needs Devin's closed harness and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
+- **Config loads at startup.** opencode reads config once when it launches. Any change to `opencode.json` or an agent prompt requires a full restart to take effect.
+- **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
+
 ## Troubleshooting
 
 ### The main agent edits files directly
@@ -189,7 +203,7 @@ The allowlist matches whole commands against fixed patterns. Chaining with `&&`,
 | `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
 | `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts |
-| `opencode.json` | Reference config for this repo (Opus main, Sonnet sidekick, Composer explore) |
+| `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
 
