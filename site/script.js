@@ -154,11 +154,32 @@
     });
   }
 
+  /* ---- Sticky-header elevation on scroll ------------------------------ */
+  function initHeaderScroll() {
+    var header = document.querySelector('.site-header');
+    if (!header) return;
+
+    var ticking = false;
+    function update() {
+      header.classList.toggle('is-scrolled', window.scrollY > 8);
+      ticking = false;
+    }
+    // rAF-throttled scroll handler; CSS owns the (reduced-motion-aware) transition.
+    window.addEventListener('scroll', function () {
+      if (!ticking) {
+        window.requestAnimationFrame(update);
+        ticking = true;
+      }
+    }, { passive: true });
+    update();
+  }
+
   function init() {
     initReveal();
     initCopy();
     initNav();
     initSmoothScroll();
+    initHeaderScroll();
   }
 
   if (document.readyState === 'loading') {
