@@ -1,7 +1,7 @@
 ---
 description: Read-only research agent. DELEGATE to it to gather external information - web search, reading docs, comparing libraries/APIs, checking version-specific behavior - and to survey the codebase (read/grep/glob). It reports findings back; it never edits files. Hand it a specific question and tell it whether you want a quick lookup or a thorough survey. It can delegate follow-up lookups to other subagents.
 mode: subagent
-model: kiro/claude-sonnet-5
+model: kirocc/claude-sonnet-5
 temperature: 0.3
 permission:
   edit: deny

@@ -146,12 +146,12 @@ All agent models live in one place: `~/.config/opencode/opencode.json` under `ag
 
 | Agent | Config key | Example |
 |-------|-----------|---------|
-| Main (build) | `agent.build.model` | `"kiro/claude-opus-4-8"` |
-| Sidekick | `agent.sidekick.model` | `"kiro/claude-sonnet-5"` |
-| Explore | `agent.explore.model` | `"progrok/grok-composer-2.5-fast"` |
-| Research | `agent.research.model` | `"kiro/claude-sonnet-5"` |
-| Design | `agent.design.model` | `"kiro/claude-sonnet-5"` |
-| Reviewer | `agent.reviewer.model` | `"kiro/claude-opus-4-8"` |
+| Main (build) | `agent.build.model` | `"kirocc/claude-opus-4-8"` |
+| Sidekick | `agent.sidekick.model` | `"progrok/grok-4.5"` |
+| Explore | `agent.explore.model` | `"progrok/grok-4.5"` |
+| Research | `agent.research.model` | `"kirocc/claude-sonnet-5"` |
+| Design | `agent.design.model` | `"kirocc/claude-sonnet-5"` |
+| Reviewer | `agent.reviewer.model` | `"kirocc/claude-opus-4-8"` |
 
 Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
 

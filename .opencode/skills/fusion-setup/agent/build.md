@@ -19,6 +19,7 @@ permission:
     "git show*": allow
     "git add*": allow
     "git commit*": allow
+    "git push*": allow
     "node --version*": allow
     "npm --version*": allow
   task: allow
