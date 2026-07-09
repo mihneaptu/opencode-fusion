@@ -2,27 +2,21 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai).
+A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**.
 
-Two agents run together: a **main agent** that plans and reviews, and a **sidekick** that executes. The main agent cannot edit files - it is mechanically forced to delegate all file changes to the sidekick. This keeps frontier intelligence in charge of the significant decisions (the plan, the interpretation of ambiguity, the final review) while a cheaper, faster model does the mechanical work.
+The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at **35-41% lower cost** on their FrontierCode benchmark.
 
-Cognition describes the pattern in [Devin Fusion](https://cognition.com/blog/devin-fusion): a frontier "main agent" that plans, interprets ambiguity, and reviews, paired with a cost-effective "sidekick" that executes. On their FrontierCode benchmark it held frontier-level performance at 35-41% lower cost.
+The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
 
-Around that core pair sits a small team of specialist subagents the main agent can delegate to: **explore** for fast read-only codebase search, plus optional **research** (external web/doc lookups), **design** (frontend/UI implementation), and **reviewer** (auditing a diff before commit). Each specialist runs on a model you pick independently - so you can put whichever model you think designs best on `design`, and a different one you trust for review on `reviewer`. Think of the repo as a catalog of roles: the core is required, and the optional specialists are pieces you add only if your workflow needs them. When the main model supports image input (most frontier models do), it reads screenshots directly; if it cannot, add the optional **vision** agent to transcribe images.
-
-## Why
+## Why it works
 
 From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
 
 > the main agent should take minimal actions, and only read what is absolutely necessary. By default it should delegate and monitor, while making the significant decisions: the plan, the interpretation of ambiguity, the final review.
 
-This repo makes that pattern work in opencode - not as a suggestion, but as mechanical enforcement. The main agent's `edit` permission is `deny`, its `grep`/`glob`/`list` are `deny`, and its `bash` is allowlisted to verification and git commands only. The only path to changing a file is the `task` tool, which delegates to the sidekick.
+This repo turns that into a hard constraint: the main agent's edit, search, and freeform bash tools are denied at the permission layer, so delegating to the sidekick is its only way to change a file. Two payoffs fall out of the split:
 
-## Cost and cross-vendor review
-
-Two payoffs fall out of the split:
-
-**Lower cost.** On Cognition's FrontierCode benchmark, the sidekick pattern held frontier-level quality at 35-41% lower cost. The saving comes from token volume: implementation mechanics are most of a session's tokens, and a cheaper sidekick handles them at near-parity while the expensive main model spends its tokens only on judgment - the plan, the spec, the review. The main agent's prompt enforces this discipline: emit judgment not volume, keep context lean, reason once then hand off.
+**Lower cost.** Implementation mechanics are most of a session's tokens. A cheaper sidekick handles them at near-parity while the expensive main model spends its tokens only on judgment - the plan, the spec, the review. The main agent's prompt enforces this discipline: emit judgment not volume, keep context lean, reason once then hand off.
 
 **Cross-vendor review, for free.** When the main agent and sidekick are different model families - for example Opus reviewing Grok - every diff gets an independent second-family read before it lands. Models from one family share blind spots; a reviewer from a different lineage catches what same-family review misses. You get this just by picking a main and sidekick from different vendors.
 
@@ -30,45 +24,37 @@ Two payoffs fall out of the split:
 
 ![System architecture: a two-column swimlane showing the flow between the Main Agent (left) and Sidekick (right)](flow-diagram.png)
 
-The flow:
+The diagram shows one delegation cycle: the main agent delegates exploration, plans from what comes back, hands the sidekick a spec, reviews the returned diff, loops until it passes, then delivers the result.
 
-1. **User task** triggers the Main Agent, which delegates **code exploration** to the sidekick or explore agent.
-2. The explorer reads the code and **sends data back** as file snippets.
-3. The Main Agent uses those snippets to make a **plan**, then **assigns the task** to the sidekick (write code / write tests / fix lint).
-4. The sidekick writes the code and **sends it back** for review.
-5. The Main Agent **reviews the code**. If edits are needed, it **sends feedback** to the sidekick, which **fixes the issues** and sends back.
-6. The reviewed code becomes the **final result** delivered to the user.
-
-| Agent | Role | Config key | Required? |
-|-------|------|------------|-----------|
-| `build` | Main: plan, delegate, review | `agent.build.model` | core |
-| `plan` | Plan mode: same brain as build, plans but does not execute | `agent.plan.model` | core |
-| `sidekick` | Execute edits and commands | `agent.sidekick.model` | core |
-| `explore` | Fast read-only exploration | `agent.explore.model` | core |
-| `research` | Read-only external research (web, docs) | `agent.research.model` | optional |
-| `design` | Frontend/UI implementation | `agent.design.model` | optional |
-| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional |
-| `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional |
+| Agent | Role | Config key | Required | Example model |
+|-------|------|------------|----------|---------------|
+| `build` | Main: plan, delegate, review | `agent.build.model` | core | `kirocc/claude-opus-4-8` |
+| `plan` | Plan mode: same brain as build, plans but does not execute | `agent.plan.model` | core | reuses main model |
+| `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `progrok/grok-4.5` |
+| `explore` | Fast read-only exploration | `agent.explore.model` | core | `progrok/grok-4.5` |
+| `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `kirocc/claude-sonnet-5` |
+| `design` | Frontend/UI implementation | `agent.design.model` | optional | `kirocc/claude-sonnet-5` |
+| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `kirocc/claude-opus-4-8` |
+| `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `kirocc/claude-sonnet-5` |
 
 ## Setup
 
-Fusion is configured entirely through your **global** opencode config at `~/.config/opencode/` (on Windows: `%USERPROFILE%\.config\opencode\`). There is no build step and nothing to clone into your projects.
+Fusion lives entirely in your **global** opencode config at `~/.config/opencode/` (Windows: `%USERPROFILE%\.config\opencode\`). There is no build step and nothing to clone into your projects.
 
-### Option A: Let opencode set it up (recommended)
+### Recommended: let opencode set it up
 
-This repo ships a skill, `fusion-setup`, that configures everything conversationally. Once the skill is available to opencode, just open opencode and say:
+This repo ships a skill, `fusion-setup`, that configures everything conversationally. Copy the `fusion-setup` folder from this repo's `.opencode/skills/` into `~/.config/opencode/skills/`, restart opencode, then say:
 
 ```
 set up fusion
 ```
 
-The agent asks which model you want for each role (main, sidekick, explore, and the optional research/design/reviewer specialists) and which provider each uses, then writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)).
+It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)).
 
-To make the skill available, place the `fusion-setup` folder from this repo's `.opencode/skills/` into your global skills directory `~/.config/opencode/skills/`. opencode discovers it on the next start.
+<details>
+<summary><b>Manual setup</b> (configure the JSON by hand)</summary>
 
-### Option B: Manual
-
-If you would rather configure by hand, write `~/.config/opencode/opencode.json` yourself. Pick your own models; the structure is what matters. Keep the `build` agent's `permission` block exactly as shown - it is the mechanical core of Fusion and must not be loosened.
+Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the structure is what matters. Keep the `build` agent's `permission` block exactly as shown - it is the mechanical core of Fusion and must not be loosened.
 
 ```json
 {
@@ -124,7 +110,10 @@ cp agent/build.md agent/plan.md agent/sidekick.md ~/.config/opencode/agent/
 
 Model references are always `provider-id/model-id`. If a model uses a provider opencode does not know yet, add a `provider` block for it (see the OpenAI-compatible template in the `fusion-setup` skill). Restart opencode after writing the config - it loads config once at startup, not mid-session.
 
-## Example provider: Grok via progrok
+</details>
+
+<details>
+<summary>Example provider: Grok as the sidekick via progrok</summary>
 
 Any provider works, but if you want to use xAI's Grok Composer as the fast sidekick model, [progrok](https://github.com/lidge-jun/progrok) turns a SuperGrok OAuth session into a local OpenAI-compatible endpoint:
 
@@ -135,6 +124,8 @@ progrok proxy        # leave this running in a terminal
 ```
 
 The proxy serves at `http://127.0.0.1:18645/v1`. Point a provider block at that baseURL with any placeholder apiKey; progrok injects your real OAuth token before forwarding to xAI.
+
+</details>
 
 ## Verify it works
 
@@ -150,16 +141,7 @@ You should see the main agent delegate exploration, receive the findings, make a
 
 ### Swap models
 
-All agent models live in one place: `~/.config/opencode/opencode.json` under `agent`.
-
-| Agent | Config key | Example |
-|-------|-----------|---------|
-| Main (build) | `agent.build.model` | `"kirocc/claude-opus-4-8"` |
-| Sidekick | `agent.sidekick.model` | `"progrok/grok-4.5"` |
-| Explore | `agent.explore.model` | `"progrok/grok-4.5"` |
-| Research | `agent.research.model` | `"kirocc/claude-sonnet-5"` |
-| Design | `agent.design.model` | `"kirocc/claude-sonnet-5"` |
-| Reviewer | `agent.reviewer.model` | `"kirocc/claude-opus-4-8"` |
+All agent models live in one place: `~/.config/opencode/opencode.json` under `agent` - one `model` value per agent (keys and example models are in the [table above](#how-it-works)).
 
 Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
 
@@ -167,7 +149,8 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 
 The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`, `git commit`, `git push`). Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default. Note that the allowlist matches each command individually - do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
-### Optional hardening
+<details>
+<summary><b>Optional hardening</b></summary>
 
 These documented opencode config keys make a local Fusion setup cheaper, more private, and more deterministic. All optional:
 
@@ -177,6 +160,8 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - `"limit": { "context": <n>, "output": <n> }` (inside a custom model block) - lets opencode track remaining context for models not on models.dev, such as local gateways. Use the model's real window; do not guess.
 - Sidekick bash denylist - the sidekick has full `bash`, but its prompt frontmatter denies force-push and blocks reading `.env`, and asks before `git reset --hard`, `git clean`, and `rm -rf`. Defense-in-depth on your least-careful, most-powerful agent.
 
+</details>
+
 ## Limitations
 
 - **No dynamic mid-session routing.** Devin Fusion's second technique - swapping the active model mid-task during context compaction - needs Devin's closed harness and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
@@ -184,6 +169,9 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
 
 ## Troubleshooting
+
+<details>
+<summary>Common issues</summary>
 
 ### The main agent edits files directly
 
@@ -201,14 +189,24 @@ The model id may be wrong or changed. Confirm the exact `provider-id/model-id` a
 
 The allowlist matches whole commands against fixed patterns. Chaining with `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
 
+</details>
+
 ## Slash command and audit plugin
+
+<details>
+<summary>Two optional extras</summary>
 
 Two optional extras ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`) - a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
 - **`fusion-audit` plugin** (`plugins/fusion-audit.js`) - logs the delegation tree (subagent spawns and edit/write/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer - the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
 
+</details>
+
 ## Files
+
+<details>
+<summary>All files</summary>
 
 | File | Purpose |
 |------|---------|
@@ -225,6 +223,8 @@ Two optional extras ship with the skill:
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
+
+</details>
 
 ## Built with opencode-fusion
 

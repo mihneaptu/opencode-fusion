@@ -2,7 +2,7 @@
   "name": "opencode-fusion",
   "version": "1.0.0",
   "private": true,
-  "description": "Devin Fusion sidekick setup for opencode",
+  "description": "A main agent that can't edit files - it plans and reviews while a cheaper sidekick does the work. Cognition's Devin Fusion pattern for opencode.",
   "license": "MIT",
   "scripts": {
     "test": "node --test"
