@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="opencode Fusion docs: install for OpenCode, verify the flow, customize models, and troubleshoot.">
+  <title>Docs — opencode Fusion</title>
+  <link rel="alternate" type="text/markdown" title="LLM-friendly docs" href="llms.txt">
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        var theme = (stored === 'light' || stored === 'dark')
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      document.documentElement.classList.remove('no-js');
+      document.documentElement.classList.add('js');
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+</head>
+<body class="docs-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="wordmark" href="index.html" aria-label="opencode Fusion home">
+        <span class="wordmark-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="8" cy="8" r="3.2"/>
+            <circle cx="16" cy="16" r="3.2"/>
+            <path d="M10.3 10.3 13.7 13.7"/>
+          </svg>
+        </span>
+        <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+      </a>
+
+      <div class="header-actions">
+        <button
+          class="theme-toggle"
+          type="button"
+          id="theme-toggle"
+          aria-label="Toggle color theme"
+          title="Toggle color theme"
+        >
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+          </svg>
+        </button>
+
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+          <span class="nav-toggle-bars" aria-hidden="true"></span>
+        </button>
+      </div>
+
+      <nav class="nav" id="nav-menu" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="#install-opencode">OpenCode</a></li>
+          <li><a href="#customize">Customize</a></li>
+          <li><a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+        </ul>
+        <a class="btn btn-primary btn-sm" href="index.html#get-started">Get started</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="docs-main">
+    <div class="container docs-shell">
+
+      <aside class="docs-toc" aria-label="On this page">
+        <p class="docs-toc-label">On this page</p>
+        <nav class="docs-toc-nav">
+          <a href="#overview">Overview</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#install-opencode">Install OpenCode</a>
+          <a href="#verify">Verify</a>
+          <a href="#customize">Customize</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+          <a href="#limitations">Limitations</a>
+        </nav>
+      </aside>
+
+      <article class="docs-article">
+        <header class="docs-hero">
+          <p class="docs-kicker">Documentation</p>
+          <h1 class="docs-title">opencode Fusion</h1>
+          <p class="docs-lead">Main agent plans and reviews. Sidekick edits. Install, verify, and customize the pattern on OpenCode.</p>
+        </header>
+
+        <section id="overview" class="docs-section">
+          <h2>Overview</h2>
+          <p>opencode Fusion is a configuration project, not an app. It implements the <a href="https://cognition.com/blog/devin-fusion" target="_blank" rel="noopener noreferrer">Devin Fusion sidekick pattern</a>: a main agent that plans and reviews but cannot edit files, and a cheaper sidekick that executes every change.</p>
+          <p>The main agent’s file editing is denied at the permission layer. Its only way to change a file is to hand a spec to the sidekick. Frontier intelligence stays on the plan and the review; mechanical work stays cheap.</p>
+
+          <div class="docs-callout">
+            <p><strong>Built for OpenCode.</strong> The v1 reference implementation with mechanical edit deny, multi-provider models, and a setup skill.</p>
+          </div>
+        </section>
+
+        <section id="how-it-works" class="docs-section">
+          <h2>How it works</h2>
+          <p>One cycle: main explores (via helpers), plans, hands the sidekick a spec, reviews the diff, loops until it passes, then delivers.</p>
+
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead>
+                <tr>
+                  <th scope="col">Agent</th>
+                  <th scope="col">Role</th>
+                  <th scope="col">Required</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>build</code></td>
+                  <td>Main: plan, delegate, review</td>
+                  <td>Core</td>
+                </tr>
+                <tr>
+                  <td><code>plan</code></td>
+                  <td>Plan mode — same brain, no execute</td>
+                  <td>Core</td>
+                </tr>
+                <tr>
+                  <td><code>sidekick</code></td>
+                  <td>Execute edits and commands</td>
+                  <td>Core</td>
+                </tr>
+                <tr>
+                  <td><code>explore</code></td>
+                  <td>Fast read-only search</td>
+                  <td>Core</td>
+                </tr>
+                <tr>
+                  <td><code>research</code></td>
+                  <td>Read-only web / docs research</td>
+                  <td>Optional</td>
+                </tr>
+                <tr>
+                  <td><code>design</code></td>
+                  <td>Frontend / UI implementation</td>
+                  <td>Optional</td>
+                </tr>
+                <tr>
+                  <td><code>reviewer</code></td>
+                  <td>Audit a diff before commit</td>
+                  <td>Optional</td>
+                </tr>
+                <tr>
+                  <td><code>vision</code></td>
+                  <td>Transcribe images if main cannot</td>
+                  <td>Optional</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>Pick main and sidekick from different model families when you can. The main agent’s review of every sidekick diff becomes cross-vendor for free.</p>
+        </section>
+
+        <section id="install-opencode" class="docs-section">
+          <h2>Install OpenCode</h2>
+          <p>Fusion lives in your global OpenCode config. No build step; nothing to clone into each project.</p>
+
+          <h3>Recommended</h3>
+          <ol class="docs-steps">
+            <li>Install the skill globally with one command (no clone required).</li>
+            <li>Restart OpenCode fully (config loads at startup).</li>
+            <li>Say <strong>set up fusion</strong> — or run <code>/fusion-setup</code>.</li>
+          </ol>
+
+          <div class="command">
+            <div class="command-bar">
+              <span class="command-label">Terminal</span>
+              <button class="copy-btn" type="button" data-copy-target="docs-cmd-opencode" aria-label="Copy OpenCode install command">
+                <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                <span class="copy-btn-text">Copy</span>
+              </button>
+            </div>
+            <pre class="command-pre"><code id="docs-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
+          </div>
+
+          <p class="docs-note">Installs into your global OpenCode skills folder. Works on Windows, macOS, and Linux.</p>
+
+          <h3>Offline / manual fallback</h3>
+          <p>From a clone of this repo, copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> (Windows: <code>%USERPROFILE%\.config\opencode\skills\</code>), then restart and run the setup flow as above.</p>
+
+          <h3>After setup</h3>
+          <p>The skill writes <code>~/.config/opencode/opencode.json</code>, installs agent prompts under <code>~/.config/opencode/agent/</code>, and asks you to restart. To change models later, say “reconfigure fusion” or edit the config directly.</p>
+        </section>
+
+        <section id="verify" class="docs-section">
+          <h2>Verify</h2>
+          <p>Open a project with lint errors (this repo’s <code>test-playground/</code> works) and ask:</p>
+
+          <div class="command">
+            <div class="command-bar">
+              <span class="command-label">Prompt</span>
+              <button class="copy-btn" type="button" data-copy-target="docs-cmd-verify" aria-label="Copy verify prompt">
+                <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                <span class="copy-btn-text">Copy</span>
+              </button>
+            </div>
+            <pre class="command-pre"><code id="docs-cmd-verify">fix the lint errors in this project</code></pre>
+          </div>
+
+          <ul class="docs-list">
+            <li>Main delegates via <code>task</code>; sidekick edits; main runs <code>npm run lint</code> itself.</li>
+            <li>Main must not edit files directly — edits and freeform shell are denied at the OpenCode permission layer.</li>
+          </ul>
+
+          <div class="command">
+            <div class="command-bar">
+              <span class="command-label">Terminal</span>
+              <button class="copy-btn" type="button" data-copy-target="docs-cmd-lint" aria-label="Copy lint fixture command">
+                <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                <span class="copy-btn-text">Copy</span>
+              </button>
+            </div>
+            <pre class="command-pre"><code id="docs-cmd-lint">npm --prefix test-playground run lint</code></pre>
+          </div>
+        </section>
+
+        <section id="customize" class="docs-section">
+          <h2>Customize</h2>
+
+          <h3>Swap models</h3>
+          <p>Edit <code>~/.config/opencode/opencode.json</code> under <code>agent.&lt;role&gt;.model</code>. Restart after changes. Keep the sidekick cheaper and faster than main when you can. OpenCode’s multi-provider setup makes cross-family main/sidekick pairs easy.</p>
+
+          <h3>Role behavior</h3>
+          <p>Agent prompts live under <code>~/.config/opencode/agent/</code> after setup (and under <code>agent/</code> in this repo). Edit those role files when you want different behavior, then restart OpenCode so config reloads.</p>
+
+          <h3>Bash allowlist (OpenCode main)</h3>
+          <p>Main agent bash is allowlisted for verify and git. Keep <code>"*": "deny"</code> first. Do not chain commands with <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, or <code>|</code> — each call is matched alone.</p>
+        </section>
+
+        <section id="troubleshooting" class="docs-section">
+          <h2>Troubleshooting</h2>
+
+          <dl class="docs-faq">
+            <div class="docs-faq-item">
+              <dt>Main agent edits files directly</dt>
+              <dd>Config was not loaded. Fully quit and restart OpenCode. Confirm <code>edit: deny</code> for the build agent in permission frontmatter.</dd>
+            </div>
+            <div class="docs-faq-item">
+              <dt>Sidekick is never invoked</dt>
+              <dd>Ensure <code>task: allow</code> on the build agent so main can delegate to sidekick.</dd>
+            </div>
+            <div class="docs-faq-item">
+              <dt>Model returns 404 or 400</dt>
+              <dd>Check exact <code>provider-id/model-id</code>, provider <code>baseURL</code>, and credentials. Some local proxies omit models from <code>/v1/models</code> even when the id works.</dd>
+            </div>
+            <div class="docs-faq-item">
+              <dt>Bash command blocked unexpectedly</dt>
+              <dd>Allowlist matches whole commands. Chaining or wrapping breaks the match. Run each allowed command as its own call.</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section id="limitations" class="docs-section">
+          <h2>Limitations</h2>
+          <ul class="docs-list">
+            <li><strong>No dynamic mid-session routing.</strong> Model per role is fixed at startup. Devin’s mid-task model swap needs a closed product runtime and is an explicit non-goal here.</li>
+            <li><strong>Config loads at startup.</strong> Any change to config or agent prompts needs a full restart.</li>
+            <li><strong>Loop protection is permission-based.</strong> Nested delegation is bounded by the task graph (sidekick may spawn only read-only searchers), not numeric depth caps.</li>
+          </ul>
+        </section>
+
+        <footer class="docs-end">
+          <p>Independent project inspired by Cognition’s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, or OpenCode.</p>
+          <p>
+            <a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub repository</a>
+            ·
+            <a href="llms.txt">llms.txt</a>
+            ·
+            <a href="index.html">Back to home</a>
+          </p>
+        </footer>
+      </article>
+    </div>
+
+    <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>
+  </main>
+
+  <footer class="site-footer" id="footer" aria-labelledby="footer-title">
+    <div class="container footer-shell">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <a class="wordmark footer-wordmark" href="index.html" aria-label="opencode Fusion home">
+            <span class="wordmark-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="3.2"/>
+                <circle cx="16" cy="16" r="3.2"/>
+                <path d="M10.3 10.3 13.7 13.7"/>
+              </svg>
+            </span>
+            <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+          </a>
+          <p id="footer-title" class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
+        </div>
+
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="index.html">Home</a>
+          <a href="docs.html">Docs</a>
+          <a href="index.html#get-started">Get started</a>
+          <a class="footer-nav-ext" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
+            GitHub
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 3 13"/></svg>
+          </a>
+        </nav>
+      </div>
+
+      <div class="footer-meta">
+        <p class="footer-copyright">&copy; 2026 opencode Fusion &middot; Open source</p>
+        <p class="footer-disclaimer">Independent project inspired by Cognition&rsquo;s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, or OpenCode.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="Sidekick Fusion is a two-agent setup for coding agents: a planning-and-review main agent that never edits, paired with a sidekick that does the editing. Frontier-level quality at roughly 35-41% lower cost. OpenCode first; Claude Code next.">
-  <title>Sidekick Fusion - main plans, sidekick edits</title>
+  <meta name="description" content="opencode Fusion: a main agent that plans and reviews without editing, and a cheaper sidekick that executes. Built for OpenCode.">
+  <title>opencode Fusion — main plans, sidekick edits</title>
+  <link rel="alternate" type="text/markdown" title="LLM-friendly docs" href="llms.txt">
   <!-- Apply saved/system theme before paint to avoid a light-flash. No network. -->
   <script>
     (function () {
@@ -23,13 +24,14 @@
     })();
   </script>
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header" id="top">
     <div class="container header-inner">
-      <a class="wordmark" href="#hero" aria-label="Sidekick Fusion, back to top">
+      <a class="wordmark" href="#hero" aria-label="opencode Fusion, back to top">
         <span class="wordmark-mark" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="8" cy="8" r="3.2"/>
@@ -37,7 +39,7 @@
             <path d="M10.3 10.3 13.7 13.7"/>
           </svg>
         </span>
-        <span class="wordmark-text">sidekick<span class="wordmark-accent">Fusion</span></span>
+        <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
       </a>
 
       <div class="header-actions">
@@ -67,7 +69,8 @@
           <li><a href="#how-it-works">How it works</a></li>
           <li><a href="#features">Features</a></li>
           <li><a href="#cost">Cost</a></li>
-          <li><a href="https://github.com/mihneaptu/sidekick-fusion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="docs.html">Docs</a></li>
+          <li><a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
         </ul>
         <a class="btn btn-primary btn-sm" href="#get-started">Get started</a>
       </nav>
@@ -97,27 +100,13 @@
       </div>
       <div class="container">
         <div class="hero-inner">
-          <p class="hero-kicker reveal">Two agents, one workflow</p>
-          <h1 id="hero-title" class="hero-title reveal">
-            <span class="hero-title-rotator" aria-hidden="true">
-              <span class="hero-title-rotator-viewport">
-                <span class="hero-title-rotator-track">
-                  <span class="hero-title-rotator-word is-opencode">opencode</span>
-                  <span class="hero-title-rotator-word is-codex">codex</span>
-                  <span class="hero-title-rotator-word is-claude">Claude Code</span>
-                  <!-- Duplicate first word for a seamless jump back to the start. -->
-                  <span class="hero-title-rotator-word is-opencode">opencode</span>
-                </span>
-              </span>
-            </span>
-            <span class="visually-hidden">opencode, codex, and Claude Code</span>
-            <span class="hero-title-suffix">&nbsp;Fusion</span>
-          </h1>
-          <p class="hero-tagline reveal">A planning-and-review main agent that never edits, paired with a sidekick that does the editing.</p>
-          <p class="hero-subline reveal">Frontier-level quality at roughly <strong>35-41% lower cost</strong>. OpenCode today; Claude Code next.</p>
+          <h1 id="hero-title" class="hero-title reveal">opencode&nbsp;Fusion</h1>
+          <p class="hero-tagline reveal">A main agent that plans and reviews but never edits. A cheaper sidekick that does the editing.</p>
+          <p class="hero-subline reveal">Frontier-level quality at roughly <strong>35–41% lower cost</strong>.</p>
+
           <div class="hero-actions reveal">
             <a class="btn btn-primary" href="#get-started">Get started</a>
-            <a class="btn btn-ghost" href="https://github.com/mihneaptu/sidekick-fusion" target="_blank" rel="noopener noreferrer">
+            <a class="btn btn-ghost" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
               <span class="btn-icon" aria-hidden="true">
                 <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
               </span>
@@ -125,9 +114,13 @@
             </a>
           </div>
         </div>
+      </div>
+    </section>
 
-        <!-- Decorative flow diagram: the main/sidekick loop, built with HTML + CSS. Mirrored in prose below, so hidden from assistive tech. -->
-        <figure class="hero-diagram reveal" aria-hidden="true">
+    <!-- Flow diagram: below the hero fold so it reveals on scroll, not on first paint. -->
+    <section class="flow-band" aria-hidden="true">
+      <div class="container">
+        <figure class="hero-diagram reveal reveal-late">
           <div class="diag-flow">
             <div class="diag-node diag-node-main">
               <span class="diag-role">Main agent</span>
@@ -162,7 +155,7 @@
       <div class="container measure">
         <h2 id="problem-title" class="section-title reveal">Strong models are expensive. Weak models cut corners.</h2>
         <p class="lead reveal">Running a top-tier model for every edit and every token gets costly fast. Running a cheaper model on its own tends to drop quality on real, multi-step work.</p>
-        <p class="lead reveal">Fusion splits the roles. You pay the premium only where judgment matters, and let a cheaper model handle the high-volume editing.</p>
+        <p class="lead reveal">opencode Fusion splits the roles. You pay the premium only where judgment matters, and let a cheaper model handle the high-volume editing.</p>
       </div>
     </section>
 
@@ -244,7 +237,7 @@
               </svg>
             </span>
             <h3 class="feature-title">Cross-vendor review</h3>
-            <p class="feature-desc">Main and sidekick come from different model families, so each tends to catch the mistakes the other's family makes.</p>
+            <p class="feature-desc">When main and sidekick use different model families, each tends to catch the other’s blind spots. OpenCode’s multi-provider setup makes this easy — pick main and sidekick from different families.</p>
           </li>
 
           <li class="feature-item reveal">
@@ -298,7 +291,7 @@
               </svg>
             </span>
             <h3 class="feature-title">Least-privilege permissions</h3>
-            <p class="feature-desc">The main agent's file edits and destructive commands are denied at the permission layer. Safety comes from tooling, not just prompt wording.</p>
+            <p class="feature-desc">Edits and freeform shell are denied for the main agent at the OpenCode permission layer. Safety is harness wiring first, prompts second.</p>
           </li>
         </ul>
       </div>
@@ -327,44 +320,79 @@
 
             <div class="bar-row">
               <div class="bar-label">
-                <span class="bar-name">Fusion</span>
+                <span class="bar-name">opencode Fusion</span>
                 <span class="bar-value bar-value-accent">~62%</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill bar-fusion" style="--pct: 62%;" role="img" aria-label="Fusion: about 62 percent of baseline relative cost."></div>
+                <div class="bar-fill bar-fusion" style="--pct: 62%;" role="img" aria-label="opencode Fusion: about 62 percent of baseline relative cost."></div>
               </div>
             </div>
           </div>
 
-          <p class="cost-caption">Figures are illustrative and for explanation only, not a benchmark we ran. Cognition has reported the Fusion pattern reaching roughly 35-41% lower cost.</p>
+          <p class="cost-caption">Figures are illustrative and for explanation only — not a benchmark we ran. Cognition has reported the Fusion sidekick pattern reaching roughly 35–41% lower cost on their own evaluation.</p>
         </div>
       </div>
     </section>
 
     <!-- GET STARTED -->
     <section id="get-started" class="section cta" aria-labelledby="cta-title">
-      <div class="container cta-inner">
-        <h2 id="cta-title" class="section-title reveal">Set up Sidekick Fusion (OpenCode today)</h2>
-        <p class="lead reveal">One command scaffolds the agents, permissions, and model wiring into your global opencode configuration.</p>
-
-        <div class="command reveal">
-          <span class="command-label" aria-hidden="true">terminal</span>
-          <pre class="command-pre"><code id="install-cmd">npx sidekick-fusion setup</code></pre>
-          <button class="copy-btn" type="button" data-copy-target="install-cmd" aria-label="Copy install command to clipboard">
-            <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
-            <span class="copy-btn-text">Copy</span>
-          </button>
-          <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>
+      <div class="container">
+        <div class="section-head cta-head">
+          <h2 id="cta-title" class="section-title reveal">Get started</h2>
+          <p class="section-intro reveal">Install with one command (no clone). Full detail lives in the docs linked below.</p>
         </div>
 
+        <div class="install-grid">
+          <article id="get-started-opencode" class="install-card reveal">
+            <header class="install-card-top">
+              <h3 class="install-name">OpenCode</h3>
+              <span class="harness-badge harness-badge-live">Available</span>
+            </header>
+
+            <ol class="install-steps">
+              <li>
+                <span class="install-step-num" aria-hidden="true">1</span>
+                <span class="install-step-text">Install the skill globally (one command, no clone required).</span>
+              </li>
+              <li>
+                <span class="install-step-num" aria-hidden="true">2</span>
+                <span class="install-step-text">Restart OpenCode fully (config loads at startup).</span>
+              </li>
+              <li>
+                <span class="install-step-num" aria-hidden="true">3</span>
+                <span class="install-step-text">Say <strong>set up fusion</strong> — or run <code>/fusion-setup</code>.</span>
+              </li>
+            </ol>
+
+            <div class="command command-in-card">
+              <div class="command-bar">
+                <span class="command-label">Terminal</span>
+                <button class="copy-btn" type="button" data-copy-target="install-cmd-opencode" aria-label="Copy OpenCode install command">
+                  <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                  <span class="copy-btn-text">Copy</span>
+                </button>
+              </div>
+              <pre class="command-pre"><code id="install-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
+            </div>
+
+            <p class="install-note">Works on Windows, macOS, and Linux. After setup, ask the main agent to fix lint in a real project and confirm it delegates to the sidekick. Offline fallback: copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> from a clone.</p>
+            <a class="install-docs" href="docs.html#install-opencode">
+              OpenCode install docs
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 3 13"/></svg>
+            </a>
+          </article>
+        </div>
+
+        <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>
+
         <div class="hero-actions cta-actions reveal">
-          <a class="btn btn-primary" href="https://github.com/mihneaptu/sidekick-fusion" target="_blank" rel="noopener noreferrer">
+          <a class="btn btn-primary" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
             <span class="btn-icon" aria-hidden="true">
               <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
             </span>
             View on GitHub
           </a>
-          <a class="btn btn-ghost" href="https://github.com/mihneaptu/sidekick-fusion#readme" target="_blank" rel="noopener noreferrer">Read the docs</a>
+          <a class="btn btn-ghost" href="docs.html">Read the docs</a>
         </div>
       </div>
     </section>
@@ -374,7 +402,7 @@
     <div class="container footer-shell">
       <div class="footer-main">
         <div class="footer-brand">
-          <a class="wordmark footer-wordmark" href="#hero" aria-label="Sidekick Fusion, back to top">
+          <a class="wordmark footer-wordmark" href="#hero" aria-label="opencode Fusion, back to top">
             <span class="wordmark-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="8" cy="8" r="3.2"/>
@@ -382,9 +410,9 @@
                 <path d="M10.3 10.3 13.7 13.7"/>
               </svg>
             </span>
-            <span class="wordmark-text">sidekick<span class="wordmark-accent">Fusion</span></span>
+            <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
           </a>
-          <p id="footer-title" class="footer-desc">Main agent plans and reviews. Sidekick edits. Frontier quality, lower cost.</p>
+          <p id="footer-title" class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
         </div>
 
         <nav class="footer-nav" aria-label="Footer">
@@ -392,7 +420,8 @@
           <a href="#features">Features</a>
           <a href="#cost">Cost</a>
           <a href="#get-started">Get started</a>
-          <a class="footer-nav-ext" href="https://github.com/mihneaptu/sidekick-fusion" target="_blank" rel="noopener noreferrer">
+          <a href="docs.html">Docs</a>
+          <a class="footer-nav-ext" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
             GitHub
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 3 13"/></svg>
           </a>
@@ -400,8 +429,8 @@
       </div>
 
       <div class="footer-meta">
-        <p class="footer-copyright">&copy; 2026 Sidekick Fusion &middot; Open source</p>
-        <p class="footer-disclaimer">Independent project inspired by Cognition&rsquo;s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, OpenCode, Anthropic, or OpenAI.</p>
+        <p class="footer-copyright">&copy; 2026 opencode Fusion &middot; Open source</p>
+        <p class="footer-disclaimer">Independent project inspired by Cognition&rsquo;s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, or OpenCode.</p>
       </div>
     </div>
   </footer>

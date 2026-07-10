@@ -1,6 +1,6 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure Sidekick Fusion (OpenCode harness) - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "sidekick fusion", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion two-agent workflow - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup

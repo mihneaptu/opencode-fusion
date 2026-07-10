@@ -1,0 +1,44 @@
+# opencode Fusion
+
+> A main agent that plans and reviews without editing files, and a cheaper sidekick that executes. Built for OpenCode with mechanical edit deny at the permission layer. Inspired by Cognition’s Devin Fusion pattern. Independent project — not affiliated with Cognition, Devin, or OpenCode.
+
+opencode Fusion is a *configuration* project (not an app). Install on OpenCode, then let the main agent delegate edits to the sidekick.
+
+## Docs
+
+- [Landing page](index.html): product overview, how it works, cost split
+- [Full docs](docs.html): install, verify, customize, troubleshoot
+- [Install OpenCode](docs.html#install-opencode)
+- [Verify the flow](docs.html#verify)
+- [Customize models](docs.html#customize)
+- [Troubleshooting](docs.html#troubleshooting)
+- [Limitations](docs.html#limitations)
+
+## Quick install
+
+### OpenCode
+
+```bash
+npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
+```
+
+Then fully restart OpenCode and say `set up fusion` (or run `/fusion-setup`). The skill writes global config under `~/.config/opencode/` and installs agent prompts.
+
+Offline fallback from a clone:
+
+```bash
+cp -r .opencode/skills/fusion-setup ~/.config/opencode/skills/
+```
+
+## Repo
+
+- [GitHub](https://github.com/mihneaptu/opencode-fusion)
+- [README](https://github.com/mihneaptu/opencode-fusion#readme)
+
+## Core ideas for agents helping users
+
+1. Main (`build`) plans, delegates, and reviews — it must not edit files.
+2. Sidekick executes precise specs; explore/research are read-only helpers.
+3. OpenCode enforces this with permission frontmatter (edit deny + task graph).
+4. Config loads at startup — always restart after config or skill changes.
+5. Cross-vendor review is emergent: pick main and sidekick from different model families.

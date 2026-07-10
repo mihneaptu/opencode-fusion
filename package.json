@@ -1,13 +1,10 @@
 {
-  "name": "sidekick-fusion",
+  "name": "opencode-fusion",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "A main agent that can't edit files - it plans and reviews while a cheaper sidekick does the work. Devin Fusion pattern for coding agents (OpenCode + Claude Code).",
+  "description": "A main agent that can't edit files - it plans and reviews while a cheaper sidekick does the work. Cognition's Devin Fusion pattern for opencode.",
   "license": "MIT",
   "scripts": {
-    "assemble": "node scripts/assemble-agents.mjs",
-    "test": "node --test",
-    "pretest": "node scripts/assemble-agents.mjs"
+    "test": "node --test"
   }
 }
