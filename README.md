@@ -29,7 +29,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | Agent | Role | Config key | Required | Suggested model (2026) |
 |-------|------|------------|----------|------------------------|
 | `build` | Main: plan, delegate, review | `agent.build.model` | core | `claude-fable-5` |
-| `plan` | Plan mode: same brain as build, plans but does not execute | `agent.plan.model` | core | reuses main model |
+| `plan` | Plan mode: same brain as build, plans but does not execute | `agent/plan.md` (file) | core | reuses main model |
 | `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `grok-4.5` |
 | `explore` | Fast read-only exploration | `agent.explore.model` | core | `gemini-3.5-flash` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
@@ -75,31 +75,7 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
     "build": {
       "mode": "primary",
       "model": "<main-provider>/<main-model-id>",
-      "prompt": "{file:agent/build.md}",
-      "permission": {
-        "edit": "deny",
-        "grep": "deny",
-        "glob": "deny",
-        "list": "deny",
-        "bash": {
-          "*": "deny",
-          "npm run lint*": "allow",
-          "npm test*": "allow",
-          "npm run build*": "allow",
-          "npx tsc --noEmit*": "allow",
-          "npx vitest run*": "allow",
-          "git diff*": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git show*": "allow",
-          "git add*": "allow",
-          "git commit*": "allow",
-          "git push*": "allow",
-          "node --version*": "allow",
-          "npm --version*": "allow"
-        },
-        "task": "allow"
-      }
+      "prompt": "{file:agent/build.md}"
     },
     "explore": { "model": "<explore-provider>/<explore-model-id>" },
     "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" }

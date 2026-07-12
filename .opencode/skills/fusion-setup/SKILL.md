@@ -36,7 +36,7 @@ Ask the user which model to use for each role. Do not assume; let them choose th
 6. Reviewer model (audits diffs; often a strong model, and deliberately can differ from the main model).
 7. Vision model (reads images) - ONLY ask this if the user's main/build model does not support image input. Most frontier models read images directly, so skip this question unless the main model cannot. The vision model must be one that accepts image input.
 
-Roles 4-7 are optional a-la-carte pieces. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent (plan mode) reuses the main/build model by default, so it needs no separate question. Do not offer `vision` when the main model already reads images.
+Roles 4-7 are optional a-la-carte pieces. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent activates from its installed `agent/plan.md` (Step 4), which overrides opencode's built-in plan agent - it reuses the main/build model and needs no `agent.plan` block in opencode.json and no separate model question. Do not offer `vision` when the main model already reads images.
 
 For each distinct provider the chosen models use, collect the connection details:
 - provider id (e.g. `kiro`, `progrok`, `anthropic`, `openai`)
@@ -102,52 +102,7 @@ Write the global config using this exact structure. Replace the `<...>` placehol
     "build": {
       "mode": "primary",
       "model": "<main-provider>/<main-model-id>",
-      "prompt": "{file:agent/build.md}",
-      "permission": {
-        "edit": "deny",
-        "grep": "deny",
-        "glob": "deny",
-        "list": "deny",
-        "bash": {
-          "*": "deny",
-          "npm run lint*": "allow",
-          "npm test*": "allow",
-          "npm run build*": "allow",
-          "npx tsc --noEmit*": "allow",
-          "npx vitest run*": "allow",
-          "git diff*": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git show*": "allow",
-          "git add*": "allow",
-          "git commit*": "allow",
-          "git push*": "allow",
-          "node --version*": "allow",
-          "npm --version*": "allow"
-        },
-        "task": "allow"
-      }
-    },
-    "plan": {
-      "mode": "primary",
-      "model": "<main-provider>/<main-model-id>",
-      "prompt": "{file:agent/plan.md}",
-      "permission": {
-        "edit": "deny",
-        "grep": "deny",
-        "glob": "deny",
-        "list": "deny",
-        "bash": {
-          "*": "deny",
-          "npm run lint*": "allow",
-          "npm test*": "allow",
-          "git diff*": "allow",
-          "git status*": "allow",
-          "git log*": "allow",
-          "git show*": "allow"
-        },
-        "task": "allow"
-      }
+      "prompt": "{file:agent/build.md}"
     },
     "explore": { "model": "<explore-provider>/<explore-model-id>" },
     "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" },
