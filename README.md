@@ -173,6 +173,10 @@ First check whether the block is actually expected: commands outside the allowli
 
 If an *allowlisted* command gets blocked, the usual cause is chaining: the allowlist matches whole commands against fixed patterns, so `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
 
+### A search reports "zero matches" for something that exists
+
+The search tools run ripgrep with standard ignore rules, so delegated searches silently skip anything matched by `.gitignore`. A gitignored path (local fixtures, generated code) produces a confident "no matches" even when the text is right there, and the main agent will relay that as fact. If agents need to search a gitignored directory, add a root `.ignore` file whitelisting it (for example `!fixtures/`) - ripgrep reads `.ignore` with higher precedence than `.gitignore`, and git pays no attention to it. Note that `git diff` has the same blind spot: changes to gitignored files never appear in it, so the main agent reviews those by reading the file directly.
+
 </details>
 
 ## Slash command and audit plugin

@@ -1,0 +1,7 @@
+# Ripgrep-only whitelist (git does not read this file).
+# opencode's grep/glob tools run ripgrep with default ignore rules, so the
+# gitignored test-playground/ would be invisible to agent searches. .ignore
+# outranks .gitignore for ripgrep, so this line re-includes the fixture for
+# search while git continues to ignore it. node_modules/ stays excluded via
+# the root .gitignore.
+!test-playground/
