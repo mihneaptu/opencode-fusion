@@ -34,10 +34,10 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `explore` | Fast read-only exploration | `agent.explore.model` | core | `gemini-3.5-flash` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional | `glm-5.2` |
-| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.5` |
+| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
 | `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `gemini-3.5-flash` |
 
-Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.5`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
+Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.6-sol`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
 
 ## Setup
 
