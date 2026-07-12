@@ -88,7 +88,7 @@ If two roles use different models from the SAME provider (for example a main mod
 
 ## Step 3 - Write ~/.config/opencode/opencode.json
 
-Write the global config using this exact structure. Replace the `<...>` placeholders with the user's choices. Model references are always `provider-id/model-id`. Keep the build agent's `permission` block EXACTLY as shown - it is the core of Fusion and must not be loosened.
+Write the global config using this exact structure. Replace the `<...>` placeholders with the user's choices. Model references are always `provider-id/model-id`. The JSON only assigns models - each role's mode, permissions, and prompt come from its agent file (Step 4), and the build agent's permission frontmatter is the core of Fusion and must not be loosened.
 
 ```json
 {
@@ -99,11 +99,7 @@ Write the global config using this exact structure. Replace the `<...>` placehol
     "<sidekick-provider-id>": { "npm": "...", "options": {}, "models": {} }
   },
   "agent": {
-    "build": {
-      "mode": "primary",
-      "model": "<main-provider>/<main-model-id>",
-      "prompt": "{file:agent/build.md}"
-    },
+    "build": { "model": "<main-provider>/<main-model-id>" },
     "explore": { "model": "<explore-provider>/<explore-model-id>" },
     "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" },
     "research": { "model": "<research-provider>/<research-model-id>" },
@@ -115,8 +111,7 @@ Write the global config using this exact structure. Replace the `<...>` placehol
 
 Notes:
 - Replace the two `"<...-provider-id>": { ... }` placeholder lines under `provider` with the ACTUAL provider block(s) you built in Step 2. If your main and sidekick share one provider, that is a single block (see Step 2 on merging models); if they use different providers, include one block each. The placeholder shape shown is not valid config on its own - it must be filled in.
-- `{file:agent/build.md}` resolves relative to `~/.config/opencode/`, so the prompt file must be installed at `~/.config/opencode/agent/build.md` (Step 4).
-- The sidekick's prompt is set by its agent file (Step 4), so it does not need a `prompt` field here.
+- opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition: frontmatter supplies the role's `mode` and `permission`, and the body is its prompt. No `prompt` fields belong in opencode.json - Step 4 installs the files that carry them.
 - If the user already has a `~/.config/opencode/opencode.json`, first back it up (copy to `opencode.json.backup.<timestamp>`), then merge or overwrite per the user's wishes. Never silently discard an existing config.
 - Add `"vision": { "model": "<vision-provider>/<vision-model-id>" }` to the `agent` block ONLY if the user configured a vision role (main model lacks image input). Omit it otherwise.
 - OPTIONAL top-level hardening keys (documented opencode fields; add if the user wants a tighter, cheaper, more private local setup):
@@ -127,7 +122,7 @@ Notes:
 
 ## Step 4 - Install the agent prompt files
 
-Copy the prompt files bundled with this skill into the global agent folder (one per role you configured). `<this-skill-dir>` is the directory this SKILL.md lives in - its bundled prompts are in the `agent/` subfolder next to this file. Every configured role except `explore` needs its prompt file installed (explore is model-only in the JSON); in particular the sidekick DOES need its `agent/sidekick.md` file even though its JSON entry has no `prompt` field:
+Copy the prompt files bundled with this skill into the global agent folder (one per role you configured). `<this-skill-dir>` is the directory this SKILL.md lives in - its bundled prompts are in the `agent/` subfolder next to this file. Every configured role except `explore` needs its agent file installed (explore is opencode's built-in read-only subagent and only gets a model in the JSON); in particular the sidekick DOES need its `agent/sidekick.md` file - its permissions and prompt come entirely from that file:
 
 - `<this-skill-dir>/agent/build.md` -> `~/.config/opencode/agent/build.md`
 - `<this-skill-dir>/agent/plan.md` -> `~/.config/opencode/agent/plan.md`
@@ -137,7 +132,7 @@ Copy the prompt files bundled with this skill into the global agent folder (one 
 - `<this-skill-dir>/agent/reviewer.md` -> `~/.config/opencode/agent/reviewer.md`
 - `<this-skill-dir>/agent/vision.md` -> `~/.config/opencode/agent/vision.md` (only if a vision role was configured)
 
-These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode`, `permission`, and a default `model`; the model in opencode.json (Step 3) takes precedence when present. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
+These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode` and `permission`; the files deliberately ship WITHOUT a `model` key, because markdown frontmatter overrides opencode.json on any key it sets - a model baked into the file would silently override the user's Step 3 choice. Models come only from opencode.json. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
 
 ## Step 4b - Install the optional slash command and audit plugin
 

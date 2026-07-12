@@ -62,7 +62,7 @@ It asks which model and provider you want for each role, writes `~/.config/openc
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
 
-Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the structure is what matters. Keep the `build` agent's `permission` block exactly as shown - it is the mechanical core of Fusion and must not be loosened.
+Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the structure is what matters. The JSON only assigns each role its model - the mechanical core of Fusion (the build agent's `edit: deny` and bash allowlist) lives in the agent files you install below, and must not be loosened.
 
 ```json
 {
@@ -72,11 +72,7 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
     "<your provider blocks here>": {}
   },
   "agent": {
-    "build": {
-      "mode": "primary",
-      "model": "<main-provider>/<main-model-id>",
-      "prompt": "{file:agent/build.md}"
-    },
+    "build": { "model": "<main-provider>/<main-model-id>" },
     "explore": { "model": "<explore-provider>/<explore-model-id>" },
     "sidekick": { "model": "<sidekick-provider>/<sidekick-model-id>" }
   }
@@ -85,7 +81,7 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
 
 The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, `agent/reviewer.md`, and `agent/vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model.
 
-Then install the agent prompts so `{file:agent/build.md}` resolves:
+Then install the agent files. opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition - the frontmatter carries the role's mode and permissions (this is where the edit denial is mechanically enforced), and the body is its prompt:
 
 ```bash
 mkdir -p ~/.config/opencode/agent
@@ -127,7 +123,7 @@ You should see the main agent delegate exploration, receive the findings, make a
 
 All agent models live in one place: `~/.config/opencode/opencode.json` under `agent` - one `model` value per agent (keys and suggested models are in the [table above](#how-it-works)).
 
-Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
+Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. Do not add a `model:` line to the agent `.md` files themselves - frontmatter overrides `opencode.json` on any key it sets, so a model baked in there would silently win over your config. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
 
 ### Adjust the bash allowlist
 
