@@ -340,47 +340,45 @@
       <div class="container">
         <div class="section-head cta-head">
           <h2 id="cta-title" class="section-title reveal">Get started</h2>
-          <p class="section-intro reveal">Install with one command (no clone). Full detail lives in the docs linked below.</p>
+          <p class="section-intro reveal">Install with one command. No clone required.</p>
         </div>
 
-        <div class="install-grid">
-          <article id="get-started-opencode" class="install-card reveal">
-            <header class="install-card-top">
-              <h3 class="install-name">OpenCode</h3>
-            </header>
+        <div id="get-started-opencode" class="install-hero reveal">
+          <p class="install-kicker">OpenCode</p>
 
-            <ol class="install-steps">
-              <li>
-                <span class="install-step-num" aria-hidden="true">1</span>
-                <span class="install-step-text">Install the skill globally (one command, no clone required).</span>
-              </li>
-              <li>
-                <span class="install-step-num" aria-hidden="true">2</span>
-                <span class="install-step-text">Restart OpenCode fully (config loads at startup).</span>
-              </li>
-              <li>
-                <span class="install-step-num" aria-hidden="true">3</span>
-                <span class="install-step-text">Say <strong>set up fusion</strong> — or run <code>/fusion-setup</code>.</span>
-              </li>
-            </ol>
-
-            <div class="command command-in-card">
-              <div class="command-bar">
-                <span class="command-label">Terminal</span>
-                <button class="copy-btn" type="button" data-copy-target="install-cmd-opencode" aria-label="Copy OpenCode install command">
-                  <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
-                  <span class="copy-btn-text">Copy</span>
-                </button>
-              </div>
-              <pre class="command-pre"><code id="install-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
+          <div class="command command-hero">
+            <div class="command-bar">
+              <span class="command-label">One command</span>
+              <button class="copy-btn" type="button" data-copy-target="install-cmd-opencode" aria-label="Copy OpenCode install command">
+                <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+                <span class="copy-btn-text">Copy</span>
+              </button>
             </div>
+            <pre class="command-pre"><code id="install-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
+          </div>
 
-            <p class="install-note">Works on Windows, macOS, and Linux. After setup, ask the main agent to fix lint in a real project and confirm it delegates to the sidekick. Offline fallback: copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> from a clone.</p>
+          <ol class="install-rail" aria-label="Setup steps">
+            <li>
+              <span class="install-step-num" aria-hidden="true">01</span>
+              <span class="install-step-text">Install the skill globally — no clone.</span>
+            </li>
+            <li>
+              <span class="install-step-num" aria-hidden="true">02</span>
+              <span class="install-step-text">Restart OpenCode fully (loads at startup).</span>
+            </li>
+            <li>
+              <span class="install-step-num" aria-hidden="true">03</span>
+              <span class="install-step-text">Say <strong>set up fusion</strong>, or run <code>/fusion-setup</code>.</span>
+            </li>
+          </ol>
+
+          <p class="install-meta">
+            Windows, macOS, and Linux. After setup, ask the main agent to fix lint and confirm it delegates to the sidekick. Offline: copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code>.
             <a class="install-docs" href="docs.html#install-opencode">
               OpenCode install docs
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 3 13"/></svg>
             </a>
-          </article>
+          </p>
         </div>
 
         <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>

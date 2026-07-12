@@ -872,143 +872,41 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 }
 
 /* ---- CTA / install / command block ----------------------------------- */
-/* Card zones: header (tight) → steps (tight group) → terminal (hero)
-   → footer (muted, pinned bottom). Rhythm via margins, not uniform gap. */
+/* Command-as-hero: no card chrome. Command is the single large focal element
+   on the section canvas; steps collapse to a slim horizontal rail; note +
+   docs become one quiet meta line. Hierarchy = type scale + whitespace. */
 .cta .section-head,
-.cta-head { text-align: center; }
-.cta .section-intro { margin-inline: auto; }
-.install-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-lg);
-  margin-top: var(--space-2xl);
-  text-align: left;
-  align-items: stretch;
-  max-width: 36rem;
+.cta-head {
+  text-align: center;
   margin-inline: auto;
 }
-.install-card {
+.cta .section-intro { margin-inline: auto; }
+.cta .section-title { max-width: none; margin-inline: auto; }
+
+/* Centered stack: kicker → command → rail → meta. Same axis as .cta-head. */
+.install-hero {
   display: flex;
   flex-direction: column;
-  /* Outer 24px, body pad 20px, terminal radius 12px → concentric (12+12=24). */
-  padding: 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease),
-              border-color var(--theme-dur) var(--ease),
-              background-color var(--theme-dur) var(--ease);
-}
-.install-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
-}
-.install-card-top {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
+  gap: clamp(1.75rem, 1.2rem + 1.5vw, 2.75rem);
+  max-width: 44rem;
+  margin-inline: auto;
+  margin-top: clamp(2rem, 1.25rem + 2vw, 3.25rem);
+  text-align: center;
 }
-.install-name {
-  font-size: var(--step-1);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--text-high);
-  text-wrap: balance;
-}
-.install-steps {
-  list-style: none;
-  margin: 0 0 var(--space-lg);
-  padding: 0;
-  display: grid;
-  gap: var(--space-sm);
-  color: var(--text-mid);
-  font-size: var(--step-0);
-  line-height: 1.5;
-}
-.install-steps li {
-  display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  gap: var(--space-sm);
-  align-items: start;
-}
-.install-step-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-top: 0.1rem;
+
+.install-kicker {
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-low);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 7px;
   line-height: 1;
 }
-.install-step-text {
-  min-width: 0;
-  text-wrap: pretty;
-}
-.install-steps code {
-  font-family: var(--font-mono);
-  font-size: 0.88em;
-  color: var(--text-high);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  padding: 0.08em 0.35em;
-  border-radius: 5px;
-}
-/* Note + docs form a tight footer. Free space sits above the note so short
-   cards don't leave a hairline floating in empty air. */
-.install-note {
-  margin-top: auto;
-  padding-top: var(--space-md);
-  border-top: 1px solid var(--border);
-  font-size: var(--step--1);
-  color: var(--text-low);
-  line-height: 1.55;
-  text-wrap: pretty;
-}
-.install-note code {
-  font-family: var(--font-mono);
-  font-size: 0.92em;
-  color: var(--text-mid);
-}
-.install-docs {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: var(--space-sm);
-  font-size: var(--step--1);
-  font-weight: 600;
-  color: var(--accent-strong);
-  text-decoration: none;
-  width: fit-content;
-  transition: color var(--theme-dur) var(--ease);
-}
-.install-docs svg {
-  width: 0.85em;
-  height: 0.85em;
-  opacity: 0.7;
-  transition: transform var(--dur-fast) var(--ease),
-              opacity var(--dur-fast) var(--ease);
-}
-.install-docs:hover { text-decoration: underline; }
-.install-docs:hover svg {
-  transform: translate(1px, -1px);
-  opacity: 1;
-}
 
-/* Terminal chrome: bar (label + copy) over code body. */
+/* Hero command: wide, quiet surface — the only visual weight in the section. */
 .command {
   display: flex;
   flex-direction: column;
@@ -1016,24 +914,26 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   padding: 0;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   max-width: 30rem;
+  width: 100%;
   text-align: left;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
-.command-in-card {
-  margin: 0 0 var(--space-md);
+.command-hero {
   max-width: none;
   width: 100%;
+  background: var(--surface);
+  border-color: var(--border-strong);
 }
 .command-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-  padding: 0.45rem 0.55rem 0.45rem 0.85rem;
-  background: var(--surface);
+  padding: 0.55rem 0.65rem 0.55rem 1.1rem;
+  background: transparent;
   border-bottom: 1px solid var(--border);
 }
 .command-label {
@@ -1046,17 +946,18 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 }
 .command-pre {
   margin: 0;
-  padding: var(--space-md) 0.95rem;
+  padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
   overflow-x: auto;
 }
 .command-pre code {
   display: block;
   font-family: var(--font-mono);
-  font-size: var(--step--1);
+  font-size: clamp(0.8125rem, 0.75rem + 0.3vw, 0.9375rem);
   color: var(--text-high);
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.55;
+  line-height: 1.65;
+  letter-spacing: -0.01em;
 }
 /* $ only on the first line of multi-line command blocks. */
 .command-pre code::before {
@@ -1064,34 +965,133 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   color: var(--accent-strong);
   font-weight: 600;
 }
+
+/* Slim horizontal step rail under the command — supporting, not stacked list. */
+.install-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--space-md) var(--space-xl);
+  width: 100%;
+  max-width: 40rem;
+}
+.install-rail li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2xs);
+  flex: 1 1 8rem;
+  min-width: 0;
+  max-width: 12rem;
+  text-align: center;
+}
+.install-step-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  color: var(--text-low);
+  line-height: 1;
+}
+.install-step-text {
+  min-width: 0;
+  font-size: var(--step--1);
+  color: var(--text-mid);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.install-rail code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--text-high);
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* One understated meta line: platform note + offline paths + docs link. */
+.install-meta {
+  margin: 0;
+  max-width: 42rem;
+  font-size: var(--step--1);
+  color: var(--text-low);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.install-meta code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  color: var(--text-mid);
+}
+.install-docs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: 0.35em;
+  white-space: nowrap;
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--accent-strong);
+  text-decoration: none;
+  transition: color var(--theme-dur) var(--ease),
+              opacity var(--dur-fast) var(--ease);
+}
+.install-docs svg {
+  width: 0.8em;
+  height: 0.8em;
+  opacity: 0.65;
+  transition: transform var(--dur-fast) var(--ease),
+              opacity var(--dur-fast) var(--ease);
+}
+.install-docs:hover { opacity: 0.85; }
+.install-docs:hover svg {
+  transform: translate(1px, -1px);
+  opacity: 1;
+}
+.install-docs:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .copy-btn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-3xs);
-  min-height: 2rem;
-  min-width: 2.75rem;
-  padding: 0.35rem 0.75rem;
+  min-height: 1.875rem;
+  min-width: 2.5rem;
+  padding: 0.3rem 0.65rem;
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--text-high);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-pill);
+  color: var(--text-mid);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: transform var(--dur-fast) var(--ease),
               background-color var(--theme-dur) var(--ease),
               border-color var(--theme-dur) var(--ease),
-              color var(--theme-dur) var(--ease),
-              box-shadow var(--theme-dur) var(--ease);
+              color var(--theme-dur) var(--ease);
 }
 .copy-btn:hover {
-  border-color: var(--text-low);
+  color: var(--text-high);
+  border-color: var(--border-strong);
   background: var(--surface-2);
 }
 .copy-btn:active { transform: scale(0.97); }
+.copy-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 .copy-btn.is-copied {
   color: var(--accent-ink);
   background: var(--accent);
@@ -1112,14 +1112,22 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   stroke-dashoffset: 16;
   animation: check-draw var(--dur-fast) var(--ease) forwards;
 }
-.cta-actions { justify-content: center; margin-top: var(--space-xl); }
+.cta-actions { justify-content: center; margin-top: var(--space-2xl); }
+
+/* Stack the rail vertically on very narrow widths so steps stay readable. */
+@media (max-width: 479px) {
+  .install-rail {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+  }
+  .install-rail li {
+    flex: 0 1 auto;
+    max-width: 22rem;
+  }
+}
 
 @media (hover: none) {
-  .install-card:hover {
-    transform: none;
-    box-shadow: var(--shadow-sm);
-    border-color: var(--border);
-  }
   .flow-card:hover,
   .feature-item:hover {
     transform: none;
@@ -1685,7 +1693,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   .btn:active .btn-icon,
   .wordmark:hover .wordmark-mark,
   .copy-btn:active,
-  .install-card:hover,
   .install-docs:hover svg { transform: none !important; }
   /* Check appears instantly with no self-drawing animation. */
   .copy-btn.is-copied .copy-btn-check path {
