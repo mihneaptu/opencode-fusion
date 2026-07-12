@@ -236,6 +236,11 @@
     var next = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
     updateThemeToggleLabel(next);
+    // Keep browser chrome (mobile address bar) in step with the chosen theme,
+    // which may differ from the OS preference the static metas follow.
+    var chrome = next === 'dark' ? '#0d1117' : '#fbfbfd';
+    var metas = document.querySelectorAll('meta[name="theme-color"]');
+    for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', chrome);
     if (opts.syncVideo !== false) syncHeroVideo(next);
   }
 

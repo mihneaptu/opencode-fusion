@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
   <meta name="description" content="opencode Fusion: a main agent that plans and reviews without editing, and a cheaper sidekick that executes. Built for OpenCode.">
   <title>opencode Fusion — main plans, sidekick edits</title>
   <link rel="alternate" type="text/markdown" title="LLM-friendly docs" href="llms.txt">
@@ -351,38 +353,38 @@
       <div class="container">
         <div class="section-head cta-head">
           <h2 id="cta-title" class="section-title reveal">Get started</h2>
-          <p class="section-intro reveal">Install with one command. No clone required.</p>
+          <p class="section-intro reveal">One command, one restart, one prompt. No clone required.</p>
         </div>
 
         <div id="get-started-opencode" class="install-hero reveal">
-          <div class="command command-hero">
-            <div class="command-bar">
-              <span class="command-label">One command</span>
-              <button class="copy-btn" type="button" data-copy-target="install-cmd-opencode" aria-label="Copy OpenCode install command">
+          <div class="term">
+            <div class="term-bar">
+              <span class="term-dots" aria-hidden="true"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span></span>
+              <span class="term-title">Your terminal</span>
+              <button class="copy-btn" type="button" data-copy-target="install-cmd-opencode" aria-label="Copy the install command">
                 <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
                 <span class="copy-btn-text">Copy</span>
               </button>
             </div>
-            <pre class="command-pre"><code id="install-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
+            <ol class="term-body" aria-label="Setup steps">
+              <li class="term-block">
+                <span class="term-comment"># 1 &middot; install the skill &mdash; global, no clone</span>
+                <span class="term-line"><span class="term-prompt" aria-hidden="true">$</span><code id="install-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></span>
+              </li>
+              <li class="term-block">
+                <span class="term-comment"># 2 &middot; restart OpenCode &mdash; skills load at startup</span>
+                <span class="term-line"><span class="term-prompt" aria-hidden="true">$</span><code>opencode</code></span>
+              </li>
+              <li class="term-block">
+                <span class="term-comment"># 3 &middot; inside OpenCode &mdash; or run /fusion-setup</span>
+                <span class="term-line"><span class="term-prompt term-prompt-oc" aria-hidden="true">&gt;</span><code>set up fusion</code><span class="term-caret" aria-hidden="true"></span></span>
+              </li>
+            </ol>
+            <p class="term-ok"><span class="term-ok-mark" aria-hidden="true">&#10003;</span> fusion configured &mdash; main plans, sidekick edits</p>
           </div>
 
-          <ol class="install-rail" aria-label="Setup steps">
-            <li>
-              <span class="install-step-num" aria-hidden="true">01</span>
-              <span class="install-step-text">Install the skill globally — no clone.</span>
-            </li>
-            <li>
-              <span class="install-step-num" aria-hidden="true">02</span>
-              <span class="install-step-text">Restart OpenCode fully (loads at startup).</span>
-            </li>
-            <li>
-              <span class="install-step-num" aria-hidden="true">03</span>
-              <span class="install-step-text">Say <strong>set up fusion</strong>, or run <code>/fusion-setup</code>.</span>
-            </li>
-          </ol>
-
           <p class="install-meta">
-            Windows, macOS, and Linux. After setup, ask the main agent to fix lint and confirm it delegates to the sidekick.
+            Works on Windows, macOS, and Linux. First test: ask the main agent to fix lint, and watch it delegate to the sidekick.
             <br>
             Offline: copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code>.
             <a class="install-docs" href="docs.html#install-opencode">

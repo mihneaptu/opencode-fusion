@@ -154,6 +154,7 @@ html.theme-ready .flow-card,
 html.theme-ready .cost-panel,
 html.theme-ready .hero-diagram,
 html.theme-ready .command,
+html.theme-ready .term,
 html.theme-ready .site-footer,
 html.theme-ready .feature-icon,
 html.theme-ready .bar-track,
@@ -328,7 +329,7 @@ strong { color: var(--text-high); font-weight: 600; }
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
-.btn-primary:active { transform: scale(0.98); box-shadow: none; }
+.btn-primary:active { transform: scale(0.96); box-shadow: none; }
 
 .btn-ghost {
   background-color: var(--surface);
@@ -336,7 +337,7 @@ strong { color: var(--text-high); font-weight: 600; }
   border-color: var(--border-strong);
 }
 .btn-ghost:hover { border-color: var(--text-low); background-color: var(--surface-2); }
-.btn-ghost:active { transform: scale(0.98); }
+.btn-ghost:active { transform: scale(0.96); }
 
 /* ---- Pills / badges (semantic role markers) --------------------------- */
 .pill {
@@ -405,11 +406,12 @@ strong { color: var(--text-high); font-weight: 600; }
   box-shadow: var(--shadow-md);
 }
 
-/* Theme toggle (sun / moon). Icon shows the mode you switch *to*. */
+/* Theme toggle (sun / moon). Icon shows the mode you switch *to*.
+   Both icons stay in the DOM, stacked in one grid cell, and cross-fade
+   with scale + blur instead of an abrupt display swap. */
 .theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-grid;
+  place-items: center;
   width: 44px;
   height: 44px;
   flex-shrink: 0;
@@ -428,15 +430,30 @@ strong { color: var(--text-high); font-weight: 600; }
   border-color: var(--text-low);
   background: var(--surface-2);
 }
-.theme-toggle:active { transform: scale(0.97); }
+.theme-toggle:active { transform: scale(0.96); }
 .theme-toggle svg {
+  grid-area: 1 / 1;
   width: 1.15rem;
   height: 1.15rem;
+  transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+              transform 200ms cubic-bezier(0.2, 0, 0, 1),
+              filter 200ms cubic-bezier(0.2, 0, 0, 1);
 }
-.theme-toggle .icon-sun { display: none; }
-.theme-toggle .icon-moon { display: block; }
-html[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
-html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+.theme-toggle .icon-sun {
+  opacity: 0;
+  transform: scale(0.25);
+  filter: blur(4px);
+}
+html[data-theme="dark"] .theme-toggle .icon-sun {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+html[data-theme="dark"] .theme-toggle .icon-moon {
+  opacity: 0;
+  transform: scale(0.25);
+  filter: blur(4px);
+}
 
 .wordmark {
   display: inline-flex;
@@ -755,7 +772,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   transition: transform var(--dur-fast) var(--ease),
               box-shadow var(--dur-fast) var(--ease);
 }
-.flow-card:hover { transform: translateY(-3px) scale(1.008); box-shadow: var(--shadow-md); }
+.flow-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .flow-card-main { background: var(--accent-soft); }
 .flow-card-side { background: var(--secondary-soft); }
 .flow-num {
@@ -799,7 +816,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
               border-color var(--theme-dur) var(--ease),
               color var(--theme-dur) var(--ease);
 }
-.feature-item:hover { transform: translateY(-3px) scale(1.008); box-shadow: var(--shadow-md); }
+.feature-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .feature-item-lead {
   background: var(--surface);
   border: 1px solid var(--accent-line);
@@ -874,6 +891,14 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 }
 .bar-baseline { background: var(--border-strong); }
 .bar-fusion { background: var(--accent); }
+/* The bars draw once the panel reveals: baseline first, then Fusion stops
+   short - the size of the gap is the message. One-shot, scroll-gated. */
+.js .cost-panel.reveal .bar-fill { width: 0; }
+.js .cost-panel.reveal.is-visible .bar-fill {
+  width: var(--pct);
+  transition: width 850ms var(--ease) 150ms;
+}
+.js .cost-panel.reveal.is-visible .bar-fusion { transition-delay: 400ms; }
 .cost-caption {
   margin-top: var(--space-xl);
   padding-top: var(--space-lg);
@@ -884,10 +909,12 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   line-height: 1.55;
 }
 
-/* ---- CTA / install / command block ----------------------------------- */
-/* Command-as-hero: no card chrome. Command is the single large focal element
-   on the section canvas; steps collapse to a slim horizontal rail; note +
-   docs become one quiet meta line. Hierarchy = type scale + whitespace. */
+/* ---- CTA / install / terminal block ----------------------------------- */
+/* Session-as-steps: the three setup steps play out inside one terminal
+   window as a real transcript. Prompt color encodes environment (blue $ =
+   your shell, amber > = inside OpenCode - the flow diagram's role hues).
+   Note + docs stay one quiet meta line below. */
+.cta { overflow: hidden; } /* clips the ambient glow bleed on small screens */
 .cta .section-head,
 .cta-head {
   text-align: center;
@@ -897,8 +924,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 .cta .section-intro { margin-inline: auto; }
 .cta .section-title { max-width: none; margin-inline: auto; }
 
-/* Centered stack: command → rail → meta. Same axis as .cta-head. */
+/* Centered stack: terminal → meta. Same axis as .cta-head. */
 .install-hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -907,6 +935,19 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   margin-inline: auto;
   margin-top: clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
   text-align: center;
+}
+/* Ambient echo of the hero's blue + amber glow behind the terminal, so the
+   page closes on the same light it opened with. Static; sits under content. */
+.install-hero::before {
+  content: "";
+  position: absolute;
+  inset: -14% -16%;
+  z-index: -1;
+  background:
+    radial-gradient(42% 48% at 20% 12%, var(--accent-soft) 0%, transparent 70%),
+    radial-gradient(38% 44% at 82% 88%, var(--secondary-soft) 0%, transparent 70%);
+  filter: blur(44px);
+  pointer-events: none;
 }
 
 /* Hero command: wide, quiet surface — the only visual weight in the section. */
@@ -923,12 +964,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   text-align: left;
   overflow: hidden;
   box-shadow: none;
-}
-.command-hero {
-  max-width: none;
-  width: 100%;
-  background: var(--surface);
-  border-color: var(--border-strong);
 }
 .command-bar {
   display: flex;
@@ -971,53 +1006,156 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   font-weight: 600;
 }
 
-/* Slim horizontal step rail under the command — supporting, not stacked list. */
-.install-rail {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: var(--space-md) var(--space-xl);
+/* Terminal window: fixed-dark in both themes - terminals are dark, and the
+   deep surface gives the closing CTA the focal weight the section carries.
+   All inner color flows from --term-* so print/theme tweaks stay one-line. */
+.term {
+  --term-bg: #0f141b;
+  --term-bar: rgba(240, 246, 252, 0.03);
+  --term-border: rgba(240, 246, 252, 0.14);
+  --term-text: #e6edf3;
+  --term-muted: #8b949e;
+  --term-faint: rgba(240, 246, 252, 0.38);
+  --term-shell: #58a6ff;
+  --term-oc: #d29922;
+  --term-pad-x: clamp(1rem, 0.85rem + 0.6vw, 1.4rem);
+  position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 40rem;
+  text-align: left;
+  background: var(--term-bg);
+  border: 1px solid var(--term-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
 }
-.install-rail li {
+/* On the dark theme, lift the window off the near-black canvas instead. */
+html[data-theme="dark"] .term {
+  --term-bg: #161b22;
+  --term-border: #30363d;
+}
+.term-bar {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-2xs);
-  flex: 1 1 8rem;
-  min-width: 0;
-  max-width: 12rem;
-  text-align: center;
+  gap: var(--space-sm);
+  padding: 0.55rem 0.65rem 0.55rem 1rem;
+  background: var(--term-bar);
+  border-bottom: 1px solid var(--term-border);
 }
-.install-step-num {
-  display: block;
+.term-dots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+.term-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: rgba(240, 246, 252, 0.14);
+}
+.term-title {
+  margin-right: auto;
   font-family: var(--font-mono);
   font-size: 0.625rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--text-low);
+  color: var(--term-muted);
   line-height: 1;
 }
-.install-step-text {
-  min-width: 0;
-  font-size: var(--step--1);
-  color: var(--text-mid);
-  line-height: 1.45;
-  text-wrap: pretty;
+/* Copy control re-tinted for the fixed-dark chrome (tokens assume page bg). */
+.term .copy-btn {
+  color: var(--term-muted);
+  border-color: rgba(240, 246, 252, 0.16);
 }
-.install-rail code {
+.term .copy-btn:hover {
+  color: var(--term-text);
+  border-color: rgba(240, 246, 252, 0.32);
+  background: rgba(240, 246, 252, 0.06);
+}
+.term .copy-btn:focus-visible { outline-color: #58a6ff; }
+.term .copy-btn.is-copied {
+  color: #ffffff;
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+/* The session transcript. One ordered list = the three real steps, numbered
+   inside the comments where a sequence belongs. Long install line scrolls
+   sideways rather than wrapping mid-flag. */
+.term-body {
+  list-style: none;
+  margin: 0;
+  padding: clamp(1.1rem, 0.9rem + 0.8vw, 1.5rem) var(--term-pad-x) 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.95rem, 0.8rem + 0.5vw, 1.2rem);
+  overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 0.9em;
-  color: var(--text-high);
-  background: transparent;
-  border: none;
-  padding: 0;
+  font-size: clamp(0.78125rem, 0.73rem + 0.26vw, 0.875rem);
+  line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240, 246, 252, 0.22) transparent;
+}
+.term-body::-webkit-scrollbar { height: 6px; }
+.term-body::-webkit-scrollbar-thumb {
+  background: rgba(240, 246, 252, 0.22);
+  border-radius: 3px;
+}
+.term-body::-webkit-scrollbar-track { background: transparent; }
+.term-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.term-comment {
+  color: var(--term-faint);
+  white-space: pre;
+}
+.term-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65ch;
+  white-space: pre;
+}
+.term-line code {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--term-text);
+  letter-spacing: -0.01em;
+}
+.term-prompt {
+  font-weight: 600;
+  color: var(--term-shell);
+}
+.term-prompt-oc { color: var(--term-oc); }
+/* Page-level ::selection assumes the page background; re-tint for the
+   fixed-dark surface so selected command text stays readable in light mode. */
+.term ::selection {
+  background: rgba(56, 139, 253, 0.35);
+  color: #e6edf3;
+}
+.term-caret {
+  align-self: center;
+  width: 0.55ch;
+  height: 1.05em;
+  margin-left: 0.2ch;
+  background: var(--term-faint);
+  animation: caret-blink 1.2s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+/* Session payoff line: the product thesis, as terminal output. */
+.term-ok {
+  margin: 0;
+  padding: 0.35rem var(--term-pad-x) clamp(1.1rem, 0.9rem + 0.8vw, 1.5rem);
+  font-family: var(--font-mono);
+  font-size: clamp(0.78125rem, 0.73rem + 0.26vw, 0.875rem);
+  line-height: 1.6;
+  color: var(--term-muted);
+}
+.term-ok-mark {
+  color: var(--term-shell);
+  font-weight: 600;
 }
 
 /* One understated meta line: platform note + offline paths + docs link. */
@@ -1066,6 +1204,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 }
 
 .copy-btn {
+  position: relative;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -1092,7 +1231,15 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   border-color: var(--border-strong);
   background: var(--surface-2);
 }
-.copy-btn:active { transform: scale(0.97); }
+.copy-btn:active { transform: scale(0.96); }
+/* Visible control is ~30px tall; a quiet halo extends the hit area to 42px.
+   Nothing else clickable sits within 6px of it in either command bar. */
+.copy-btn::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+}
 .copy-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -1119,25 +1266,19 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 }
 .cta-actions { justify-content: center; margin-top: var(--space-2xl); }
 
-/* Stack the rail vertically on very narrow widths so steps stay readable. */
-@media (max-width: 479px) {
-  .install-rail {
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-md);
-  }
-  .install-rail li {
-    flex: 0 1 auto;
-    max-width: 22rem;
-  }
-}
-
 @media (hover: none) {
   .flow-card:hover,
   .feature-item:hover {
     transform: none;
     box-shadow: none;
   }
+  /* Tap-triggered sticky hovers should not leave things floated or nudged. */
+  .btn-primary:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .btn:hover .btn-icon,
+  .wordmark:hover .wordmark-mark { transform: none; }
 }
 
 /* ---- Footer ----------------------------------------------------------- */
@@ -1556,6 +1697,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   opacity: 1;
   transform: none;
   animation: reveal-rise var(--dur) var(--ease) both;
+  /* Release the pre-promotion hint; the running animation keeps its own
+     layer, and ~20 permanently promoted layers cost memory on mobile. */
+  will-change: auto;
 }
 
 /* Staggered cascade: children of a revealing group enter one after another.
@@ -1727,4 +1871,18 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   .nav-toggle,
   .copy-btn { display: none !important; }
   .site-header { position: static; }
+  /* Ink-friendly terminal: retint via its own tokens, drop glow and caret. */
+  .term {
+    --term-bg: #ffffff;
+    --term-bar: transparent;
+    --term-border: #999999;
+    --term-text: #000000;
+    --term-muted: #444444;
+    --term-faint: #666666;
+    --term-shell: #000000;
+    --term-oc: #000000;
+    box-shadow: none;
+  }
+  .install-hero::before,
+  .term-caret { display: none !important; }
 }
