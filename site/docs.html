@@ -229,6 +229,7 @@
           <ul class="docs-list">
             <li>Main delegates via <code>task</code>; sidekick edits; main runs the project’s own lint or test command (for example <code>npm run lint</code>) itself to verify.</li>
             <li>Main must not edit files directly — edits and freeform shell are denied at the OpenCode permission layer.</li>
+            <li>An occasional struck-through command with a permission error is expected — bash is deny-by-default, and the agent recovers by reading the file or delegating. A denied command is the guardrail working, not the setup failing.</li>
           </ul>
         </section>
 
@@ -263,7 +264,7 @@
             </div>
             <div class="docs-faq-item">
               <dt>Bash command blocked unexpectedly</dt>
-              <dd>Allowlist matches whole commands. Chaining or wrapping breaks the match. Run each allowed command as its own call.</dd>
+              <dd>Denials of non-allowlisted commands are expected and self-recovering. If an <em>allowlisted</em> command is blocked: the allowlist matches whole commands, so chaining or wrapping breaks the match. Run each allowed command as its own call.</dd>
             </div>
           </dl>
         </section>

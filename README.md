@@ -117,6 +117,8 @@ fix the lint errors in this project
 
 You should see the main agent delegate exploration, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself before reporting back.
 
+Along the way you may see the occasional command struck through with a permission error — for example the agent trying `git ls-files`. That is not a bug. The main and plan agents run bash deny-by-default, so anything outside their short allowlist is mechanically blocked, and the agent recovers on its own by reading the file or delegating the search. A denied command is the guardrail working, not the setup failing.
+
 ## Customize
 
 ### Swap models
@@ -167,7 +169,9 @@ The model id may be wrong or changed. Confirm the exact `provider-id/model-id` a
 
 ### A bash command gets blocked unexpectedly
 
-The allowlist matches whole commands against fixed patterns. Chaining with `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
+First check whether the block is actually expected: commands outside the allowlist (searches like `git ls-files`, file writes, `git checkout`) are *meant* to be denied, and the agent recovers by reading or delegating — see [Verify it works](#verify-it-works).
+
+If an *allowlisted* command gets blocked, the usual cause is chaining: the allowlist matches whole commands against fixed patterns, so `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
 
 </details>
 
