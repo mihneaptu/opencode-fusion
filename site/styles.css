@@ -20,6 +20,7 @@
   --accent-ink: #ffffff;
   --accent-soft: rgba(0, 102, 204, 0.08);
   --accent-line: rgba(0, 102, 204, 0.22);
+  --selection: rgba(0, 102, 204, 0.18);
 
   /* Secondary semantic hue (warm amber) - "edits" role. */
   --secondary: #9a5b00;
@@ -110,6 +111,7 @@ html[data-theme="dark"] {
   --accent-ink: #ffffff;
   --accent-soft: rgba(56, 139, 253, 0.15);
   --accent-line: rgba(56, 139, 253, 0.4);
+  --selection: rgba(56, 139, 253, 0.32);
 
   --secondary: #d29922;
   --secondary-soft: rgba(210, 153, 34, 0.15);
@@ -209,6 +211,11 @@ svg { display: block; }
 
 strong { color: var(--text-high); font-weight: 600; }
 
+::selection {
+  background: var(--selection);
+  color: var(--text-high);
+}
+
 /* ---- Focus + accessibility helpers ------------------------------------ */
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -302,7 +309,7 @@ strong { color: var(--text-high); font-weight: 600; }
               background-color var(--theme-dur) var(--ease),
               border-color var(--theme-dur) var(--ease),
               color var(--theme-dur) var(--ease),
-              box-shadow var(--theme-dur) var(--ease);
+              box-shadow var(--dur-fast) var(--ease);
 }
 .btn-sm { padding: 0.5rem 1rem; font-size: var(--step--1); }
 
@@ -316,8 +323,12 @@ strong { color: var(--text-high); font-weight: 600; }
   background-color: var(--accent);
   color: var(--accent-ink);
 }
-.btn-primary:hover { background-color: var(--accent-hover); }
-.btn-primary:active { transform: scale(0.98); }
+.btn-primary:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.btn-primary:active { transform: scale(0.98); box-shadow: none; }
 
 .btn-ghost {
   background-color: var(--surface);
@@ -374,10 +385,12 @@ strong { color: var(--text-high); font-weight: 600; }
   background-color: var(--header-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid var(--border);
   border-radius: var(--header-radius);
   box-shadow: var(--shadow-sm);
   pointer-events: auto;
   transition: background-color var(--dur-fast) var(--ease),
+              border-color var(--dur-fast) var(--ease),
               box-shadow var(--dur-fast) var(--ease),
               min-height var(--dur-fast) var(--ease),
               padding-block var(--dur-fast) var(--ease);
@@ -879,31 +892,21 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 .cta-head {
   text-align: center;
   margin-inline: auto;
+  margin-bottom: clamp(1.75rem, 1rem + 2vw, 2.75rem);
 }
 .cta .section-intro { margin-inline: auto; }
 .cta .section-title { max-width: none; margin-inline: auto; }
 
-/* Centered stack: kicker → command → rail → meta. Same axis as .cta-head. */
+/* Centered stack: command → rail → meta. Same axis as .cta-head. */
 .install-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(1.75rem, 1.2rem + 1.5vw, 2.75rem);
-  max-width: 44rem;
+  gap: clamp(1.5rem, 1rem + 1.25vw, 2.25rem);
+  max-width: 47rem;
   margin-inline: auto;
-  margin-top: clamp(2rem, 1.25rem + 2vw, 3.25rem);
+  margin-top: clamp(1rem, 0.5rem + 1.5vw, 1.75rem);
   text-align: center;
-}
-
-.install-kicker {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-low);
-  line-height: 1;
 }
 
 /* Hero command: wide, quiet surface — the only visual weight in the section. */
@@ -949,13 +952,15 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
   overflow-x: auto;
 }
+/* Commands never wrap mid-flag: keep one line and let the block scroll
+   sideways on narrow screens instead. */
 .command-pre code {
   display: block;
+  width: max-content;
   font-family: var(--font-mono);
   font-size: clamp(0.8125rem, 0.75rem + 0.3vw, 0.9375rem);
   color: var(--text-high);
-  white-space: pre-wrap;
-  word-break: break-word;
+  white-space: pre;
   line-height: 1.65;
   letter-spacing: -0.01em;
 }
@@ -1691,6 +1696,8 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   /* Neutralize hover/state motion refinements. */
   .btn:hover .btn-icon,
   .btn:active .btn-icon,
+  .btn-primary:hover,
+  .btn-primary:active,
   .wordmark:hover .wordmark-mark,
   .copy-btn:active,
   .install-docs:hover svg { transform: none !important; }
@@ -1703,4 +1710,21 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   .hero-video {
     display: none !important;
   }
+}
+
+/* =========================================================================
+   Print: reveals are scroll-gated, so force everything visible; drop the
+   ambient video and interactive chrome that make no sense on paper.
+   ========================================================================= */
+@media print {
+  .js .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .hero-video,
+  .theme-toggle,
+  .nav-toggle,
+  .copy-btn { display: none !important; }
+  .site-header { position: static; }
 }
