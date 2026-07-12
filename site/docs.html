@@ -202,7 +202,7 @@
 
         <section id="verify" class="docs-section">
           <h2>Verify</h2>
-          <p>Open a project with lint errors (this repo’s <code>test-playground/</code> works) and ask:</p>
+          <p>Open any project that has some lint errors and ask:</p>
 
           <div class="command">
             <div class="command-bar">
@@ -216,20 +216,9 @@
           </div>
 
           <ul class="docs-list">
-            <li>Main delegates via <code>task</code>; sidekick edits; main runs <code>npm run lint</code> itself.</li>
+            <li>Main delegates via <code>task</code>; sidekick edits; main runs the project’s own lint or test command (for example <code>npm run lint</code>) itself to verify.</li>
             <li>Main must not edit files directly — edits and freeform shell are denied at the OpenCode permission layer.</li>
           </ul>
-
-          <div class="command">
-            <div class="command-bar">
-              <span class="command-label">Terminal</span>
-              <button class="copy-btn" type="button" data-copy-target="docs-cmd-lint" aria-label="Copy lint fixture command">
-                <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
-                <span class="copy-btn-text">Copy</span>
-              </button>
-            </div>
-            <pre class="command-pre"><code id="docs-cmd-lint">npm --prefix test-playground run lint</code></pre>
-          </div>
         </section>
 
         <section id="customize" class="docs-section">
@@ -293,7 +282,7 @@
     <span class="visually-hidden" role="status" aria-live="polite" id="copy-status"></span>
   </main>
 
-  <footer class="site-footer" id="footer" aria-labelledby="footer-title">
+  <footer class="site-footer" id="footer" aria-label="Site footer">
     <div class="container footer-shell">
       <div class="footer-main">
         <div class="footer-brand">
@@ -307,7 +296,7 @@
             </span>
             <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
           </a>
-          <p id="footer-title" class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
+          <p class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
         </div>
 
         <nav class="footer-nav" aria-label="Footer">

@@ -16,6 +16,7 @@
   /* Accent: restrained blue for key moments. */
   --accent: #0066cc;
   --accent-strong: #0058b0;
+  --accent-hover: #0058b0;
   --accent-ink: #ffffff;
   --accent-soft: rgba(0, 102, 204, 0.08);
   --accent-line: rgba(0, 102, 204, 0.22);
@@ -49,7 +50,6 @@
   --step-0: 1.0625rem;    /* 17px - body */
   --step-1: clamp(1.1875rem, 1.12rem + 0.34vw, 1.375rem);   /* 19 -> 22 lead */
   --step-2: clamp(1.4375rem, 1.3rem + 0.7vw, 1.75rem);      /* 23 -> 28 */
-  --step-3: clamp(1.75rem, 1.5rem + 1.25vw, 2.25rem);       /* 28 -> 36 */
   --step-4: clamp(2.125rem, 1.65rem + 2.4vw, 3.25rem);      /* 34 -> 52 section titles */
   --step-5: clamp(2.5rem, 1.4rem + 5.2vw, 5rem);            /* 40 -> 80 hero */
 
@@ -62,7 +62,6 @@
   --space-lg: 1.5rem;
   --space-xl: 2.5rem;
   --space-2xl: 4rem;
-  --space-3xl: 6rem;
 
   /* Primitives */
   --container: 1080px;
@@ -107,6 +106,7 @@ html[data-theme="dark"] {
 
   --accent: #1f6feb;
   --accent-strong: #58a6ff;
+  --accent-hover: #1a5fca;
   --accent-ink: #ffffff;
   --accent-soft: rgba(56, 139, 253, 0.15);
   --accent-line: rgba(56, 139, 253, 0.4);
@@ -265,7 +265,7 @@ strong { color: var(--text-high); font-weight: 600; }
 
 .section-title {
   font-size: var(--step-4);
-  max-width: 18ch;
+  max-width: 26ch;
 }
 
 .section-intro {
@@ -316,7 +316,7 @@ strong { color: var(--text-high); font-weight: 600; }
   background-color: var(--accent);
   color: var(--accent-ink);
 }
-.btn-primary:hover { background-color: var(--accent-strong); }
+.btn-primary:hover { background-color: var(--accent-hover); }
 .btn-primary:active { transform: scale(0.98); }
 
 .btn-ghost {
@@ -415,7 +415,7 @@ strong { color: var(--text-high); font-weight: 600; }
   border-color: var(--text-low);
   background: var(--surface-2);
 }
-.theme-toggle:active { transform: scale(0.96); }
+.theme-toggle:active { transform: scale(0.97); }
 .theme-toggle svg {
   width: 1.15rem;
   height: 1.15rem;
@@ -509,7 +509,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
      .hero-media fills the viewport from the top edge (behind the floating
      capsule). Compensating padding keeps content clearing the bar. */
   margin-top: calc(-1 * var(--header-band));
-  /* Slightly less top pad now that the kicker is gone — title leads. */
+  /* Comfortable top pad below the sticky header — title leads. */
   padding-top: calc(var(--header-band) + clamp(2.75rem, 1.5rem + 5vw, 5.5rem));
   padding-bottom: var(--section-pad);
   text-align: center;
@@ -627,7 +627,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   margin-inline: auto;
   font-size: var(--step-2);
   color: var(--text-high);
-  max-width: 28ch;
+  max-width: 34ch;
   line-height: 1.3;
   font-weight: 400;
   letter-spacing: -0.015em;
@@ -871,28 +871,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
   line-height: 1.55;
 }
 
-/* ---- Install card badges (Available pill) ---------------------------- */
-.harness-badge {
-  flex-shrink: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 0.28rem 0.55rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--border);
-}
-.harness-badge-live {
-  color: #1a7f37;
-  background: rgba(26, 127, 55, 0.08);
-  border-color: rgba(26, 127, 55, 0.22);
-}
-html[data-theme="dark"] .harness-badge-live {
-  color: #3fb950;
-  background: rgba(63, 185, 80, 0.12);
-  border-color: rgba(63, 185, 80, 0.28);
-}
-
 /* ---- CTA / install / command block ----------------------------------- */
 /* Card zones: header (tight) → steps (tight group) → terminal (hero)
    → footer (muted, pinned bottom). Rhythm via margins, not uniform gap. */
@@ -1113,7 +1091,7 @@ html[data-theme="dark"] .harness-badge-live {
   border-color: var(--text-low);
   background: var(--surface-2);
 }
-.copy-btn:active { transform: scale(0.96); }
+.copy-btn:active { transform: scale(0.97); }
 .copy-btn.is-copied {
   color: var(--accent-ink);
   background: var(--accent);
@@ -1136,14 +1114,16 @@ html[data-theme="dark"] .harness-badge-live {
 }
 .cta-actions { justify-content: center; margin-top: var(--space-xl); }
 
-@media (max-width: 860px) {
-  .install-grid { grid-template-columns: 1fr; }
-}
 @media (hover: none) {
   .install-card:hover {
     transform: none;
     box-shadow: var(--shadow-sm);
     border-color: var(--border);
+  }
+  .flow-card:hover,
+  .feature-item:hover {
+    transform: none;
+    box-shadow: none;
   }
 }
 
@@ -1441,14 +1421,6 @@ html[data-theme="dark"] .harness-badge-live {
   margin-top: var(--space-sm) !important;
   font-size: var(--step--1) !important;
   color: var(--text-low) !important;
-}
-.docs-ext {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin-top: var(--space-md);
-  font-size: var(--step--1);
-  font-weight: 600;
 }
 .docs-table-wrap {
   margin: var(--space-lg) 0;

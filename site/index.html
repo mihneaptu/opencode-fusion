@@ -118,9 +118,10 @@
     </section>
 
     <!-- Flow diagram: below the hero fold so it reveals on scroll, not on first paint. -->
-    <section class="flow-band" aria-hidden="true">
+    <section class="flow-band" aria-label="How the flow works">
+      <p class="visually-hidden">The main agent writes a spec, the sidekick applies the edits and returns a diff, then the main agent runs tests and reviews the diff.</p>
       <div class="container">
-        <figure class="hero-diagram reveal reveal-late">
+        <figure class="hero-diagram reveal reveal-late" aria-hidden="true">
           <div class="diag-flow">
             <div class="diag-node diag-node-main">
               <span class="diag-role">Main agent</span>
@@ -346,7 +347,6 @@
           <article id="get-started-opencode" class="install-card reveal">
             <header class="install-card-top">
               <h3 class="install-name">OpenCode</h3>
-              <span class="harness-badge harness-badge-live">Available</span>
             </header>
 
             <ol class="install-steps">
@@ -398,7 +398,7 @@
     </section>
   </main>
 
-  <footer class="site-footer" id="footer" aria-labelledby="footer-title">
+  <footer class="site-footer" id="footer" aria-label="Site footer">
     <div class="container footer-shell">
       <div class="footer-main">
         <div class="footer-brand">
@@ -412,7 +412,7 @@
             </span>
             <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
           </a>
-          <p id="footer-title" class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
+          <p class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
         </div>
 
         <nav class="footer-nav" aria-label="Footer">

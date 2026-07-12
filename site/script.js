@@ -29,11 +29,12 @@
       });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
 
-    /* Late reveals (e.g. flow diagram) wait until the user has scrolled;
-       also use a stricter root so they don't fire while still in the first paint. */
+    /* Late reveals (e.g. flow diagram) use a stricter root margin so they
+       enter a touch later than default reveals, without a scroll gate that
+       could strand them invisible when already on screen at load. */
     var lateObserver = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
-        if (entry.isIntersecting && window.scrollY > 24) {
+        if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
           lateObserver.unobserve(entry.target);
         }
@@ -70,20 +71,24 @@
         });
       });
 
+      var originalAriaLabel = btn.getAttribute('aria-label');
       function showCopied(ok) {
         var original = 'Copy';
         if (ok) {
           label.textContent = 'Copied';
           btn.classList.add('is-copied');
+          btn.setAttribute('aria-label', 'Copied to clipboard');
           if (status) status.textContent = 'Command copied to clipboard.';
         } else {
           label.textContent = 'Copy failed';
+          btn.setAttribute('aria-label', 'Copy failed');
           if (status) status.textContent = 'Copy failed. Select the command and copy it manually.';
         }
         if (revertTimer) clearTimeout(revertTimer);
         revertTimer = setTimeout(function () {
           label.textContent = original;
           btn.classList.remove('is-copied');
+          if (originalAriaLabel) btn.setAttribute('aria-label', originalAriaLabel);
           if (status) status.textContent = '';
         }, 2000);
       }
@@ -121,6 +126,10 @@
     var nav = document.getElementById('nav-menu');
     if (!toggle || !nav) return;
 
+    function isOpen() {
+      return toggle.getAttribute('aria-expanded') === 'true';
+    }
+
     function setOpen(open) {
       toggle.setAttribute('aria-expanded', String(open));
       toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
@@ -128,8 +137,7 @@
     }
 
     toggle.addEventListener('click', function () {
-      var open = toggle.getAttribute('aria-expanded') === 'true';
-      setOpen(!open);
+      setOpen(!isOpen());
     });
 
     // Close the menu after following an in-page link.
@@ -138,9 +146,17 @@
       if (link) setOpen(false);
     });
 
+    // Close when a pointer press lands outside the open menu and toggle,
+    // so focus/pointer users aren't left with an overlay over the page.
+    document.addEventListener('pointerdown', function (e) {
+      if (!isOpen()) return;
+      if (nav.contains(e.target) || toggle.contains(e.target)) return;
+      setOpen(false);
+    });
+
     // Close on Escape for keyboard users.
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+      if (e.key === 'Escape' && isOpen()) {
         setOpen(false);
         toggle.focus();
       }
@@ -163,7 +179,15 @@
       e.preventDefault();
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Move focus for keyboard users without an extra visible jump.
-      target.setAttribute('tabindex', '-1');
+      // Only add a temporary tabindex when the target isn't already focusable,
+      // and strip it on blur so it doesn't linger in the tab order.
+      if (!target.hasAttribute('tabindex')) {
+        target.setAttribute('tabindex', '-1');
+        target.addEventListener('blur', function onBlur() {
+          target.removeAttribute('tabindex');
+          target.removeEventListener('blur', onBlur);
+        });
+      }
       target.focus({ preventScroll: true });
     });
   }
