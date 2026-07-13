@@ -1,6 +1,6 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion two-agent workflow - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion two-agent workflow - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup
@@ -17,7 +17,7 @@ Fusion splits work across agents with asymmetric permissions:
 - `explore` (subagent): a cheap model used for read-only codebase exploration.
 - `research` (subagent): read-only external research - web search and docs. No edit access.
 - `design` (subagent): frontend/UI implementation. Loads design skills, edits files, runs the dev/build tooling.
-- `reviewer` (subagent): audits a diff before commit (correctness, scope, security). Read-only plus lint/test; no edit access.
+- `reviewer` (subagent): critiques a plan before implementation and audits a diff before commit (correctness, scope, security). Read-only plus lint/test; no edit access.
 - `vision` (subagent): reads images/screenshots the main model cannot see and reports them as text. Only needed when the main model lacks image input.
 
 Think of the repo as a catalog of roles: the core (build/plan/sidekick/explore) is required, and the rest are optional pieces you install only if your workflow needs them. The research/design/reviewer/vision specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
@@ -33,7 +33,7 @@ Ask the user which model to use for each role. Do not assume; let them choose th
 3. Explore model (cheap; can be the same as sidekick).
 4. Research model (read-only external research; a solid general model).
 5. Design model (frontend/UI work; pick whichever model does design best in your opinion).
-6. Reviewer model (audits diffs; often a strong model, and deliberately can differ from the main model).
+6. Reviewer model (critiques plans and audits diffs; often a strong model, and deliberately can differ from the main model).
 7. Vision model (reads images) - ONLY ask this if the user's main/build model does not support image input. Most frontier models read images directly, so skip this question unless the main model cannot. The vision model must be one that accepts image input.
 
 Roles 4-7 are optional a-la-carte pieces. If the user only wants the core build/plan/sidekick/explore roles, skip them - but offer them, since choosing a different model per specialist is a key reason to use Fusion. The `plan` agent activates from its installed `agent/plan.md` (Step 4), which overrides opencode's built-in plan agent - it reuses the main/build model and needs no `agent.plan` block in opencode.json and no separate model question. Do not offer `vision` when the main model already reads images.
@@ -139,18 +139,30 @@ These carry the full operating instructions and permissions for each role. Each 
 
 ## Step 4b - Install the optional slash command and audit plugin
 
-The skill bundles two optional extras next to it. Install them if the user wants them:
+The skill bundles three optional extras next to it. Install them if the user wants them:
 
 - Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
+- Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files). It only reports - it changes nothing.
 - Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/task tool calls) via opencode's logger for auditing. It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
 
 ## Step 5 - Validate and finish
 
 1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
-2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the command or plugin, confirm `~/.config/opencode/commands/fusion-setup.md` and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
+2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the commands or plugin, confirm `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
 3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from (`echo $VAR` in their shell, `echo %VAR%` in cmd). An unset variable becomes an empty string and shows up later as auth errors.
 4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later
 
 To change a model, edit `agent.<role>.model` (and add a `provider` block if the new model uses a new provider) in `~/.config/opencode/opencode.json`, then restart opencode. No scripts or presets are involved - this skill and a plain JSON edit are the whole surface.
+
+## Undoing Fusion
+
+To remove Fusion entirely:
+
+1. Restore the pre-Fusion config: copy the `opencode.json.backup.<timestamp>` created in Step 3 back over `~/.config/opencode/opencode.json`. If no backup exists (Fusion was the first config), delete the Fusion `agent` entries and provider blocks from the file, or delete the file.
+2. Delete the installed agent files under `~/.config/opencode/agent/`: `build.md`, `plan.md`, `sidekick.md`, plus any installed specialists (`research.md`, `design.md`, `reviewer.md`, `vision.md`).
+3. Remove the optional extras if installed: `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and `~/.config/opencode/plugins/fusion-audit.js`.
+4. Tell the user to restart opencode - it falls back to its built-in build/plan agents.
+
+Confirm with the user before deleting anything, and never delete the backups themselves.

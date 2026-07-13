@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A minimal, working implementation of the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**.
+A minimal, working multi-model team for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**. Inspired by the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) from Cognition.
 
 The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at roughly **35–41% lower cost** on their FrontierCode benchmark.
 
@@ -40,7 +40,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `explore` | Fast read-only exploration | `agent.explore.model` | core | `gemini-3.5-flash` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional | `glm-5.2` |
-| `reviewer` | Audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
+| `reviewer` | Critique a plan before implementation; audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
 | `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `gemini-3.5-flash` |
 
 Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.6-sol`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
@@ -59,7 +59,7 @@ If the main agent "won't delegate," the result is visible inaction - nothing on 
 
 **Advised - the prompt layer.** Spec precision, diff-review rigor, cost discipline, parallelization, and skill usage are instructions in the agent prompts. opencode loads skills at the model's discretion - nothing can force an agent to read or apply one - which is exactly why no guarantee here depends on them; the skill in this repo is just the installer. If the model slacks at this layer, the cost is quality or wasted tokens, never an unauthorized edit.
 
-**Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-command-and-audit-plugin) logs the delegation tree, and opencode's session DB (`~/.local/share/opencode/opencode.db`) records every agent's actual tool calls. "Did it really delegate?" is checkable ground truth, not vibes.
+**Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-audit-plugin) logs the delegation tree, and opencode's session DB (`~/.local/share/opencode/opencode.db`) records every agent's actual tool calls. "Did it really delegate?" is checkable ground truth, not vibes.
 
 ## Setup
 
@@ -79,7 +79,7 @@ Or copy the `fusion-setup` folder from this repo's `.opencode/skills/` into `~/.
 set up fusion
 ```
 
-It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)).
+It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)). Setup backs up any existing config before overwriting, and "undo fusion" walks the restore path.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
@@ -206,6 +206,8 @@ Different layer. Skill libraries like [superpowers](https://github.com/obra/supe
 <details>
 <summary>Common issues</summary>
 
+If you installed the optional command, run `/fusion-status` first - it checks the usual suspects in one shot: live enforcement in the running session, the config on disk, and the installed agent files.
+
 ### The main agent edits files directly
 
 The config was not loaded. Fully quit and restart opencode - it loads config at startup, not mid-session. Then confirm `edit: deny` is set for the build agent (in `agent/build.md` or the `opencode.json` build permission block).
@@ -230,14 +232,15 @@ The search tools run ripgrep with standard ignore rules, so delegated searches s
 
 </details>
 
-## Slash command and audit plugin
+## Slash commands and audit plugin
 
 <details>
-<summary>Two optional extras</summary>
+<summary>Three optional extras</summary>
 
-Two optional extras ship with the skill:
+Three optional extras ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`) - a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
+- **`/fusion-status` command** (`commands/fusion-status.md`) - a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, and the installed agent files. It only reports - it changes nothing. Install it to `~/.config/opencode/commands/`.
 - **`fusion-audit` plugin** (`plugins/fusion-audit.js`) - logs the delegation tree (subagent spawns and edit/write/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer - the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
 
 </details>
@@ -254,10 +257,11 @@ Two optional extras ship with the skill:
 | `agent/sidekick.md` | Sidekick prompt (model set in `opencode.json`) |
 | `agent/research.md` | Optional research specialist: read-only, web + docs |
 | `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
-| `agent/reviewer.md` | Optional reviewer specialist: audits diffs, read-only plus lint/test |
+| `agent/reviewer.md` | Optional reviewer specialist: critiques plans and audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
 | `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, command, and plugin |
 | `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
+| `.opencode/commands/fusion-status.md` | Optional `/fusion-status` health check: verifies the setup is installed, loaded, and enforcing |
 | `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
@@ -275,7 +279,7 @@ This project is not affiliated with, endorsed by, or built by the opencode team.
 
 ## Credit
 
-Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com). The sidekick pattern and the principle that "the main agent should take minimal actions" come directly from their work.
+Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com): the "sidekick" framing, the principle that "the main agent should take minimal actions", and the benchmark numbers quoted in this README are theirs. The underlying split has older roots - [Aider's architect/editor mode](https://aider.chat/2024/09/26/architect.html) paired an expensive reasoning model with a cheaper editing model back in 2024. The permission-layer enforcement, the cross-vendor review setup, and the specialist team are this repo's own.
 
 ## License
 
