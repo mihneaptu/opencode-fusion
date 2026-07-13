@@ -5,6 +5,7 @@
   "description": "A main agent that can't edit files - it plans and reviews while a cheaper sidekick does the work. Cognition's Devin Fusion pattern for opencode.",
   "license": "MIT",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "check-install": "node scripts/check-install.js"
   }
 }
