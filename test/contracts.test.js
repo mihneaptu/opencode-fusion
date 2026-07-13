@@ -251,6 +251,25 @@ describe('agent frontmatter contracts', () => {
     );
   });
 
+  test('design has edit allow and the destructive-command denylist', () => {
+    assertPermissionValue('design', 'edit', 'allow');
+    const bash = requireBlock(agents.design.frontmatter, 'bash', 'design');
+    assert.equal(bash.scalar, null, 'contract violated: design bash must be a rule map, not a bare allow');
+    const forcePushDenies = bash.children.filter(
+      (c) =>
+        c.value === 'deny' &&
+        (/git push --force/i.test(c.key) || /git push -f/i.test(c.key))
+    );
+    assert.ok(
+      forcePushDenies.length >= 1,
+      'contract violated: design bash must deny force-push'
+    );
+    const envDenies = bash.children.filter(
+      (c) => c.value === 'deny' && /\.env/i.test(c.key)
+    );
+    assert.ok(envDenies.length >= 1, 'contract violated: design bash must deny .env reads');
+  });
+
   test('research and reviewer have edit: deny', () => {
     for (const role of ['research', 'reviewer']) {
       assertPermissionValue(role, 'edit', 'deny');
