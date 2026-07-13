@@ -27,6 +27,14 @@
   --secondary-soft: rgba(154, 91, 0, 0.08);
   --secondary-line: rgba(154, 91, 0, 0.22);
 
+  /* Success green (diagram "verified" end state) + lane hatch texture. */
+  --ok: #1a7f37;
+  --hatch: rgba(29, 29, 31, 0.04);
+
+  /* Logo-only orange: more vivid than --secondary, which is tuned for text
+     contrast and reads brown at mark sizes. */
+  --mark-orange: #d97706;
+
   --text-high: #1d1d1f;
   --text-mid: #4a4a4f;
   --text-low: #6e6e73;
@@ -117,6 +125,11 @@ html[data-theme="dark"] {
   --secondary-soft: rgba(210, 153, 34, 0.15);
   --secondary-line: rgba(210, 153, 34, 0.4);
 
+  --ok: #3fb950;
+  --hatch: rgba(240, 246, 252, 0.05);
+
+  --mark-orange: #f0883e;
+
   --text-high: #e6edf3;
   --text-mid: #9198a1;
   --text-low: #6e7681;
@@ -150,10 +163,12 @@ html[data-theme="dark"] {
    transform) so hover/press feedback is not clobbered after first paint. */
 html.theme-ready body,
 html.theme-ready .pill,
-html.theme-ready .flow-card,
 html.theme-ready .cost-panel,
 html.theme-ready .hero-diagram,
+html.theme-ready .swim-panel,
+html.theme-ready .swim-box,
 html.theme-ready .command,
+html.theme-ready .hero-command,
 html.theme-ready .term,
 html.theme-ready .site-footer,
 html.theme-ready .feature-icon,
@@ -183,6 +198,11 @@ html {
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--header-band) + var(--space-lg)); /* sticky header height for anchor jumps */
   -webkit-text-size-adjust: 100%;
+  /* Slim, theme-tinted scrollbars: the Windows default rail glares against
+     the dark canvas. scrollbar-color inherits, so inner scrollers (code,
+     tables, terminal) pick up the same quiet tint. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 body {
@@ -207,6 +227,12 @@ h1, h2, h3 {
 p { text-wrap: pretty; }
 
 a { color: inherit; text-decoration: none; }
+
+/* Faster taps, no grey flash on mobile; :active states supply press feedback. */
+a, button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
 svg { display: block; }
 
@@ -372,17 +398,23 @@ strong { color: var(--text-high); font-weight: 600; }
   pointer-events: none;
 }
 
-/* The floating capsule. Also carries .container (max-width + centering), so it
-   stays <= --container wide and centered. Frosted glass + hairline ring + soft
-   shadow, all lifted off the old full-width bar onto this island. */
+/* Two floating capsules on a transparent rail: brand pill on the left, nav
+   cluster pill on the right. .header-inner still carries .container
+   (max-width + centering); the frosted glass lives on each .header-pill. */
 .header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  min-height: 56px;
-  padding-block: var(--space-xs);
-  padding-inline: var(--space-lg);
+  /* Full-bleed rail: the pills sit near the viewport edges rather than the
+     centered content column, with comfortable breathing room. */
+  max-width: none;
+  padding-inline: clamp(0.75rem, 0.4rem + 1.2vw, 1.75rem);
+}
+.header-pill {
+  min-height: 46px;
+  padding-block: var(--space-2xs);
+  padding-inline: var(--space-sm);
   background-color: var(--header-bg);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -396,11 +428,21 @@ strong { color: var(--text-high); font-weight: 600; }
               min-height var(--dur-fast) var(--ease),
               padding-block var(--dur-fast) var(--ease);
 }
+.header-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
 
 /* Subtle elevation + a hair of contraction once the page scrolls under the
-   island. JS toggles .is-scrolled on .site-header at scrollY > 8. */
-.site-header.is-scrolled .header-inner {
-  min-height: 52px;
+   islands. JS toggles .is-scrolled on .site-header at scrollY > 8. */
+.site-header.is-scrolled .header-pill {
+  min-height: 42px;
   padding-block: var(--space-2xs);
   background-color: var(--header-bg-scrolled);
   box-shadow: var(--shadow-md);
@@ -412,12 +454,12 @@ strong { color: var(--text-high); font-weight: 600; }
 .theme-toggle {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   padding: 0;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--text-high);
   cursor: pointer;
@@ -470,14 +512,19 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   transition: transform var(--dur-fast) var(--ease);
 }
 .wordmark:hover .wordmark-mark { transform: scale(1.06); }
-.wordmark-mark svg { width: 1.35rem; height: 1.35rem; }
-.wordmark-text { font-size: var(--step-1); }
-.wordmark-accent { color: var(--accent); margin-left: 0.15em; }
+.wordmark-mark svg { width: 1.2rem; height: 1.2rem; }
+.wordmark-text { font-size: var(--step-0); }
+/* "Fusion" (header and hero): flat accent blue. */
+.wordmark-accent,
+.hero-fusion {
+  color: var(--accent);
+}
+.wordmark-accent { margin-left: 0.15em; }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 .nav-list {
   display: flex;
@@ -488,7 +535,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 }
 .nav-list a {
   color: var(--text-mid);
-  font-size: var(--step-0);
+  font-size: 0.9375rem;
   font-weight: 450;
   padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
@@ -502,14 +549,66 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 
 .nav-toggle {
   display: none;
-  width: 44px; height: 44px;
+  width: 38px; height: 38px;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
+
+/* External-page nav link ("Docs"): minimal north-east arrow that nudges
+   up-right on hover. */
+a.nav-ext {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  /* A touch of extra right padding so the hover arrow sits inside the pill
+     with breathing room instead of touching its edge. */
+  padding-right: calc(var(--space-sm) + 5px);
+}
+/* The arrow lives inside the link's right padding (negative margin cancels
+   its width + gap), so "Docs" spaces like every other nav item. */
+.nav-ext-arrow {
+  margin-right: calc(-9px - 0.25em);
+  width: 9px;
+  height: 9px;
+  color: var(--text-low);
+  opacity: 0;
+  transform: translate(-1px, 1px);
+  transition: transform var(--dur-fast) var(--ease),
+              opacity var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease);
+}
+.nav-ext:hover .nav-ext-arrow {
+  opacity: 1;
+  transform: translate(1px, -1px);
+  color: var(--text-high);
+}
+
+/* GitHub star pill: inverted chip (dark on light, light on dark) with the
+   octocat mark, live star count, and a gold star. */
+.gh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--radius-pill);
+  background: var(--text-high);
+  color: var(--bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  transition: transform var(--dur-fast) var(--ease),
+              box-shadow var(--dur-fast) var(--ease),
+              background-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease);
+}
+.gh-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.gh-btn-mark { width: 16px; height: 16px; flex-shrink: 0; }
+.gh-btn-count { font-variant-numeric: tabular-nums; }
+.gh-btn-star { width: 12px; height: 12px; flex-shrink: 0; margin-left: 2px; color: #e3b341; }
 .nav-toggle-bars,
 .nav-toggle-bars::before,
 .nav-toggle-bars::after {
@@ -649,7 +748,33 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   width: 100%;
   margin: 0;
   text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.12em 0.28em;
 }
+/* Official opencode pixel wordmark, swapped per theme. Height is in em so
+   it scales with the clamped hero type next to it. */
+.hero-wordmark-stack {
+  display: inline-grid;
+  place-items: center;
+  /* The flex baseline is the image's bottom edge, but the SVG canvas keeps a
+     16.43/115 descender zone below the glyph baseline (for the "p"). Dropping
+     the box by that zone (as a share of the 0.82em image) puts the wordmark's
+     true baseline exactly on "Fusion"'s; the descender dips below, as text would. */
+  position: relative;
+  top: 0.1171em;
+}
+.hero-wordmark {
+  grid-area: 1 / 1;
+  display: block;
+  height: 0.82em; /* keeps the full lockup inside .hero-inner's 40rem column */
+  width: auto;
+}
+.hero-wordmark-dark { display: none; }
+html[data-theme="dark"] .hero-wordmark-light { display: none; }
+html[data-theme="dark"] .hero-wordmark-dark { display: block; }
 
 /* Lead: primary message under the title. */
 .hero-tagline {
@@ -675,6 +800,52 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 }
 .hero-subline strong { color: var(--accent-strong); font-weight: 600; }
 
+/* Hero install command: one-line pill mirroring the Get started terminal. */
+.hero-command {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  margin-top: clamp(1.5rem, 1rem + 1.5vw, 2.25rem);
+  padding: var(--space-2xs) var(--space-2xs) var(--space-2xs) var(--space-md);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+.hero-command-prompt {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-low);
+}
+.hero-command code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-block: var(--space-2xs);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-high);
+  /* Scrolls by wheel/drag; the Copy button is the primary interaction. */
+  scrollbar-width: none;
+  /* When the command overflows (narrow screens), the right edge fades as a
+     scroll hint instead of hard-clipping mid-word. Trailing padding matches
+     the fade width so the last flag stays fully opaque when the command fits
+     (the pill is max-content on wide screens, so there is no other slack). */
+  padding-right: 1.5rem;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+}
+.hero-command code::-webkit-scrollbar { display: none; }
+/* Wide screens: let the pill size to the full command and spill past the
+   40rem hero measure symmetrically (the hero column centers it), so the
+   whole command reads in one piece where there is room. */
+@media (min-width: 900px) {
+  .hero-command { width: max-content; max-width: 46rem; }
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -690,64 +861,183 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   padding-block: clamp(1rem, 0.5rem + 2vw, 2rem) clamp(2rem, 1rem + 3vw, 3.5rem);
   margin-top: calc(-1 * clamp(1rem, 0.5rem + 2vw, 2rem));
 }
-/* Hero diagram (decorative main/sidekick loop) */
+/* Hero diagram: the Fusion loop as a two-lane swimlane (main agent left,
+   sidekick right), boxes ping-ponging between lanes via crossing arrows. */
 .hero-diagram {
   margin: 0 auto;
-  max-width: 900px;
+  max-width: 760px;
   padding: clamp(1.25rem, 1rem + 1.5vw, 2rem);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
-.diag-flow {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: var(--space-sm);
+/* One shared grid so rows align across both lanes: col 1 = main agent,
+   col 2 = arrow gutter, col 3 = sidekick. Rows: 1 titles, 2-3 explore
+   round-trip, 4 down-arrow, 5-6 spec/diff round-trip, 7-8 fix round-trip. */
+.swim {
+  --swim-pad: clamp(0.875rem, 0.7rem + 0.9vw, 1.25rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(2.75rem, 1.2rem + 6vw, 5.5rem) minmax(0, 1fr);
+  grid-template-rows: repeat(8, auto);
+  row-gap: var(--space-sm);
+  padding: var(--swim-pad);
 }
-.diag-node {
-  flex: 1 1 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2xs);
-  padding: var(--space-md);
-  text-align: left;
-  background: var(--surface-2);
+/* Lane backdrops: hatched panels behind each column. Negative margins equal
+   to the grid's own padding inflate them around the boxes, and halfway into
+   the gutter, so crossing arrows visibly pierce the lane borders. */
+.swim-panel {
+  grid-row: 1 / -1;
+  margin: calc(-1 * var(--swim-pad));
+  background-color: var(--surface-2);
+  background-image: repeating-linear-gradient(135deg, var(--hatch) 0, var(--hatch) 1px, transparent 1px, transparent 8px);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
 }
-.diag-node-main { border-color: var(--accent-line); background: var(--accent-soft); }
-.diag-node-side { border-color: var(--secondary-line); background: var(--secondary-soft); }
-.diag-role {
+.swim-panel-main { grid-column: 1; }
+.swim-panel-side { grid-column: 3; }
+.swim-title {
+  grid-row: 1;
+  text-align: center;
   font-weight: 600;
-  color: var(--text-high);
   font-size: var(--step-0);
   letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text-high);
 }
-.diag-desc {
-  font-size: var(--step--1);
-  color: var(--text-mid);
+.swim-title-main { grid-column: 1; }
+.swim-title-side { grid-column: 3; }
+.swim-box {
+  display: grid;
+  place-content: center;
+  gap: 0.15em;
+  min-height: 2.75rem;
+  padding: var(--space-xs) var(--space-sm);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text-high);
+  font-size: clamp(0.8125rem, 0.72rem + 0.5vw, 0.9375rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
   line-height: 1.35;
 }
-.diag-node .pill { margin-top: var(--space-2xs); background: var(--surface); }
-.diag-link {
-  flex: 0 0 auto;
+.swim-l { grid-column: 1; }
+.swim-s { grid-column: 3; }
+/* Entry and exit states, tinted like the reference: blue in, green out. */
+.swim-box-start { border-color: var(--accent); }
+.swim-box-done { border-color: var(--ok); }
+/* Sidekick boxes span the two main-agent rows they converse with, so both
+   the outgoing and returning arrow land on their edge. */
+.swim-ce { grid-row: 2 / 4; }
+.swim-wc { grid-row: 5 / 7; }
+.swim-fb { grid-row: 7 / 9; }
+.swim .r2 { grid-row: 2; }
+.swim .r3 { grid-row: 3; }
+.swim .r5 { grid-row: 5; }
+.swim .r6 { grid-row: 6; }
+.swim .r7 { grid-row: 7; }
+.swim .r8 { grid-row: 8; }
+/* Gutter arrows: a 1px line spanning the full gutter (touching both boxes)
+   with a chevron at the pointing end; built from pseudos so they stretch. */
+.swim-arrow {
+  position: relative;
+  grid-column: 2;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-3xs);
   color: var(--text-low);
-  padding-inline: var(--space-2xs);
+  min-width: 0;
 }
-.diag-link-arrow { width: 40px; height: 12px; }
-.diag-link-label {
+.swim-arrow::before {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: currentColor;
+}
+.swim-arrow::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-left: -8px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+/* Left-pointing variant: chevron flips to the start edge (no scaleX mirror,
+   so the optional label text stays readable). */
+.swim-arrow-l::after {
+  order: -1;
+  margin-left: 0;
+  margin-right: -8px;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 1.5px solid currentColor;
+  border-left: 1.5px solid currentColor;
+}
+.swim-arrow i {
+  position: absolute;
+  left: 50%;
+  bottom: calc(50% + 4px);
+  transform: translateX(-50%);
   font-family: var(--font-mono);
+  font-style: normal;
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+/* Small in-lane connector between "File snippets" and "Plan". */
+.swim-arrow-down {
+  grid-column: 1;
+  grid-row: 4;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 18px;
+  color: var(--text-low);
+}
+.swim-arrow-down::before {
+  content: "";
+  flex: 1 1 auto;
+  width: 1px;
+  background: currentColor;
+}
+.swim-arrow-down::after {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: -8px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
+/* Diagram choreography: once the figure reveals, the loop plays through a
+   single time in process order. Each box fades in with a small rise; each
+   arrow fades in sliding a few pixels in the direction it points. --fi
+   (flow index, set inline in the markup) sequences the steps. Hidden state
+   is gated on .js so the diagram is fully visible without JavaScript. */
+@keyframes swim-step-in {
+  from { opacity: 0; transform: translate(var(--slide-x, 0), var(--slide-y, 4px)); }
+  to   { opacity: 1; transform: none; }
+}
+.js .hero-diagram .swim-box,
+.js .hero-diagram .swim-arrow,
+.js .hero-diagram .swim-arrow-down { opacity: 0; }
+.js .hero-diagram .swim-arrow { --slide-x: -6px; --slide-y: 0; }
+.js .hero-diagram .swim-arrow-l { --slide-x: 6px; }
+.js .hero-diagram .swim-arrow-down { --slide-x: 0; --slide-y: -6px; }
+.js .hero-diagram.is-visible .swim-box,
+.js .hero-diagram.is-visible .swim-arrow,
+.js .hero-diagram.is-visible .swim-arrow-down {
+  animation: swim-step-in 0.45s var(--ease) both;
+  /* 0.35s lets the figure's own reveal-rise settle before the walk starts;
+     16 steps at 0.11s keeps the full pass under ~2.5s. */
+  animation-delay: calc(0.35s + var(--fi, 0) * 0.11s);
 }
 
 /* ---- How it works: connected flow ------------------------------------- */
@@ -759,6 +1049,12 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   counter-reset: step;
 }
 .flow-step { position: relative; }
+/* Step cards: quiet neutral surfaces. Role identity comes from the legend
+   dot + label and the capability pill rather than a full-card tint (soft
+   tints read muddy in dark mode). A large ghost numeral in the corner
+   carries the 01-04 sequence. Owns its transition list (theme colors +
+   transform) like .feature-item, so the hover lift keeps easing after the
+   theme-ready crossfade kicks in. */
 .flow-card {
   position: relative;
   height: 100%;
@@ -766,33 +1062,58 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   flex-direction: column;
   gap: var(--space-xs);
   padding: var(--space-lg);
-  background: var(--surface-2);
-  border: 1px solid transparent;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--dur-fast) var(--ease),
-              box-shadow var(--dur-fast) var(--ease);
+              box-shadow var(--dur-fast) var(--ease),
+              background-color var(--theme-dur) var(--ease),
+              border-color var(--theme-dur) var(--ease),
+              color var(--theme-dur) var(--ease);
 }
-.flow-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.flow-card-main { background: var(--accent-soft); }
-.flow-card-side { background: var(--secondary-soft); }
+.flow-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
 .flow-num {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
   font-family: var(--font-mono);
-  font-size: var(--step--1);
+  font-size: var(--step-2);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: var(--text-low);
+  opacity: 0.4;
 }
 .flow-role {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 600;
 }
+/* Legend dot: ties the card to its lane color without tinting the card. */
+.flow-role::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
 .flow-role-neutral { color: var(--text-low); }
 .flow-role-main { color: var(--accent-strong); }
 .flow-role-side { color: var(--secondary); }
 .flow-title { font-size: var(--step-1); margin-top: var(--space-3xs); }
 .flow-desc { font-size: var(--step-0); color: var(--text-mid); line-height: 1.5; }
-.flow-card .pill { margin-top: auto; background: var(--surface); }
+/* Pills keep their own soft tint; it reads cleanly on the neutral card. */
+.flow-card .pill { margin-top: auto; }
 
 /* ---- Features: asymmetric bento --------------------------------------- */
 .feature-grid {
@@ -860,9 +1181,9 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 }
 .bars {
   display: grid;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
-.bar-row { display: grid; gap: var(--space-sm); }
+.bar-row { display: grid; gap: var(--space-xs); }
 .bar-label {
   display: flex;
   justify-content: space-between;
@@ -870,6 +1191,19 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   gap: var(--space-md);
 }
 .bar-name { color: var(--text-high); font-weight: 500; }
+/* The savings delta is the card's actual message; the chip makes it scannable. */
+.bar-chip {
+  display: inline-block;
+  margin-left: 0.4em;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  padding: 0.08rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
 .bar-value {
   font-family: var(--font-mono);
   color: var(--text-low);
@@ -878,7 +1212,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 }
 .bar-value-accent { color: var(--accent-strong); }
 .bar-track {
-  height: 12px;
+  height: 14px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -905,7 +1239,6 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   border-top: 1px solid var(--border);
   font-size: var(--step--1);
   color: var(--text-low);
-  max-width: 58ch;
   line-height: 1.55;
 }
 
@@ -986,6 +1319,7 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   margin: 0;
   padding: clamp(1.25rem, 1rem + 1vw, 1.75rem) clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 /* Commands never wrap mid-flag: keep one line and let the block scroll
    sideways on narrow screens instead. */
@@ -1579,6 +1913,7 @@ html[data-theme="dark"] .term {
 .docs-table-wrap {
   margin: var(--space-lg) 0;
   overflow-x: auto;
+  scrollbar-width: thin;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
@@ -1725,6 +2060,11 @@ html[data-theme="dark"] .term {
 
 /* Tablet / small laptop */
 @media (min-width: 620px) {
+  /* Tablet: pair the step cards 2x2 instead of one long stack; the 4-across
+     row with connectors takes over at 900px. */
+  .flow {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .feature-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1756,30 +2096,30 @@ html[data-theme="dark"] .term {
   .feature-item { grid-column: span 2; }
   .feature-item-lead { grid-column: span 4; }
   .feature-item-wide { grid-column: span 6; flex-direction: row; align-items: flex-start; gap: var(--space-lg); }
+  .feature-item-lead .feature-desc,
   .feature-item-wide .feature-desc { max-width: 60ch; }
 }
 
-/* Mobile nav: collapse below 820px */
-@media (max-width: 819px) {
+/* Mobile nav: collapse below 900px - the full desktop nav needs ~900px
+   before "How it works" stops wrapping inside the cluster pill. */
+@media (max-width: 899px) {
   .nav-toggle { display: inline-flex; }
-  .header-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    margin-left: auto;
-  }
   .nav {
+    /* The cluster pill's backdrop-filter makes it the containing block, so
+       the dropdown hangs right-aligned under the right pill by design. */
     position: absolute;
     top: calc(100% + var(--space-2xs));
-    left: 0;
+    left: auto;
     right: 0;
+    width: min(20rem, 86vw);
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg) var(--space-lg);
-    background: var(--header-bg-scrolled);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    /* Solid surface, no blur: the cluster pill's own backdrop-filter makes
+       this a nested backdrop root, so blur here cannot sample the page
+       behind - a translucent panel lets the hero bleed through un-blurred. */
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--header-radius);
     box-shadow: var(--shadow-md);
@@ -1793,27 +2133,19 @@ html[data-theme="dark"] .term {
     gap: 0;
   }
   .nav-list li { border-bottom: 1px solid var(--border); }
-  .nav-list a { display: block; padding: var(--space-sm); border-radius: 0; }
+  .nav-list a { display: flex; align-items: center; gap: 0.2em; padding: var(--space-sm); border-radius: 0; }
   .nav-list a:hover { background-color: transparent; }
   .nav .btn { margin-top: var(--space-sm); justify-content: center; }
-  /* Anchor the absolute dropdown to the floating capsule. */
+  .nav .gh-btn { margin-top: var(--space-2xs); justify-content: center; }
+  /* Anchor the absolute dropdown to the full header rail (both pills). */
   .header-inner { position: relative; }
 }
 
-/* Desktop: theme toggle sits after the nav (wordmark | nav | toggle). */
-@media (min-width: 820px) {
-  .header-actions { display: contents; }
-  .wordmark { order: 0; }
-  .nav { order: 1; }
-  .theme-toggle { order: 2; }
-}
-
-/* Stack the hero diagram vertically on narrow screens */
+/* Tighten the swimlane diagram on narrow screens (it stays two-lane -
+   the side-by-side conversation is the point). */
 @media (max-width: 619px) {
-  .diag-flow { flex-direction: column; }
-  .diag-node { flex: 1 1 auto; }
-  .diag-link { flex-direction: row; gap: var(--space-xs); }
-  .diag-link-arrow { transform: rotate(90deg); }
+  .swim-box { min-height: 2.5rem; padding: var(--space-2xs) var(--space-xs); }
+  .swim-arrow i { display: none; }
 }
 
 /* =========================================================================
@@ -1837,6 +2169,13 @@ html[data-theme="dark"] .term {
   }
   /* Neutralize the stagger cascade and entrance keyframe. */
   .js .reveal.is-visible { animation: none !important; }
+  /* Diagram choreography off: show every box and arrow immediately. */
+  .js .hero-diagram .swim-box,
+  .js .hero-diagram .swim-arrow,
+  .js .hero-diagram .swim-arrow-down {
+    opacity: 1;
+    animation: none !important;
+  }
   /* Neutralize hover/state motion refinements. */
   .btn:hover .btn-icon,
   .btn:active .btn-icon,
@@ -1864,6 +2203,12 @@ html[data-theme="dark"] .term {
   .js .reveal {
     opacity: 1 !important;
     transform: none !important;
+    animation: none !important;
+  }
+  .js .hero-diagram .swim-box,
+  .js .hero-diagram .swim-arrow,
+  .js .hero-diagram .swim-arrow-down {
+    opacity: 1 !important;
     animation: none !important;
   }
   .hero-video,

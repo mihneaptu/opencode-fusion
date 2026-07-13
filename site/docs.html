@@ -20,6 +20,40 @@
   <meta property="og:image:height" content="720">
   <meta property="og:image:alt" content="Abstract hero art: a blue and an amber gradient glow on a light background">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- Warm up the only cross-origin call (star count fetch in script.js). -->
+  <link rel="preconnect" href="https://api.github.com" crossorigin>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What happens when the sidekick can’t satisfy the spec?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The main agent escalates on a ladder: feedback naming the specific miss, then — after two misses — it authors the exact patch itself (file, line range, verbatim code) and hands it over to apply. A verbatim patch needs no judgment, so the loop cannot deadlock; you lose the cost saving on that one task only. If even the dictated patch fails verification, the plan is wrong, not the sidekick — the main agent revises the plan."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What if agents ignore the prompts or never load the skills?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You lose quality, not guarantees. Delegation is not a behavior the main agent chooses: its edit and search tools are removed from its tool schema, so handing work to the sidekick is the only path to changing a file. The fusion-audit plugin and OpenCode’s session DB record what every agent actually did."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is this different from superpowers or other orchestration?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Different layer. Skill libraries like superpowers teach agents how to work — process knowledge the model can still ignore. Fusion configures what agents can do at the permission layer, and adds per-role model routing for cost with cross-vendor review as a side effect. No framework, no code — just configuration on a normal session. The two compose: superpowers supports OpenCode, so its skills can run inside a Fusion setup."
+        }
+      }
+    ]
+  }
+  </script>
   <script>
     (function () {
       try {
@@ -43,48 +77,63 @@
 
   <header class="site-header" id="top">
     <div class="container header-inner">
-      <a class="wordmark" href="index.html" aria-label="opencode Fusion home">
+      <a class="wordmark header-pill" href="index.html" aria-label="opencode Fusion home">
         <span class="wordmark-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8" cy="8" r="3.2"/>
-            <circle cx="16" cy="16" r="3.2"/>
-            <path d="M10.3 10.3 13.7 13.7"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <defs>
+              <!-- Main-agent blue blends into sidekick amber across the link. -->
+              <linearGradient id="mark-fuse-h" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0.35" style="stop-color: var(--accent)"/>
+                <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+              </linearGradient>
+            </defs>
+            <g stroke="url(#mark-fuse-h)">
+              <circle cx="8" cy="8" r="3.2"/>
+              <circle cx="16" cy="16" r="3.2"/>
+              <path d="M10.3 10.3 13.7 13.7"/>
+            </g>
           </svg>
         </span>
         <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
       </a>
 
-      <div class="header-actions">
-        <button
-          class="theme-toggle"
-          type="button"
-          id="theme-toggle"
-          aria-label="Toggle color theme"
-          title="Toggle color theme"
-        >
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-          </svg>
-        </button>
+      <div class="header-cluster header-pill">
+        <nav class="nav" id="nav-menu" aria-label="Primary">
+          <ul class="nav-list">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="#install-opencode">OpenCode</a></li>
+            <li><a href="#customize">Customize</a></li>
+          </ul>
+          <a class="btn btn-primary btn-sm" href="index.html#get-started">Get started</a>
+          <a class="gh-btn" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer" aria-label="Star opencode-fusion on GitHub">
+            <svg class="gh-btn-mark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span class="gh-btn-count" data-gh-stars>GitHub</span>
+            <svg class="gh-btn-star" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.1l2.05 4.15 4.58.67-3.31 3.23.78 4.56L8 11.56l-4.1 2.15.78-4.56-3.31-3.23 4.58-.67L8 1.1Z"/></svg>
+          </a>
+        </nav>
 
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
-          <span class="nav-toggle-bars" aria-hidden="true"></span>
-        </button>
+        <div class="header-actions">
+          <button
+            class="theme-toggle"
+            type="button"
+            id="theme-toggle"
+            aria-label="Toggle color theme"
+            title="Toggle color theme"
+          >
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+          </button>
+
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+            <span class="nav-toggle-bars" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
-
-      <nav class="nav" id="nav-menu" aria-label="Primary">
-        <ul class="nav-list">
-          <li><a href="index.html">Home</a></li>
-          <li><a href="#install-opencode">OpenCode</a></li>
-          <li><a href="#customize">Customize</a></li>
-          <li><a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-        </ul>
-        <a class="btn btn-primary btn-sm" href="index.html#get-started">Get started</a>
-      </nav>
     </div>
   </header>
 
@@ -337,10 +386,18 @@
         <div class="footer-brand">
           <a class="wordmark footer-wordmark" href="index.html" aria-label="opencode Fusion home">
             <span class="wordmark-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="8" cy="8" r="3.2"/>
-                <circle cx="16" cy="16" r="3.2"/>
-                <path d="M10.3 10.3 13.7 13.7"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                  <linearGradient id="mark-fuse-f" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                    <stop offset="0.35" style="stop-color: var(--accent)"/>
+                    <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#mark-fuse-f)">
+                  <circle cx="8" cy="8" r="3.2"/>
+                  <circle cx="16" cy="16" r="3.2"/>
+                  <path d="M10.3 10.3 13.7 13.7"/>
+                </g>
               </svg>
             </span>
             <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>

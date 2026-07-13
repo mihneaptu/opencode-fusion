@@ -9,3 +9,8 @@ node_modules/
 opencode.json
 AGENTS.md
 test-playground/
+
+# Design-iteration screenshots and browser-tool output; real site images live in site/assets/
+site/*.png
+site/*.jpeg
+site/.playwright-mcp/

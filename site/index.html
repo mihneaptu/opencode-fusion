@@ -20,6 +20,21 @@
   <meta property="og:image:height" content="720">
   <meta property="og:image:alt" content="Abstract hero art: a blue and an amber gradient glow on a light background">
   <meta name="twitter:card" content="summary_large_image">
+  <!-- Warm up the only cross-origin call (star count fetch in script.js). -->
+  <link rel="preconnect" href="https://api.github.com" crossorigin>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "opencode Fusion",
+    "url": "https://mihneaptu.github.io/opencode-fusion/",
+    "description": "A main agent that plans and reviews without editing, and a cheaper sidekick that executes. Built for OpenCode.",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "sameAs": ["https://github.com/mihneaptu/opencode-fusion"]
+  }
+  </script>
   <!-- Apply saved/system theme before paint to avoid a light-flash. No network. -->
   <script>
     (function () {
@@ -44,49 +59,64 @@
 
   <header class="site-header" id="top">
     <div class="container header-inner">
-      <a class="wordmark" href="#hero" aria-label="opencode Fusion, back to top">
+      <a class="wordmark header-pill" href="#hero" aria-label="opencode Fusion, back to top">
         <span class="wordmark-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="8" cy="8" r="3.2"/>
-            <circle cx="16" cy="16" r="3.2"/>
-            <path d="M10.3 10.3 13.7 13.7"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <defs>
+              <!-- Main-agent blue blends into sidekick amber across the link. -->
+              <linearGradient id="mark-fuse-h" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0.35" style="stop-color: var(--accent)"/>
+                <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+              </linearGradient>
+            </defs>
+            <g stroke="url(#mark-fuse-h)">
+              <circle cx="8" cy="8" r="3.2"/>
+              <circle cx="16" cy="16" r="3.2"/>
+              <path d="M10.3 10.3 13.7 13.7"/>
+            </g>
           </svg>
         </span>
         <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
       </a>
 
-      <div class="header-actions">
-        <button
-          class="theme-toggle"
-          type="button"
-          id="theme-toggle"
-          aria-label="Toggle color theme"
-          title="Toggle color theme"
-        >
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-          </svg>
-        </button>
+      <div class="header-cluster header-pill">
+        <nav class="nav" id="nav-menu" aria-label="Primary">
+          <ul class="nav-list">
+            <li><a href="#how-it-works">How it works</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#cost">Cost</a></li>
+            <li><a class="nav-ext" href="docs.html">Docs<svg class="nav-ext-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 8.5 3.5"/><path d="M4.5 3.5h4v4"/></svg></a></li>
+          </ul>
+          <a class="btn btn-primary btn-sm" href="#get-started">Get started</a>
+          <a class="gh-btn" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer" aria-label="Star opencode-fusion on GitHub">
+            <svg class="gh-btn-mark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span class="gh-btn-count" data-gh-stars>GitHub</span>
+            <svg class="gh-btn-star" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.1l2.05 4.15 4.58.67-3.31 3.23.78 4.56L8 11.56l-4.1 2.15.78-4.56-3.31-3.23 4.58-.67L8 1.1Z"/></svg>
+          </a>
+        </nav>
 
-        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
-          <span class="nav-toggle-bars" aria-hidden="true"></span>
-        </button>
+        <div class="header-actions">
+          <button
+            class="theme-toggle"
+            type="button"
+            id="theme-toggle"
+            aria-label="Toggle color theme"
+            title="Toggle color theme"
+          >
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+          </button>
+
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+            <span class="nav-toggle-bars" aria-hidden="true"></span>
+          </button>
+        </div>
       </div>
-
-      <nav class="nav" id="nav-menu" aria-label="Primary">
-        <ul class="nav-list">
-          <li><a href="#how-it-works">How it works</a></li>
-          <li><a href="#features">Features</a></li>
-          <li><a href="#cost">Cost</a></li>
-          <li><a href="docs.html">Docs</a></li>
-          <li><a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub</a></li>
-        </ul>
-        <a class="btn btn-primary btn-sm" href="#get-started">Get started</a>
-      </nav>
     </div>
   </header>
 
@@ -113,12 +143,26 @@
       </div>
       <div class="container">
         <div class="hero-inner">
-          <h1 id="hero-title" class="hero-title reveal">opencode&nbsp;Fusion</h1>
+          <h1 id="hero-title" class="hero-title reveal">
+            <span class="hero-wordmark-stack">
+              <img class="hero-wordmark hero-wordmark-light" src="assets/opencode-wordmark-simple-light.svg" alt="opencode" width="640" height="115">
+              <img class="hero-wordmark hero-wordmark-dark" src="assets/opencode-wordmark-simple-dark.svg" alt="" aria-hidden="true" width="641" height="115">
+            </span>
+            <span class="hero-fusion">Fusion</span>
+          </h1>
           <p class="hero-tagline reveal">A main agent that plans and reviews but never edits. A cheaper sidekick that does the editing.</p>
           <p class="hero-subline reveal">Frontier-level quality at roughly <strong>35–41% lower cost</strong>.</p>
 
+          <div class="hero-command reveal">
+            <span class="hero-command-prompt" aria-hidden="true">$</span>
+            <code id="hero-install-cmd">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code>
+            <button class="copy-btn" type="button" data-copy-target="hero-install-cmd" aria-label="Copy the install command">
+              <svg class="copy-btn-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.5"/></svg>
+              <span class="copy-btn-text">Copy</span>
+            </button>
+          </div>
+
           <div class="hero-actions reveal">
-            <a class="btn btn-primary" href="#get-started">Get started</a>
             <a class="btn btn-ghost" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
               <span class="btn-icon" aria-hidden="true">
                 <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
@@ -132,33 +176,34 @@
 
     <!-- Flow diagram: below the hero fold so it reveals on scroll, not on first paint. -->
     <section class="flow-band" aria-label="How the flow works">
-      <p class="visually-hidden">The main agent writes a spec, the sidekick applies the edits and returns a diff, then the main agent runs tests and reviews the diff.</p>
+      <p class="visually-hidden">The main agent turns your task into a plan, delegates code exploration and editing to the sidekick, reviews the returned diff, requests fixes, and verifies the final code.</p>
       <div class="container">
         <figure class="hero-diagram reveal reveal-late" aria-hidden="true">
-          <div class="diag-flow">
-            <div class="diag-node diag-node-main">
-              <span class="diag-role">Main agent</span>
-              <span class="diag-desc">Plans and reviews</span>
-              <span class="pill pill-main">cannot edit</span>
-            </div>
-            <div class="diag-link">
-              <span class="diag-link-label">writes spec</span>
-              <svg class="diag-link-arrow" viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h40"/><path d="M36 2.5 42 7l-6 4.5"/></svg>
-            </div>
-            <div class="diag-node diag-node-side">
-              <span class="diag-role">Sidekick</span>
-              <span class="diag-desc">Applies the edits</span>
-              <span class="pill pill-side">edits files</span>
-            </div>
-            <div class="diag-link">
-              <span class="diag-link-label">returns diff</span>
-              <svg class="diag-link-arrow" viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7h40"/><path d="M36 2.5 42 7l-6 4.5"/></svg>
-            </div>
-            <div class="diag-node diag-node-verify">
-              <span class="diag-role">Main agent</span>
-              <span class="diag-desc">Runs tests, reviews the diff</span>
-              <span class="pill pill-ok">verified</span>
-            </div>
+          <div class="swim">
+            <div class="swim-panel swim-panel-main"></div>
+            <div class="swim-panel swim-panel-side"></div>
+            <span class="swim-title swim-title-main">Main agent</span>
+            <span class="swim-title swim-title-side">Sidekick</span>
+
+            <span class="swim-box swim-l r2 swim-box-start" style="--fi: 0">Your task</span>
+            <span class="swim-arrow r2" style="--fi: 1"></span>
+            <span class="swim-box swim-s swim-ce" style="--fi: 2">Code exploration</span>
+            <span class="swim-arrow swim-arrow-l r3" style="--fi: 3"></span>
+            <span class="swim-box swim-l r3" style="--fi: 4">File snippets</span>
+
+            <span class="swim-arrow-down" style="--fi: 5"></span>
+
+            <span class="swim-box swim-l r5" style="--fi: 6">Plan</span>
+            <span class="swim-arrow r5" style="--fi: 7"><i>spec</i></span>
+            <span class="swim-box swim-s swim-wc" style="--fi: 8"><span>Write code</span><span>Write tests</span><span>Fix lint</span></span>
+            <span class="swim-arrow swim-arrow-l r6" style="--fi: 9"><i>diff</i></span>
+            <span class="swim-box swim-l r6" style="--fi: 10">Review diff</span>
+
+            <span class="swim-box swim-l r7" style="--fi: 11">Request fixes</span>
+            <span class="swim-arrow r7" style="--fi: 12"></span>
+            <span class="swim-box swim-s swim-fb" style="--fi: 13">Fix bugs</span>
+            <span class="swim-arrow swim-arrow-l r8" style="--fi: 14"></span>
+            <span class="swim-box swim-l r8 swim-box-done" style="--fi: 15">Verified code</span>
           </div>
         </figure>
       </div>
@@ -319,22 +364,22 @@
         </div>
 
         <div class="cost-panel reveal">
-          <p class="cost-flag">Illustrative - not a measured benchmark</p>
+          <p class="cost-flag">Illustrative — not a measured benchmark</p>
 
           <div class="bars">
             <div class="bar-row">
               <div class="bar-label">
-                <span class="bar-name">All frontier model</span>
+                <span class="bar-name">Frontier model for everything</span>
                 <span class="bar-value">100%</span>
               </div>
               <div class="bar-track">
-                <div class="bar-fill bar-baseline" style="--pct: 100%;" role="img" aria-label="All frontier model: 100 percent relative cost, the baseline."></div>
+                <div class="bar-fill bar-baseline" style="--pct: 100%;" role="img" aria-label="Frontier model for everything: 100 percent relative cost, the baseline."></div>
               </div>
             </div>
 
             <div class="bar-row">
               <div class="bar-label">
-                <span class="bar-name">opencode Fusion</span>
+                <span class="bar-name">opencode Fusion <span class="bar-chip">&minus;38%</span></span>
                 <span class="bar-value bar-value-accent">~62%</span>
               </div>
               <div class="bar-track">
@@ -343,7 +388,7 @@
             </div>
           </div>
 
-          <p class="cost-caption">Figures are illustrative and for explanation only — not a benchmark we ran. Cognition has reported the Fusion sidekick pattern reaching roughly 35–41% lower cost on their own evaluation.</p>
+          <p class="cost-caption">Cognition has reported the Fusion sidekick pattern reaching roughly 35&ndash;41% lower cost on their own evaluation. The bars above only illustrate that idea.</p>
         </div>
       </div>
     </section>
@@ -415,10 +460,18 @@
         <div class="footer-brand">
           <a class="wordmark footer-wordmark" href="#hero" aria-label="opencode Fusion, back to top">
             <span class="wordmark-mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="8" cy="8" r="3.2"/>
-                <circle cx="16" cy="16" r="3.2"/>
-                <path d="M10.3 10.3 13.7 13.7"/>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                  <linearGradient id="mark-fuse-f" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                    <stop offset="0.35" style="stop-color: var(--accent)"/>
+                    <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#mark-fuse-f)">
+                  <circle cx="8" cy="8" r="3.2"/>
+                  <circle cx="16" cy="16" r="3.2"/>
+                  <path d="M10.3 10.3 13.7 13.7"/>
+                </g>
               </svg>
             </span>
             <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>

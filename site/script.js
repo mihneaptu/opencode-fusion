@@ -120,6 +120,33 @@
     }
   }
 
+  /* ---- GitHub stars (header pill) -------------------------------------- */
+  function initStars() {
+    var els = document.querySelectorAll('[data-gh-stars]');
+    if (!els.length || !window.fetch) return;
+
+    function show(count) {
+      els.forEach(function (el) { el.textContent = count; });
+    }
+
+    /* Paint the last-known count immediately so a refresh never flashes the
+       "GitHub" fallback while the API round-trip is in flight. */
+    var cached = null;
+    try { cached = localStorage.getItem('gh-stars'); } catch (e) {}
+    if (cached) show(cached);
+
+    fetch('https://api.github.com/repos/mihneaptu/opencode-fusion')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && typeof d.stargazers_count === 'number') {
+          var count = d.stargazers_count.toLocaleString('en-US');
+          show(count);
+          try { localStorage.setItem('gh-stars', count); } catch (e) {}
+        }
+      })
+      .catch(function () { /* keep whatever label is showing */ });
+  }
+
   /* ---- Mobile nav toggle ---------------------------------------------- */
   function initNav() {
     var toggle = document.querySelector('.nav-toggle');
@@ -439,6 +466,7 @@
     initTheme(); // also loads the matching hero video
     initReveal();
     initCopy();
+    initStars();
     initNav();
     initSmoothScroll();
     initHeaderScroll();
