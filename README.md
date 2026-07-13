@@ -4,7 +4,7 @@
 
 A minimal, working multi-model team for [opencode](https://opencode.ai): a **main agent** that plans and reviews but **cannot edit files**, delegating every change to a cheaper, faster **sidekick**. Inspired by the [Devin Fusion "sidekick" pattern](https://cognition.com/blog/devin-fusion) from Cognition.
 
-The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at roughly **35–41% lower cost** on their FrontierCode benchmark.
+The main agent's file editing is mechanically denied - its only way to change a file is to hand a spec to the sidekick. That keeps frontier intelligence on the decisions that matter (the plan, the interpretation of ambiguity, the review) while a cheap model does the mechanical work. Cognition reports the pattern holds frontier-level quality at roughly **35% lower cost** on their own FrontierCode benchmark, and in a July 2026 follow-up measured a Fable 5-led setup at **54% below pure Fable 5** with near-identical quality - cheaper in absolute dollars than an Opus 4.8-led setup, despite Fable's 2x per-token price.
 
 The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
 
@@ -38,7 +38,7 @@ From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
 
 This repo turns that into a hard constraint: the main agent's edit, search, and freeform bash tools are denied at the permission layer, so delegating to the sidekick is its only way to change a file. Two payoffs fall out of the split:
 
-**Lower cost.** Implementation mechanics are most of a session's tokens. A cheaper sidekick handles them at near-parity while the expensive main model spends its tokens only on judgment - the plan, the spec, the review. The main agent's prompt enforces this discipline: emit judgment not volume, keep context lean, reason once then hand off.
+**Lower cost.** Implementation mechanics are most of a session's tokens. A cheaper sidekick handles them at near-parity while the expensive main model spends its tokens only on judgment - the plan, the spec, the review. The main agent's prompt enforces this discipline: emit judgment not volume, keep context lean, reason once then hand off. Cognition's [follow-up study](https://cognition.com/blog/making-fable-cheaper-than-opus) bears this out: in 81% of Fable-led Fusion runs, the lead model never made a single code edit - the behavior this repo makes mechanical rather than advisory.
 
 **Cross-vendor review, for free.** When the main agent and sidekick are different model families - for example Opus reviewing Grok - every diff gets an independent second-family read before it lands. Models from one family share blind spots; a reviewer from a different lineage catches what same-family review misses. You get this just by picking a main and sidekick from different vendors.
 
@@ -53,7 +53,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `build` | Main: plan, delegate, review | `agent.build.model` | core | `claude-fable-5` |
 | `plan` | Plan mode: same brain as build, plans but does not execute | `agent/plan.md` (file) | core | reuses main model |
 | `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `grok-4.5` |
-| `explore` | Fast read-only exploration | `agent.explore.model` | core | `gemini-3.5-flash` |
+| `explore` | Fast read-only exploration (opencode's built-in agent - no prompt file) | `agent.explore.model` | core | `grok-4.5` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional | `glm-5.2` |
 | `reviewer` | Critique a plan before implementation; audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
@@ -197,6 +197,7 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - **No dynamic mid-session routing.** Devin Fusion's second technique - swapping the active model mid-task during context compaction - needs Devin's closed product surface and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
 - **Config loads at startup.** opencode reads config once when it launches. Any change to `opencode.json` or an agent prompt requires a full restart to take effect.
 - **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
+- **Targets opencode 1.x.** These files are written against opencode's stable 1.x config schema (verified on 1.17.x). The opencode v2 beta (`opencode2`) uses a different schema - plural `agents`, array-based `permissions` - and is not supported by this repo yet.
 
 ## FAQ
 
@@ -317,4 +318,4 @@ This project is not affiliated with, endorsed by, or built by the opencode team.
 
 ## Credit
 
-Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com): the "sidekick" framing, the principle that "the main agent should take minimal actions", and the benchmark numbers quoted in this README are theirs. The underlying split has older roots - [Aider's architect/editor mode](https://aider.chat/2024/09/26/architect.html) separated code reasoning from code editing back in 2024: one model describes the solution, a second turns it into clean edits. The permission-layer enforcement, the cross-vendor review setup, and the specialist team are this repo's own.
+Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com): the "sidekick" framing, the principle that "the main agent should take minimal actions", and the benchmark numbers quoted in this README are theirs - from the launch post and the July 2026 follow-up, ["Making Fable Cheaper Than Opus"](https://cognition.com/blog/making-fable-cheaper-than-opus). The underlying split has older roots - [Aider's architect/editor mode](https://aider.chat/2024/09/26/architect.html) separated code reasoning from code editing back in 2024: one model describes the solution, a second turns it into clean edits. The permission-layer enforcement, the cross-vendor review setup, and the specialist team are this repo's own.
