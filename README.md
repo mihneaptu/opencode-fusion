@@ -39,6 +39,22 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 
 Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.6-sol`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
 
+## Enforced vs. advised
+
+The pattern's guarantees live in two different layers, and being precise about which is which answers most "what if the model just ignores the instructions?" questions.
+
+**Enforced - the permission layer.** opencode checks these on every tool call, no matter what the model reads, remembers, or intends:
+
+- The main agent's `edit`, `grep`, `glob`, and `list` are denied. Denied tools are removed from the model's tool schema entirely - there is no edit tool for it to decline to use.
+- Its bash is deny-by-default with a short verification and git allowlist, so file-writing commands are blocked.
+- Delegation is bounded by an explicit `task` allowlist: the main agent reaches only its named specialists, and the sidekick can spawn only read-only searchers.
+
+If the main agent "won't delegate," the result is visible inaction - nothing on disk changes. The failure mode is never a silent bypass.
+
+**Advised - the prompt layer.** Spec precision, diff-review rigor, cost discipline, parallelization, and skill usage are instructions in the agent prompts. opencode loads skills at the model's discretion - nothing can force an agent to read or apply one - which is exactly why no guarantee here depends on them; the skill in this repo is just the installer. If the model slacks at this layer, the cost is quality or wasted tokens, never an unauthorized edit.
+
+**Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-command-and-audit-plugin) logs the delegation tree, and opencode's session DB (`~/.local/share/opencode/opencode.db`) records every agent's actual tool calls. "Did it really delegate?" is checkable ground truth, not vibes.
+
 ## Setup
 
 Fusion lives entirely in your **global** opencode config at `~/.config/opencode/` (Windows: `%USERPROFILE%\.config\opencode\`). There is no build step and nothing to clone into your projects.
@@ -149,6 +165,35 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - **No dynamic mid-session routing.** Devin Fusion's second technique - swapping the active model mid-task during context compaction - needs Devin's closed product surface and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
 - **Config loads at startup.** opencode reads config once when it launches. Any change to `opencode.json` or an agent prompt requires a full restart to take effect.
 - **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
+
+## FAQ
+
+<details>
+<summary><b>What happens when the sidekick can't satisfy the spec?</b></summary>
+
+The main agent's prompt carries an explicit escalation ladder, so the retry loop always terminates:
+
+1. **First miss** - re-delegate with feedback naming the specific problem.
+2. **Second miss** - stop describing and start dictating: the main agent authors the exact patch itself (file, line range, verbatim code) and hands it over to apply. Applying a verbatim patch needs no judgment, so this ends the capability question - the sidekick becomes a pair of hands. You lose the cost saving on that one task, but you cannot deadlock.
+3. **Dictated patch still fails verification** - then the plan is wrong, not the sidekick, and the main agent revises the plan. It reports a blocker only when verification fails for reasons outside the code (broken environment, flaky tests), with the real command output attached.
+
+The mechanical block is on the main agent's *tools*, not on the content of its specs - dictating an exact diff was always within the rules; the prompt makes it an explicit step instead of an emergent discovery.
+
+</details>
+
+<details>
+<summary><b>What if the agents ignore the prompts, or never load the skills?</b></summary>
+
+You lose quality, not guarantees - see [Enforced vs. advised](#enforced-vs-advised). Delegation is not a behavior the main agent chooses: its edit and search tools are removed from its tool schema at the permission layer, so handing work to the sidekick is the only path that exists. Skills are advisory in every harness - opencode loads them at the model's discretion - which is why nothing load-bearing lives in one. And you can verify instead of trusting: the `fusion-audit` plugin and opencode's session DB record what every agent actually did.
+
+</details>
+
+<details>
+<summary><b>How is this different from superpowers or other orchestration approaches?</b></summary>
+
+Different layer. Skill libraries like [superpowers](https://github.com/obra/superpowers) teach agents *how to work* - process knowledge (TDD, debugging, planning) delivered as skills and hooks. That guidance is valuable, but a hook injects text, and the model can still not comply. Fusion configures *what agents can do*: capabilities are removed at the permission layer, so the pattern holds even when the model has a bad day. The second difference is the point of the pattern - per-role model routing for cost (expensive judgment, cheap execution) with cross-vendor review as a side effect, which skill libraries do not do. Versus code-level frameworks like LangGraph or CrewAI: no framework and no code - this is configuration on a normal interactive session. The approaches compose: superpowers supports opencode, so its skills can run inside a Fusion setup.
+
+</details>
 
 ## Troubleshooting
 

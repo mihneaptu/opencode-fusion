@@ -96,11 +96,13 @@
         <nav class="docs-toc-nav">
           <a href="#overview">Overview</a>
           <a href="#how-it-works">How it works</a>
+          <a href="#guarantees">Enforced vs. advised</a>
           <a href="#install-opencode">Install OpenCode</a>
           <a href="#verify">Verify</a>
           <a href="#customize">Customize</a>
           <a href="#troubleshooting">Troubleshooting</a>
           <a href="#limitations">Limitations</a>
+          <a href="#faq">FAQ</a>
         </nav>
       </aside>
 
@@ -180,6 +182,20 @@
           </div>
 
           <p>Pick main and sidekick from different model families when you can. The main agent’s review of every sidekick diff becomes cross-vendor for free.</p>
+        </section>
+
+        <section id="guarantees" class="docs-section">
+          <h2>Enforced vs. advised</h2>
+          <p>The pattern’s guarantees live in two layers. Knowing which is which answers most “what if the model just ignores the instructions?” questions.</p>
+
+          <h3>Enforced — the permission layer</h3>
+          <p>OpenCode checks these on every tool call, regardless of what the model reads or intends. The main agent’s <code>edit</code>, <code>grep</code>, <code>glob</code>, and <code>list</code> are denied — denied tools are removed from the model’s tool schema entirely, so there is no edit tool for it to decline to use. Bash is deny-by-default with a short verify/git allowlist, and delegation is bounded by an explicit <code>task</code> allowlist. If the main agent “won’t delegate,” the result is visible inaction — never a silent bypass.</p>
+
+          <h3>Advised — the prompt layer</h3>
+          <p>Spec precision, diff-review rigor, cost discipline, and skill usage are instructions in the agent prompts. Skills load at the model’s discretion in OpenCode — nothing can force an agent to read or apply one — which is exactly why no guarantee depends on them; the skill in this repo is just the installer. Slacking here costs quality or tokens, never an unauthorized edit.</p>
+
+          <h3>Auditable</h3>
+          <p>The optional <code>fusion-audit</code> plugin logs the delegation tree, and OpenCode’s session DB records every agent’s actual tool calls — “did it really delegate?” is checkable ground truth.</p>
         </section>
 
         <section id="install-opencode" class="docs-section">
@@ -278,6 +294,25 @@
             <li><strong>Config loads at startup.</strong> Any change to config or agent prompts needs a full restart.</li>
             <li><strong>Loop protection is permission-based.</strong> Nested delegation is bounded by the task graph (sidekick may spawn only read-only searchers), not numeric depth caps.</li>
           </ul>
+        </section>
+
+        <section id="faq" class="docs-section">
+          <h2>FAQ</h2>
+
+          <dl class="docs-faq">
+            <div class="docs-faq-item">
+              <dt>What happens when the sidekick can’t satisfy the spec?</dt>
+              <dd>The main agent escalates on a ladder: feedback naming the specific miss, then — after two misses — it authors the exact patch itself (file, line range, verbatim code) and hands it over to apply. A verbatim patch needs no judgment, so the loop cannot deadlock; you lose the cost saving on that one task only. If even the dictated patch fails verification, the plan is wrong, not the sidekick — the main agent revises the plan.</dd>
+            </div>
+            <div class="docs-faq-item">
+              <dt>What if agents ignore the prompts or never load the skills?</dt>
+              <dd>You lose quality, not guarantees — see <a href="#guarantees">Enforced vs. advised</a>. Delegation is not a behavior the main agent chooses: its edit and search tools are removed from its tool schema, so handing work to the sidekick is the only path to changing a file. The <code>fusion-audit</code> plugin and OpenCode’s session DB record what every agent actually did.</dd>
+            </div>
+            <div class="docs-faq-item">
+              <dt>How is this different from superpowers or other orchestration?</dt>
+              <dd>Different layer. Skill libraries like <a href="https://github.com/obra/superpowers" target="_blank" rel="noopener noreferrer">superpowers</a> teach agents <em>how</em> to work — process knowledge the model can still ignore. Fusion configures <em>what agents can do</em> at the permission layer, and adds per-role model routing for cost with cross-vendor review as a side effect. No framework, no code — just configuration on a normal session. The two compose: superpowers supports OpenCode, so its skills can run inside a Fusion setup.</dd>
+            </div>
+          </dl>
         </section>
 
         <footer class="docs-end">

@@ -10,9 +10,11 @@ opencode Fusion is a *configuration* project (not an app). Install on OpenCode, 
 - [Full docs](docs.html): install, verify, customize, troubleshoot
 - [Install OpenCode](docs.html#install-opencode)
 - [Verify the flow](docs.html#verify)
+- [Enforced vs. advised](docs.html#guarantees)
 - [Customize models](docs.html#customize)
 - [Troubleshooting](docs.html#troubleshooting)
 - [Limitations](docs.html#limitations)
+- [FAQ](docs.html#faq)
 
 ## Quick install
 
@@ -39,6 +41,8 @@ cp -r .opencode/skills/fusion-setup ~/.config/opencode/skills/
 
 1. Main (`build`) plans, delegates, and reviews — it must not edit files.
 2. Sidekick executes precise specs; explore/research are read-only helpers.
-3. OpenCode enforces this with permission frontmatter (edit deny + task graph).
+3. OpenCode enforces this with permission frontmatter (edit deny + task graph). Denied tools are removed from the model's tool schema, so "won't delegate" means visible inaction, never a silent bypass.
 4. Config loads at startup — always restart after config or skill changes.
 5. Cross-vendor review is emergent: pick main and sidekick from different model families.
+6. Only the permission layer is enforced; prompts and skills are advisory. Ignoring them costs quality or tokens, never an unauthorized edit. Skills load at the model's discretion, so nothing load-bearing lives in one — the bundled skill is just the installer.
+7. If the sidekick misses a spec twice, the main agent dictates the exact patch verbatim (file, line range, code) for the sidekick to apply — the retry loop cannot deadlock. If the dictated patch fails verification, the plan is wrong and main revises it.
