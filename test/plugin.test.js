@@ -31,7 +31,9 @@ describe('fusion-audit plugin smoke test', () => {
   });
 
   after(() => {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
   });
 
   test('returns the hook surface opencode expects', () => {

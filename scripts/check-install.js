@@ -36,11 +36,20 @@ for (const name of names) {
     }
     continue;
   }
-  const same = fs
-    .readFileSync(path.join(repoAgentDir, name))
-    .equals(fs.readFileSync(installedFile));
-  console.log(`${name}: ${same ? 'in sync' : 'DRIFTED'}`);
-  if (!same) drift++;
+  const repoBuf = fs.readFileSync(path.join(repoAgentDir, name));
+  const installedBuf = fs.readFileSync(installedFile);
+  if (repoBuf.equals(installedBuf)) {
+    console.log(`${name}: in sync`);
+    continue;
+  }
+  // Byte identity stays the invariant - installs are plain copies, so any
+  // difference means the installed file is not the repo artifact. But when
+  // the only difference is line endings, say so.
+  const eolOnly =
+    repoBuf.toString('utf8').replace(/\r\n/g, '\n') ===
+    installedBuf.toString('utf8').replace(/\r\n/g, '\n');
+  console.log(`${name}: DRIFTED${eolOnly ? ' (line endings only)' : ''}`);
+  drift++;
 }
 
 if (drift > 0) {
