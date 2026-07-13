@@ -269,7 +269,7 @@
             <pre class="command-pre"><code id="docs-cmd-opencode">npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code></pre>
           </div>
 
-          <p class="docs-note">Installs into your global OpenCode skills folder. Works on Windows, macOS, and Linux.</p>
+          <p class="docs-note">Installs into your global OpenCode skills folder. Works on Windows, macOS, and Linux. Requires Node 20.12 or newer — on older Node the installer crashes with a <code>styleText</code> error (see <a href="#troubleshooting">Troubleshooting</a>).</p>
 
           <h3>Offline / manual fallback</h3>
           <p>From a clone of this repo, copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> (Windows: <code>%USERPROFILE%\.config\opencode\skills\</code>), then run the setup flow as above — skills are discovered on demand, no restart needed.</p>
@@ -319,6 +319,10 @@
           <p>If you installed the optional <code>/fusion-status</code> command, run it first — it checks the usual suspects in one shot: live enforcement in the running session, the config on disk, and the installed agent files. It only reports; it changes nothing.</p>
 
           <dl class="docs-faq">
+            <div class="docs-faq-item">
+              <dt>Install crashes with a <code>styleText</code> SyntaxError</dt>
+              <dd>Node is too old for the installer. Since <code>skills@1.5.16</code>, Vercel's CLI needs Node 20.12+ even though the package still claims Node 18 support (<a href="https://github.com/vercel-labs/skills/issues/1672" target="_blank" rel="noopener noreferrer">vercel-labs/skills#1672</a>). Fix any of three ways: upgrade Node (18 is end-of-life), pin the last compatible installer with <code>npx skills@1.5.15 add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y</code>, or use the offline fallback in <a href="#install-opencode">Install</a> — the skill itself has no Node dependency.</dd>
+            </div>
             <div class="docs-faq-item">
               <dt>Main agent edits files directly</dt>
               <dd>Config was not loaded. Fully quit and restart OpenCode. Confirm <code>edit: deny</code> for the build agent in permission frontmatter.</dd>
