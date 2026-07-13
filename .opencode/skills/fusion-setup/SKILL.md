@@ -41,10 +41,11 @@ Roles 4-7 are optional a-la-carte pieces. If the user only wants the core build/
 For each distinct provider the chosen models use, collect the connection details:
 - provider id (e.g. `kiro`, `progrok`, `anthropic`, `openai`)
 - the npm adapter (for OpenAI-compatible local gateways use `@ai-sdk/openai-compatible`)
-- baseURL and apiKey (for local gateways / custom endpoints)
+- baseURL (for local gateways / custom endpoints)
+- if the endpoint needs a key: the NAME of an environment variable that holds it (e.g. `MYPROVIDER_API_KEY`). NEVER ask the user to paste the actual key into the chat - the config references the variable and opencode resolves it at startup, so the secret never appears in the conversation or in plaintext config.
 - the model id(s) and a display name
 
-If the user is unsure, offer the OpenAI-compatible local-gateway shape as the default pattern and ask for their baseURL/apiKey.
+If the user is unsure, offer the OpenAI-compatible local-gateway shape as the default pattern and ask for their baseURL and key env var name.
 
 ## Step 2 - Build the provider blocks
 
@@ -56,7 +57,7 @@ For each provider, build a block under `provider`. OpenAI-compatible template:
   "name": "<display name>",
   "options": {
     "baseURL": "<baseURL>",
-    "apiKey": "<apiKey>"
+    "apiKey": "{env:<ENV_VAR_NAME>}"
   },
   "models": {
     "<model-id>": {
@@ -68,6 +69,8 @@ For each provider, build a block under `provider`. OpenAI-compatible template:
 }
 ```
 
+The `{env:...}` placeholder is documented opencode config syntax: the key is read from the user's environment at startup, so it never sits in plaintext in opencode.json. An UNSET variable silently resolves to an empty string, which surfaces later as auth errors - tell the user to set the variable in the environment they launch opencode from. If they prefer a key file, `"apiKey": "{file:~/.secrets/<name>}"` works the same way.
+
 Only include `attachment`/`modalities` for models that actually support image input. A main model with image input means no separate vision agent is needed.
 
 The template above shows the OpenAI-compatible shape (`@ai-sdk/openai-compatible`). If a provider is a native vendor rather than an OpenAI-compatible gateway, use that vendor's adapter instead - for example `@ai-sdk/anthropic` for an Anthropic-style endpoint or `@ai-sdk/openai` for OpenAI. Only the `npm` value changes; the rest of the block shape is the same.
@@ -78,7 +81,7 @@ If two roles use different models from the SAME provider (for example a main mod
 "kirocc": {
   "npm": "@ai-sdk/anthropic",
   "name": "Kirocc",
-  "options": { "baseURL": "<baseURL>", "apiKey": "<apiKey>" },
+  "options": { "baseURL": "<baseURL>", "apiKey": "{env:KIROCC_API_KEY}" },
   "models": {
     "claude-opus-4-8": { "name": "Opus", "attachment": true, "modalities": { "input": ["text", "image"] } },
     "claude-sonnet-5": { "name": "Sonnet" }
@@ -145,7 +148,8 @@ The skill bundles two optional extras next to it. Install them if the user wants
 
 1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
 2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the command or plugin, confirm `~/.config/opencode/commands/fusion-setup.md` and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
-3. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
+3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from (`echo $VAR` in their shell, `echo %VAR%` in cmd). An unset variable becomes an empty string and shows up later as auth errors.
+4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later
 

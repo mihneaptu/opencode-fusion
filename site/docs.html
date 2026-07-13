@@ -205,8 +205,8 @@
           <h3>Recommended</h3>
           <ol class="docs-steps">
             <li>Install the skill globally with one command (no clone required).</li>
-            <li>Restart OpenCode fully (config loads at startup).</li>
-            <li>Say <strong>set up fusion</strong> — or run <code>/fusion-setup</code>.</li>
+            <li>Say <strong>set up fusion</strong> — or run <code>/fusion-setup</code>. Skills are discovered on demand, so no restart is needed for this step.</li>
+            <li>Restart OpenCode when the skill finishes — the config it writes loads at startup.</li>
           </ol>
 
           <div class="command">
@@ -223,7 +223,7 @@
           <p class="docs-note">Installs into your global OpenCode skills folder. Works on Windows, macOS, and Linux.</p>
 
           <h3>Offline / manual fallback</h3>
-          <p>From a clone of this repo, copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> (Windows: <code>%USERPROFILE%\.config\opencode\skills\</code>), then restart and run the setup flow as above.</p>
+          <p>From a clone of this repo, copy <code>.opencode/skills/fusion-setup</code> into <code>~/.config/opencode/skills/</code> (Windows: <code>%USERPROFILE%\.config\opencode\skills\</code>), then run the setup flow as above — skills are discovered on demand, no restart needed.</p>
 
           <h3>After setup</h3>
           <p>The skill writes <code>~/.config/opencode/opencode.json</code>, installs agent prompts under <code>~/.config/opencode/agent/</code>, and asks you to restart. To change models later, say “reconfigure fusion” or edit the config directly.</p>

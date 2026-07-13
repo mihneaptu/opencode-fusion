@@ -67,7 +67,7 @@ This repo ships a skill, `fusion-setup`, that configures everything conversation
 npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
 ```
 
-Or copy the `fusion-setup` folder from this repo's `.opencode/skills/` into `~/.config/opencode/skills/`. Restart opencode, then say:
+Or copy the `fusion-setup` folder from this repo's `.opencode/skills/` into `~/.config/opencode/skills/`. Skills are discovered on demand - no restart needed to pick one up. Then say:
 
 ```
 set up fusion
@@ -210,7 +210,7 @@ Check that `task: allow` is set for the build agent. If the `task` permission is
 
 ### A model returns 404 or 400
 
-The model id may be wrong or changed. Confirm the exact `provider-id/model-id` against your provider, and that the provider block's `baseURL`/`apiKey` are correct. For progrok's Grok models, the composer coding models are callable but intentionally not listed in `/v1/models`, so a missing entry there does not mean the id is wrong.
+The model id may be wrong or changed. Confirm the exact `provider-id/model-id` against your provider, and that the provider block's `baseURL`/`apiKey` are correct. If the key uses `{env:VAR}` substitution, check the variable is actually set in the environment opencode launches from - an unset variable silently becomes an empty string. For progrok's Grok models, the composer coding models are callable but intentionally not listed in `/v1/models`, so a missing entry there does not mean the id is wrong.
 
 ### A bash command gets blocked unexpectedly
 
