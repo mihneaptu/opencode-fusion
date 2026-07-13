@@ -4,7 +4,15 @@ mode: subagent
 temperature: 0.4
 permission:
   edit: allow
-  bash: allow
+  bash:
+    "*": allow
+    "git push --force*": deny
+    "git push -f*": deny
+    "git reset --hard*": ask
+    "git clean -f*": ask
+    "rm -rf *": ask
+    "cat *.env*": deny
+    "Get-Content *.env*": deny
   task:
     "*": deny
     "sidekick": allow
