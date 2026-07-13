@@ -53,7 +53,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `build` | Main: plan, delegate, review | `agent.build.model` | core | `claude-fable-5` |
 | `plan` | Plan mode: same brain as build, plans but does not execute | `agent/plan.md` (file) | core | reuses main model |
 | `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `grok-4.5` |
-| `explore` | Fast read-only exploration (opencode's built-in agent - no prompt file) | `agent.explore.model` | core | `gemini-3.5-flash` |
+| `explore` | Fast read-only exploration (opencode's built-in agent - no prompt file) | `agent.explore.model` | core | `grok-4.5` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional | `glm-5.2` |
 | `reviewer` | Critique a plan before implementation; audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
