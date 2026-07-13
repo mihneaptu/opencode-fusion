@@ -117,7 +117,7 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
 }
 ```
 
-The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, `agent/reviewer.md`, and `agent/vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model.
+The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, `agent/reviewer.md`, and `agent/vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model. `explore` is the one role with no prompt file — it is opencode's built-in read-only subagent, so it gets a model entry in the JSON and nothing else; there is intentionally no `agent/explore.md` in this repo.
 
 Then install the agent files. opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition - the frontmatter carries the role's mode and permissions (this is where the edit denial is mechanically enforced), and the body is its prompt:
 
@@ -236,11 +236,11 @@ If you installed the optional command, run `/fusion-status` first - it checks th
 
 ### The main agent edits files directly
 
-The config was not loaded. Fully quit and restart opencode - it loads config at startup, not mid-session. Then confirm `edit: deny` is set for the build agent (in `agent/build.md` or the `opencode.json` build permission block).
+The config was not loaded. Fully quit and restart opencode - it loads config at startup, not mid-session. Then confirm `edit: deny` is set in the installed `~/.config/opencode/agent/build.md` frontmatter.
 
 ### The sidekick is not being invoked
 
-Check that `task: allow` is set for the build agent. If the `task` permission is missing or set to `deny`, the main agent cannot delegate.
+Check the build agent's `permission.task` graph in `~/.config/opencode/agent/build.md`: it must deny broadly with `"*": deny` first, then allow `"sidekick": allow` (and the other named specialists). Do not use bare `task: allow` - that exposes every subagent, including the built-in `general`.
 
 ### A model returns 404 or 400
 
