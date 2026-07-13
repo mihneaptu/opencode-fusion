@@ -8,9 +8,12 @@ permission:
     "*": allow
     "git push --force*": deny
     "git push -f*": deny
+    "git push *--force*": deny
+    "git push * -f*": deny
     "git reset --hard*": ask
-    "git clean -f*": ask
+    "git clean*": ask
     "rm -rf *": ask
+    "rm -fr *": ask
     "cat *.env*": deny
     "Get-Content *.env*": deny
   task:
