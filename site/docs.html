@@ -325,11 +325,11 @@
             </div>
             <div class="docs-faq-item">
               <dt>Main agent edits files directly</dt>
-              <dd>Config was not loaded. Fully quit and restart OpenCode. Confirm <code>edit: deny</code> for the build agent in permission frontmatter.</dd>
+              <dd>Config was not loaded. Fully quit and restart OpenCode. Confirm <code>edit: deny</code> in the installed <code>~/.config/opencode/agent/build.md</code> frontmatter.</dd>
             </div>
             <div class="docs-faq-item">
               <dt>Sidekick is never invoked</dt>
-              <dd>Ensure <code>task: allow</code> on the build agent so main can delegate to sidekick.</dd>
+              <dd>Check the build agent's <code>permission.task</code> graph in <code>~/.config/opencode/agent/build.md</code>: broad <code>"*": deny</code> first, then <code>"sidekick": allow</code>. Do not use bare <code>task: allow</code> - that exposes every subagent, including the built-in <code>general</code>.</dd>
             </div>
             <div class="docs-faq-item">
               <dt>Model returns 404 or 400</dt>

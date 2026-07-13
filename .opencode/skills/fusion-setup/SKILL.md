@@ -22,7 +22,7 @@ Fusion splits work across agents with asymmetric permissions:
 
 Think of the repo as a catalog of roles: the core (build/plan/sidekick/explore) is required, and the rest are optional pieces you install only if your workflow needs them. The research/design/reviewer/vision specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
 
-The asymmetry is enforced by the permission layer, not by convention. Preserving the exact permission block below is what makes Fusion work.
+The asymmetry is enforced by the permission layer, not by convention. Preserving the exact permission frontmatter in the bundled agent files installed during Step 4 is what makes Fusion work.
 
 ## Step 1 - Gather the user's model choices
 
