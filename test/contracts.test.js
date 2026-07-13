@@ -9,9 +9,9 @@ const agentDir = path.join(__dirname, '..', 'agent');
 
 // Hand-rolled YAML helpers - not a general parser. Indent assumes 2-space YAML.
 
-function extractFrontmatter(source) {
+function extractFrontmatter(source, fileName) {
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  assert.ok(match, 'agent file is missing YAML frontmatter delimiters');
+  assert.ok(match, `agent/${fileName} is missing YAML frontmatter delimiters`);
   return match[1];
 }
 
@@ -44,44 +44,23 @@ function findNamedBlock(frontmatter, blockName) {
     const inlineValue = m[2].trim();
     const children = [];
     if (inlineValue !== '') {
-      return {
-        indent,
-        startIndex: i,
-        endIndex: i + 1,
-        children,
-        scalar: unquote(inlineValue),
-        raw: lines[i],
-      };
+      return { children, scalar: unquote(inlineValue) };
     }
-    let end = i + 1;
     for (let j = i + 1; j < lines.length; j++) {
       const line = lines[j];
-      if (line.trim() === '' || line.trim().startsWith('#')) {
-        end = j + 1;
-        continue;
-      }
+      if (line.trim() === '' || line.trim().startsWith('#')) continue;
       const lead = line.match(/^(\s*)/)[1].length;
       if (lead <= indent) break;
-      end = j + 1;
       if (lead !== indent + 2) continue;
       const childMatch = line.match(/^(\s*)([^:]+):\s*(.*)$/);
       if (!childMatch) continue;
       children.push({
         key: unquote(childMatch[2].trim()),
         value: unquote(childMatch[3].trim()),
-        line: line.trim(),
         index: j,
-        indent: lead,
       });
     }
-    return {
-      indent,
-      startIndex: i,
-      endIndex: end,
-      children,
-      scalar: null,
-      raw: lines.slice(i, end).join('\n'),
-    };
+    return { children, scalar: null };
   }
   return null;
 }
@@ -166,7 +145,7 @@ const agents = Object.fromEntries(
   agentFiles.map((name) => {
     const full = path.join(agentDir, name);
     const source = fs.readFileSync(full, 'utf8');
-    const frontmatter = extractFrontmatter(source);
+    const frontmatter = extractFrontmatter(source, name);
     const body = source.slice(source.indexOf('---', 3) + 3).replace(/^\r?\n/, '');
     return [name.replace(/\.md$/, ''), { name, full, source, frontmatter, body }];
   })
@@ -292,10 +271,10 @@ describe('agent frontmatter contracts', () => {
       return;
     }
     const values = Object.fromEntries(task.children.map((c) => [c.key, c.value]));
-    assert.ok(
-      values['*'] === 'deny' ||
-        (task.children.length === 1 && task.children[0].value === 'deny'),
-      'contract violated: vision task map must deny spawning further agents'
+    assert.equal(
+      values['*'],
+      'deny',
+      'contract violated: vision task map must deny spawning further agents with "*": deny'
     );
     assert.equal(
       task.children.some((c) => c.value === 'allow'),
