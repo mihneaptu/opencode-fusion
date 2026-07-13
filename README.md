@@ -8,6 +8,12 @@ The main agent's file editing is mechanically denied - its only way to change a 
 
 The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
 
+## Demo
+
+https://github.com/user-attachments/assets/6d9e96e2-654a-4bc4-82af-3c3f1a8bde91
+
+One full delegation cycle in 38 seconds: the main agent plans, hands a spec to the sidekick, reviews the returned diff, and verifies the result - without ever touching a file itself.
+
 ## Why it works
 
 From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
