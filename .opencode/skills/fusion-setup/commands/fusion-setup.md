@@ -1,9 +1,9 @@
 ---
-description: Configure or reconfigure the opencode Fusion two-agent workflow
+description: Configure or reconfigure the opencode Fusion agent team
 agent: build
 ---
 
-Load and follow the `fusion-setup` skill to configure the Fusion two-agent workflow.
+Load and follow the `fusion-setup` skill to configure the Fusion agent team.
 
 $ARGUMENTS
 

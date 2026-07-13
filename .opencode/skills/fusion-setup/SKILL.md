@@ -1,11 +1,11 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion two-agent workflow - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup
 
-This skill configures the Fusion two-agent workflow by writing the user's GLOBAL opencode config at `~/.config/opencode/` (on Windows: `%USERPROFILE%\.config\opencode\`). It does not require cloning any repository.
+This skill configures the Fusion agent team (a main agent, a sidekick executor, an explore searcher, and optional specialists) by writing the user's GLOBAL opencode config at `~/.config/opencode/` (on Windows: `%USERPROFILE%\.config\opencode\`). It does not require cloning any repository.
 
 ## What Fusion is
 
