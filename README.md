@@ -8,17 +8,33 @@ The main agent's file editing is mechanically denied - its only way to change a 
 
 The main pair is backed by read-only helpers (**explore**, **research**) and optional specialists (**design**, **reviewer**, **vision**), each on a model you choose. See the [full team](#how-it-works).
 
+[Quick start](#quick-start) • [How it works](#how-it-works) • [Setup](#setup) • [Customize](#customize) • [FAQ](#faq) • [Troubleshooting](#troubleshooting)
+
 ## Demo
 
 https://github.com/user-attachments/assets/6d9e96e2-654a-4bc4-82af-3c3f1a8bde91
 
 One full delegation cycle in 38 seconds: the main agent plans, hands a spec to the sidekick, reviews the returned diff, and verifies the result - without ever touching a file itself.
 
+## Quick start
+
+Install the setup skill globally, then let opencode configure everything conversationally:
+
+```bash
+npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
+```
+
+```
+set up fusion
+```
+
+The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. Manual setup and provider examples live in [Setup](#setup).
+
 ## Why it works
 
 From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
 
-> the main agent should take minimal actions, and only read what is absolutely necessary. By default it should delegate and monitor, while making the significant decisions: the plan, the interpretation of ambiguity, the final review.
+> We've found that the main agent should take minimal actions, and only read what is absolutely necessary. By default it should delegate and monitor, while making the significant decisions: the plan, the interpretation of ambiguity, the final review.
 
 This repo turns that into a hard constraint: the main agent's edit, search, and freeform bash tools are denied at the permission layer, so delegating to the sidekick is its only way to change a file. Two payoffs fall out of the split:
 
@@ -59,7 +75,7 @@ If the main agent "won't delegate," the result is visible inaction - nothing on 
 
 **Advised - the prompt layer.** Spec precision, diff-review rigor, cost discipline, parallelization, and skill usage are instructions in the agent prompts. opencode loads skills at the model's discretion - nothing can force an agent to read or apply one - which is exactly why no guarantee here depends on them; the skill in this repo is just the installer. If the model slacks at this layer, the cost is quality or wasted tokens, never an unauthorized edit.
 
-**Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-audit-plugin) logs the delegation tree, and opencode's session DB (`~/.local/share/opencode/opencode.db`) records every agent's actual tool calls. "Did it really delegate?" is checkable ground truth, not vibes.
+**Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-audit-plugin) logs the delegation tree, and opencode's session DB records every agent's actual tool calls (`opencode db path` prints its location - typically `~/.local/share/opencode/opencode.db`). "Did it really delegate?" is checkable ground truth, not vibes.
 
 ## Setup
 
@@ -110,7 +126,10 @@ mkdir -p ~/.config/opencode/agent
 cp agent/build.md agent/plan.md agent/sidekick.md ~/.config/opencode/agent/
 ```
 
-Model references are always `provider-id/model-id`. If a model uses a provider opencode does not know yet, add a `provider` block for it (see the OpenAI-compatible template in the `fusion-setup` skill). Restart opencode after writing the config - it loads config once at startup, not mid-session.
+Model references are always `provider-id/model-id`. If a model uses a provider opencode does not know yet, add a `provider` block for it (see the OpenAI-compatible template in the `fusion-setup` skill).
+
+> [!IMPORTANT]
+> Restart opencode after writing the config - it loads config once at startup, not mid-session.
 
 </details>
 
@@ -139,7 +158,8 @@ fix the lint errors in this project
 
 You should see the main agent delegate exploration, receive the findings, make a plan, then delegate execution to the sidekick via the `task` tool. The sidekick makes the edits, and the main agent verifies by running `npm run lint` itself before reporting back.
 
-Along the way you may see the occasional command struck through with a permission error — for example the agent trying `git ls-files`. That is not a bug. The main and plan agents run bash deny-by-default, so anything outside their short allowlist is mechanically blocked, and the agent recovers on its own by reading the file or delegating the search. A denied command is the guardrail working, not the setup failing.
+> [!NOTE]
+> Along the way you may see the occasional command struck through with a permission error — for example the agent trying `git ls-files`. That is not a bug. The main and plan agents run bash deny-by-default, so anything outside their short allowlist is mechanically blocked, and the agent recovers on its own by reading the file or delegating the search. A denied command is the guardrail working, not the setup failing.
 
 ## Customize
 
@@ -147,7 +167,13 @@ Along the way you may see the occasional command struck through with a permissio
 
 All agent models live in one place: `~/.config/opencode/opencode.json` under `agent` - one `model` value per agent (keys and suggested models are in the [table above](#how-it-works)).
 
-Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. Do not add a `model:` line to the agent `.md` files themselves - frontmatter overrides `opencode.json` on any key it sets, so a model baked in there would silently win over your config. The sidekick should stay cheaper and faster than the main agent when possible. You can also run `/models` in opencode to swap the active model for the current session only.
+Change the value, add a `provider` block if the model uses a new provider, and restart opencode. For a persistent default main model, also update the top-level `model` field. The sidekick should stay cheaper and faster than the main agent when possible.
+
+> [!WARNING]
+> Do not add a `model:` line to the agent `.md` files themselves - frontmatter overrides `opencode.json` on any key it sets, so a model baked in there would silently win over your config.
+
+> [!TIP]
+> Run `/models` in opencode to swap the active model for the current session only.
 
 ### Adjust the bash allowlist
 
@@ -279,8 +305,4 @@ This project is not affiliated with, endorsed by, or built by the opencode team.
 
 ## Credit
 
-Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com): the "sidekick" framing, the principle that "the main agent should take minimal actions", and the benchmark numbers quoted in this README are theirs. The underlying split has older roots - [Aider's architect/editor mode](https://aider.chat/2024/09/26/architect.html) paired an expensive reasoning model with a cheaper editing model back in 2024. The permission-layer enforcement, the cross-vendor review setup, and the specialist team are this repo's own.
-
-## License
-
-MIT
+Inspired by [Devin Fusion](https://cognition.com/blog/devin-fusion) by [Cognition](https://cognition.com): the "sidekick" framing, the principle that "the main agent should take minimal actions", and the benchmark numbers quoted in this README are theirs. The underlying split has older roots - [Aider's architect/editor mode](https://aider.chat/2024/09/26/architect.html) separated code reasoning from code editing back in 2024: one model describes the solution, a second turns it into clean edits. The permission-layer enforcement, the cross-vendor review setup, and the specialist team are this repo's own.
