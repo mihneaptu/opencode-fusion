@@ -24,6 +24,8 @@ opencode Fusion is a *configuration* project (not an app). Install on OpenCode, 
 npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
 ```
 
+The installer needs Node 20.12+; on older Node (e.g. Ubuntu's apt default 18.x) it crashes with a `styleText` SyntaxError — upgrade Node, pin `npx skills@1.5.15 add …`, or use the offline fallback below.
+
 Then say `set up fusion` (or run `/fusion-setup`) — skills are discovered on demand, no restart needed to pick one up. The skill writes global config under `~/.config/opencode/` and installs agent prompts; restart OpenCode after it finishes, because config loads at startup.
 
 Offline fallback from a clone:

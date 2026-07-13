@@ -28,7 +28,7 @@ npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
 set up fusion
 ```
 
-The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. Manual setup and provider examples live in [Setup](#setup).
+The installer needs **Node 20.12 or newer** - on older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. Manual setup and provider examples live in [Setup](#setup).
 
 ## Why it works
 
@@ -83,7 +83,7 @@ Fusion lives entirely in your **global** opencode config at `~/.config/opencode/
 
 ### Recommended: let opencode set it up
 
-This repo ships a skill, `fusion-setup`, that configures everything conversationally. Install it globally:
+This repo ships a skill, `fusion-setup`, that configures everything conversationally. Install it globally (Node 20.12+):
 
 ```bash
 npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
@@ -233,6 +233,18 @@ Different layer. Skill libraries like [superpowers](https://github.com/obra/supe
 <summary>Common issues</summary>
 
 If you installed the optional command, run `/fusion-status` first - it checks the usual suspects in one shot: live enforcement in the running session, the config on disk, and the installed agent files.
+
+### `npx skills add ...` crashes with a `styleText` SyntaxError
+
+```
+SyntaxError: The requested module 'node:util' does not provide an export named 'styleText'
+```
+
+Your Node is too old for the installer. The install command runs Vercel's [`skills`](https://github.com/vercel-labs/skills) CLI, and since `skills@1.5.16` its bundle uses `util.styleText`, which only exists in **Node 20.12+** - even though the package still declares support for Node 18 ([vercel-labs/skills#1672](https://github.com/vercel-labs/skills/issues/1672)). Node 18 - Ubuntu's apt default, end-of-life since April 2025 - crashes at startup with the error above. Any of these fixes work:
+
+- **Upgrade Node** (recommended - Node 18 is EOL anyway): install Node 22 via [nvm](https://github.com/nvm-sh/nvm) or [NodeSource](https://github.com/nodesource/distributions), then re-run the command.
+- **Pin the last compatible installer**: `npx skills@1.5.15 add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y` - 1.5.15 is the last release without the `styleText` import, and the skill it installs is identical.
+- **Skip npx entirely**: clone this repo and copy `.opencode/skills/fusion-setup/` into `~/.config/opencode/skills/` - the skill itself is plain markdown with no Node dependency.
 
 ### The main agent edits files directly
 
