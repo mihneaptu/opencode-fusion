@@ -52,11 +52,11 @@ function findNamedBlock(frontmatter, blockName) {
       const lead = line.match(/^(\s*)/)[1].length;
       if (lead <= indent) break;
       if (lead !== indent + 2) continue;
-      const childMatch = line.match(/^(\s*)([^:]+):\s*(.*)$/);
+      const childMatch = line.match(/^(\s*)(?:"([^"]+)"|'([^']+)'|([^:]+)):\s*(.*)$/);
       if (!childMatch) continue;
       children.push({
-        key: unquote(childMatch[2].trim()),
-        value: unquote(childMatch[3].trim()),
+        key: (childMatch[2] ?? childMatch[3] ?? childMatch[4]).trim(),
+        value: unquote(childMatch[5].trim()),
         index: j,
       });
     }
@@ -134,6 +134,27 @@ function bashKeyMatchesCommand(key, cmd) {
   const k = key.toLowerCase();
   const c = cmd.toLowerCase();
   return k === c || k.startsWith(c + '*') || k.startsWith(c + ' ');
+}
+
+function wildcardMatches(pattern, command) {
+  const normalizedPattern = pattern.replaceAll('\\', '/');
+  const normalizedCommand = command.replaceAll('\\', '/');
+  let source = normalizedPattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  if (source.endsWith(' .*')) {
+    source = source.slice(0, -3) + '( .*)?';
+  }
+  const flags = process.platform === 'win32' ? 'si' : 's';
+  return new RegExp(`^${source}$`, flags).test(normalizedCommand);
+}
+
+function resolveBashRule(block, command) {
+  return block.children.reduce(
+    (decision, rule) => wildcardMatches(rule.key, command) ? rule.value : decision,
+    undefined
+  );
 }
 
 const agentFiles = fs
@@ -249,6 +270,92 @@ describe('agent frontmatter contracts', () => {
       forcePushDenies.length >= 1,
       'contract violated: sidekick bash must retain explicit force-push denial'
     );
+  });
+
+  test('executors deny git commit and git push entirely', () => {
+    for (const role of ['sidekick', 'design']) {
+      const bash = requireBlock(agents[role].frontmatter, 'bash', role);
+      const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+      assert.equal(
+        rules['git commit*'],
+        'deny',
+        `contract violated: ${role} bash must deny git commit* (committing belongs to the main agent)`
+      );
+      assert.equal(
+        rules['git push*'],
+        'deny',
+        `contract violated: ${role} bash must deny git push* (pushing belongs to the main agent)`
+      );
+      for (const command of [
+        'git commit -m change',
+        'git -C . commit -m change',
+        'git --git-dir .git push origin main',
+        'env git push origin main',
+      ]) {
+        assert.equal(
+          resolveBashRule(bash, command),
+          'deny',
+          `contract violated: ${role} must deny common git wrapper form: ${command}`
+        );
+      }
+    }
+  });
+
+  test('build asks on commit/push and denies dangerous push variants after git push*', () => {
+    const bash = requireBlock(agents.build.frontmatter, 'bash', 'build');
+    const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+    assert.equal(rules['git add*'], 'allow', 'contract violated: build bash must allow git add*');
+    assert.equal(rules['git commit*'], 'ask', 'contract violated: build bash git commit* must be ask');
+    assert.equal(rules['git push*'], 'ask', 'contract violated: build bash git push* must be ask');
+    for (const command of [
+      'git push origin feature',
+      'git push origin feature--force',
+      'git push origin feature--mirror',
+      'git push origin feature--delete',
+      'git push origin feature--prune',
+    ]) {
+      assert.equal(
+        resolveBashRule(bash, command),
+        'ask',
+        `contract violated: an ordinary push must require approval: ${command}`
+      );
+    }
+    for (const command of [
+      'git push --force origin main',
+      'git push -f origin main',
+      'git push -uf origin main',
+      'git push -d origin retired',
+      'git push --delete origin retired',
+      'git push --prune origin',
+      'git push origin --prune',
+      'git push --mir origin',
+      'git push origin --mir',
+      'git push origin :retired',
+      'git push origin +main',
+    ]) {
+      assert.equal(
+        resolveBashRule(bash, command),
+        'deny',
+        `contract violated: dangerous push must be denied: ${command}`
+      );
+    }
+    // opencode resolves overlapping bash patterns last-match-wins, so every
+    // push deny must appear AFTER the broad "git push*" ask to actually win.
+    const pushAsk = bash.children.find((c) => c.key === 'git push*');
+    const pushDenies = bash.children.filter(
+      (c) => c.value === 'deny' && c.key.startsWith('git push')
+    );
+    assert.ok(pushDenies.length >= 4, 'contract violated: build bash must keep the dangerous-push denylist');
+    for (const deny of pushDenies) {
+      assert.ok(
+        deny.index > pushAsk.index,
+        `contract violated: ${deny.key} deny must appear after "git push*" (last-match-wins)`
+      );
+    }
+  });
+
+  test('design is fenced to the workspace', () => {
+    assertPermissionValue('design', 'external_directory', 'deny');
   });
 
   test('design has edit allow and the destructive-command denylist', () => {
