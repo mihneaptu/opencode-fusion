@@ -20,6 +20,10 @@ permission:
     "git clean*": ask
     "rm -rf *": ask
     "rm -fr *": ask
+    "Remove-Item *-Recurse*": ask
+    "Remove-Item *-Force*": ask
+    "rd /s*": ask
+    "del /s*": ask
     "cat *.env*": deny
     "Get-Content *.env*": deny
   task:

@@ -195,7 +195,7 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - `"enabled_providers": ["..."]` (top level) - allowlist the providers opencode loads, so a stray credential elsewhere cannot add models to the picker.
 - `"compaction": { "prune": true }` (top level) - drops stale tool outputs when compacting, cutting main-agent token cost in a delegation-heavy flow.
 - `"limit": { "context": <n>, "output": <n> }` (inside a custom model block) - lets opencode track remaining context for models not on models.dev, such as local gateways. Use the model's real window; do not guess.
-- Sidekick bash denylist - the sidekick has broad `bash`, but its prompt frontmatter denies direct `git commit`/`git push` and common wrapper forms (committing is the main agent's job, after review), blocks common `.env` reads, and asks before `git reset --hard`, `git clean`, and `rm -rf`. These are defense-in-depth command guards, not process isolation.
+- Sidekick bash denylist - the sidekick has broad `bash`, but its prompt frontmatter denies direct `git commit`/`git push` and common wrapper forms (committing is the main agent's job, after review), blocks common `.env` reads, and asks before `git reset --hard`, `git clean`, and `rm -rf` (plus their PowerShell/cmd equivalents: `Remove-Item -Recurse`/`-Force`, `rd /s`, `del /s`). These are defense-in-depth command guards, not process isolation.
 
 </details>
 
