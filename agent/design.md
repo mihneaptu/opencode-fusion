@@ -9,6 +9,10 @@ permission:
     "*": allow
     "git commit*": deny
     "git push*": deny
+    "git * commit*": deny
+    "git * push*": deny
+    "env git commit*": deny
+    "env git push*": deny
     "git push --force*": deny
     "git push -f*": deny
     "git push *--force*": deny
@@ -46,6 +50,6 @@ You are the DESIGN agent in a Fusion team. You own frontend implementation - tur
 
 ## Rules
 - Verify your work: run the build or dev server, fix errors before reporting back.
-- Never run `git commit` or `git push`, and stay inside the project directory - both are blocked for you by design. The main agent commits after reviewing your work.
+- Never run `git commit` or `git push`, and stay inside the project directory. Direct Git invocations and common wrappers are blocked as defense-in-depth, and opencode's path-aware tools are workspace-restricted; broad bash is not an OS sandbox. The main agent commits after reviewing your work.
 - Clean up temporary files.
 - ASCII only in your output text (the code you write may contain whatever the project needs).

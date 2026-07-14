@@ -60,15 +60,15 @@ describe('fusion-audit plugin smoke test', () => {
     assert.equal(logged[0].extra.parentID, 'ses_root');
   });
 
-  test('logs edit/write/patch/task tool calls and ignores read-only tools', async () => {
+  test('logs edit/write/apply_patch/task tool calls and ignores read-only tools', async () => {
     logged.length = 0;
-    // "patch" is opencode's third mutation tool gated by the edit permission.
-    for (const tool of ['edit', 'write', 'patch', 'task', 'read', 'grep', 'bash']) {
+    // "apply_patch" is opencode's third mutation tool gated by the edit permission.
+    for (const tool of ['edit', 'write', 'apply_patch', 'task', 'read', 'grep', 'bash']) {
       await hooks['tool.execute.after']({ tool, sessionID: 'ses_x' });
     }
     assert.deepEqual(
       logged.map((entry) => entry.extra.tool),
-      ['edit', 'write', 'patch', 'task'],
+      ['edit', 'write', 'apply_patch', 'task'],
       'only file-mutating and delegation tools belong in the audit trail'
     );
   });
