@@ -16,4 +16,4 @@ gpt5.6-sol-plan.md
 # Design-iteration screenshots and browser-tool output; real site images live in site/assets/
 site/*.png
 site/*.jpeg
-site/.playwright-mcp/
+.playwright-mcp/

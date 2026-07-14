@@ -37,7 +37,7 @@ cp -r .opencode/skills/fusion-setup ~/.config/opencode/skills/
 ## Repo
 
 - [GitHub](https://github.com/mihneaptu/opencode-fusion)
-- [README](https://github.com/mihneaptu/opencode-fusion#readme)
+- [README](https://github.com/mihneaptu/opencode-fusion#readme) — canonical reference; this site is the short version. Prefer the README when the two differ.
 
 ## Core ideas for agents helping users
 
