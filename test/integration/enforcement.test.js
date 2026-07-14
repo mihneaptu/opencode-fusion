@@ -17,13 +17,19 @@ const { FakeProvider, toolNames, systemText, toolResults } = require('./fake-pro
 const { createEnv, runOpencode, opencodeAvailable } = require('./opencode-env');
 
 const enabled = process.env.FUSION_INTEGRATION === '1';
+const available = !enabled || opencodeAvailable();
+if (enabled && !available) {
+  test('FUSION_INTEGRATION=1 requires an opencode binary on PATH', () => {
+    assert.fail('FUSION_INTEGRATION=1 but no opencode binary is available on PATH');
+  });
+}
 const skip = enabled
-  ? opencodeAvailable()
+  ? available
     ? false
-    : 'FUSION_INTEGRATION=1 but no opencode binary on PATH'
+    : 'opencode availability is reported by the failing precondition test'
   : 'set FUSION_INTEGRATION=1 (runs the real opencode binary)';
 
-const MUTATION_TOOLS = ['edit', 'write', 'patch'];
+const MUTATION_TOOLS = ['edit', 'write', 'apply_patch'];
 const SEARCH_TOOLS = ['grep', 'glob', 'list'];
 
 // The build prompt also mentions "SIDEKICK", so a sidekick session is
@@ -69,16 +75,22 @@ describe('live permission enforcement (real opencode, fake provider)', { skip },
     }
   });
 
-  test('plan agent tool schema has no mutation tools either', async () => {
+  test('plan agent tool schema has no mutation or search tools', async () => {
     const { provider, result } = await captureSchema('plan');
     assert.equal(result.code, 0, `opencode exited ${result.code}: ${result.stderr.slice(-800)}`);
     const requests = agentRequests(provider);
     assert.ok(requests.length >= 1, 'no tool-bearing request reached the fake provider');
     const tools = toolNames(requests[0]);
-    for (const denied of MUTATION_TOOLS) {
+    for (const denied of [...MUTATION_TOOLS, ...SEARCH_TOOLS]) {
       assert.ok(
         !tools.includes(denied),
         `plan agent was offered denied tool "${denied}" (schema: ${tools.join(', ')})`
+      );
+    }
+    for (const required of ['read', 'task']) {
+      assert.ok(
+        tools.includes(required),
+        `plan agent is missing expected tool "${required}" (schema: ${tools.join(', ')})`
       );
     }
   });

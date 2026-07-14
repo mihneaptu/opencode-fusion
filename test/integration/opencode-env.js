@@ -12,21 +12,44 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 
 const repoRoot = path.join(__dirname, '..', '..');
-const CATALOG_URL = 'https://models.dev/api.json';
+const PASSTHROUGH_ENV = new Set([
+  'path',
+  'pathext',
+  'systemroot',
+  'comspec',
+  'temp',
+  'tmp',
+  'tmpdir',
+  'lang',
+  'lc_all',
+  'ci',
+]);
 
-/** Seed the models.dev catalog so startup never blocks on that fetch.
-    Prefers the developer's warm cache; falls back to one network fetch. */
-async function seedCatalog(fakeHome) {
+/** Seed an empty local catalog so startup never reads the developer's cache
+    or reaches models.dev. The configured fake provider supplies its model. */
+function seedCatalog(fakeHome) {
   const target = path.join(fakeHome, '.cache', 'opencode', 'models.json');
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  const real = path.join(os.homedir(), '.cache', 'opencode', 'models.json');
-  if (fs.existsSync(real)) {
-    fs.copyFileSync(real, target);
-    return;
+  fs.writeFileSync(target, '{}');
+}
+
+function isolatedProcessEnv() {
+  const env = {};
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value !== undefined && PASSTHROUGH_ENV.has(key.toLowerCase())) env[key] = value;
   }
-  const resp = await fetch(CATALOG_URL);
-  if (!resp.ok) throw new Error(`models.dev catalog fetch failed: ${resp.status}`);
-  fs.writeFileSync(target, Buffer.from(await resp.arrayBuffer()));
+  return env;
+}
+
+function seedGitBoundary(projectDir) {
+  const gitDir = path.join(projectDir, '.git');
+  fs.mkdirSync(path.join(gitDir, 'objects'), { recursive: true });
+  fs.mkdirSync(path.join(gitDir, 'refs', 'heads'), { recursive: true });
+  fs.writeFileSync(path.join(gitDir, 'HEAD'), 'ref: refs/heads/main\n');
+  fs.writeFileSync(
+    path.join(gitDir, 'config'),
+    '[core]\n\trepositoryformatversion = 0\n\tbare = false\n'
+  );
 }
 
 /** Create the isolated home + project. Returns paths, the env for spawning
@@ -48,6 +71,7 @@ async function createEnv(baseURL) {
     $schema: 'https://opencode.ai/config.json',
     model: 'fake/fake-model',
     small_model: 'fake/fake-model',
+    enabled_providers: ['fake'],
     provider: {
       fake: {
         npm: '@ai-sdk/openai-compatible',
@@ -62,15 +86,14 @@ async function createEnv(baseURL) {
       explore: { model: 'fake/fake-model' },
     },
   };
-  fs.writeFileSync(path.join(configDir, 'opencode.json'), JSON.stringify(config, null, 2));
+  const configText = JSON.stringify(config, null, 2);
+  fs.writeFileSync(path.join(configDir, 'opencode.json'), configText);
+  fs.writeFileSync(path.join(projectDir, 'opencode.json'), configText);
   fs.writeFileSync(path.join(projectDir, 'README.md'), 'fusion integration fixture\n');
-  await seedCatalog(fakeHome);
+  seedGitBoundary(projectDir);
+  seedCatalog(fakeHome);
 
-  const env = { ...process.env };
-  // Drop any opencode-specific overrides from the developer's shell.
-  for (const key of Object.keys(env)) {
-    if (key.startsWith('OPENCODE_')) delete env[key];
-  }
+  const env = isolatedProcessEnv();
   Object.assign(env, {
     HOME: fakeHome,
     USERPROFILE: fakeHome, // Windows home resolution

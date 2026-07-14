@@ -27,6 +27,10 @@ function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
+function writeJson(file, value) {
+  fs.writeFileSync(file, JSON.stringify(value));
+}
+
 describe('fusion-setup deterministic installer', () => {
   let dir; // throwaway config dir standing in for ~/.config/opencode
   let fragmentPath;
@@ -72,9 +76,11 @@ describe('fusion-setup deterministic installer', () => {
     }
     assert.ok(!fs.existsSync(path.join(dir, 'agent', 'design.md')), 'optional role installed unasked');
     const manifest = readJson(path.join(dir, '.fusion-install.json'));
-    assert.equal(manifest.hadExistingConfig, false);
-    assert.equal(manifest.backup, null);
+    assert.equal(manifest.version, 2);
+    assert.equal(manifest.config.existed, false);
+    assert.equal(manifest.config.originalContent, null);
     assert.deepEqual(manifest.roles, ['build', 'plan', 'sidekick']);
+    assert.ok(manifest.files.every((entry) => typeof entry.installedHash === 'string'));
   });
 
   test('apply over an existing config backs it up and preserves unrelated keys', () => {
@@ -105,6 +111,86 @@ describe('fusion-setup deterministic installer', () => {
     const first = readJson(path.join(dir, 'opencode.json'));
     assert.equal(run(applyArgs()).status, 0);
     assert.deepEqual(readJson(path.join(dir, 'opencode.json')), first);
+  });
+
+  test('undo restores a prompt that existed before apply', () => {
+    const prompt = path.join(dir, 'agent', 'build.md');
+    fs.mkdirSync(path.dirname(prompt), { recursive: true });
+    fs.writeFileSync(prompt, 'user build prompt\n');
+
+    assert.equal(run(applyArgs()).status, 0);
+    assert.notEqual(fs.readFileSync(prompt, 'utf8'), 'user build prompt\n');
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(fs.readFileSync(prompt, 'utf8'), 'user build prompt\n');
+  });
+
+  test('undo refuses without changing anything when a managed prompt was modified', () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const prompt = path.join(dir, 'agent', 'build.md');
+    fs.writeFileSync(prompt, 'user changed this after install\n');
+    const configBefore = fs.readFileSync(path.join(dir, 'opencode.json'));
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /modified.*agent\/build\.md|agent\/build\.md.*modified/i);
+    assert.equal(fs.readFileSync(prompt, 'utf8'), 'user changed this after install\n');
+    assert.deepEqual(fs.readFileSync(path.join(dir, 'opencode.json')), configBefore);
+    assert.ok(fs.existsSync(path.join(dir, '.fusion-install.json')));
+  });
+
+  test('undo refuses without changing anything when installed config was modified', () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const configPath = path.join(dir, 'opencode.json');
+    const changed = { ...readJson(configPath), theme: 'changed-after-install' };
+    writeJson(configPath, changed);
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /opencode\.json.*modified|modified.*opencode\.json/i);
+    assert.deepEqual(readJson(configPath), changed);
+    assert.ok(fs.existsSync(path.join(dir, '.fusion-install.json')));
+  });
+
+  test('reapply refuses when a managed file changed after the prior apply', () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const prompt = path.join(dir, 'agent', 'build.md');
+    fs.writeFileSync(prompt, 'local customization\n');
+    const configBefore = fs.readFileSync(path.join(dir, 'opencode.json'));
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /modified.*agent\/build\.md|agent\/build\.md.*modified/i);
+    assert.equal(fs.readFileSync(prompt, 'utf8'), 'local customization\n');
+    assert.deepEqual(fs.readFileSync(path.join(dir, 'opencode.json')), configBefore);
+  });
+
+  test('reapply refuses when installed config changed after the prior apply', () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const configPath = path.join(dir, 'opencode.json');
+    const changed = { ...readJson(configPath), theme: 'local-config-change' };
+    writeJson(configPath, changed);
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /opencode\.json.*modified|modified.*opencode\.json/i);
+    assert.deepEqual(readJson(configPath), changed);
+  });
+
+  test('reapply preserves the original baseline and union of managed files', () => {
+    writeJson(path.join(dir, 'opencode.json'), { model: 'old/model', theme: 'original' });
+    assert.equal(run(applyArgs(['--extras', 'plugin'])).status, 0);
+    assert.ok(fs.existsSync(path.join(dir, 'plugins', 'fusion-audit.js')));
+
+    assert.equal(run(applyArgs()).status, 0);
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(readJson(path.join(dir, 'opencode.json')), {
+      model: 'old/model',
+      theme: 'original',
+    });
+    assert.ok(!fs.existsSync(path.join(dir, 'plugins', 'fusion-audit.js')));
   });
 
   test('extras install the commands and the audit plugin', () => {
@@ -139,6 +225,75 @@ describe('fusion-setup deterministic installer', () => {
     assert.equal(fs.readFileSync(path.join(dir, 'opencode.json'), 'utf8'), '{broken');
   });
 
+  test('valid JSON with a non-object config root is refused unchanged', () => {
+    fs.writeFileSync(path.join(dir, 'opencode.json'), '[]');
+    const result = run(applyArgs());
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /existing.*object/i);
+    assert.equal(fs.readFileSync(path.join(dir, 'opencode.json'), 'utf8'), '[]');
+  });
+
+  test('malformed model references and agent entries are refused', () => {
+    for (const invalid of [
+      { ...fragment, model: 'missing-provider-separator' },
+      { ...fragment, small_model: '' },
+      { ...fragment, agent: { ...fragment.agent, reviewer: 'not-an-object' } },
+      { ...fragment, agent: { ...fragment.agent, reviewer: { model: '/missing-provider' } } },
+    ]) {
+      writeJson(fragmentPath, invalid);
+      const result = run(applyArgs());
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /provider\/model-id|agent.*object/i);
+      assert.ok(!fs.existsSync(path.join(dir, 'opencode.json')));
+    }
+  });
+
+  test('malformed nested Fusion config fields are refused', () => {
+    for (const invalid of [
+      { ...fragment, enabled_providers: 'prov' },
+      { ...fragment, provider: { prov: { models: [] } } },
+      { ...fragment, provider: { prov: { options: [] } } },
+      { ...fragment, provider: { prov: { models: { model: 'not-an-object' } } } },
+      { ...fragment, provider: { prov: { options: { baseURL: 42 } } } },
+      { ...fragment, provider: { prov: { models: { model: { attachment: 'yes' } } } } },
+      { ...fragment, provider: { prov: { models: { model: { modalities: [] } } } } },
+      { ...fragment, provider: { prov: { models: { model: { modalities: { input: 'text' } } } } } },
+      { ...fragment, provider: { prov: { models: { model: { modalities: { input: ['bogus'] } } } } } },
+      { ...fragment, provider: { prov: { models: { model: { limit: { context: 1000 } } } } } },
+      { ...fragment, agent: { build: { model: 'prov/main-model', permission: [] } } },
+      { ...fragment, compaction: [] },
+    ]) {
+      writeJson(fragmentPath, invalid);
+      const result = run(applyArgs());
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /must be|must contain/i);
+      assert.ok(!fs.existsSync(path.join(dir, 'opencode.json')));
+    }
+  });
+
+  test('preserves valid agent permission string shorthand in existing config', () => {
+    writeJson(path.join(dir, 'opencode.json'), {
+      agent: { custom: { permission: 'deny' } },
+      theme: 'keep-me',
+    });
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readJson(path.join(dir, 'opencode.json')).agent.custom.permission, 'deny');
+  });
+
+  test('invalid destination parent is refused before config changes', () => {
+    writeJson(path.join(dir, 'opencode.json'), { model: 'old/model' });
+    fs.writeFileSync(path.join(dir, 'agent'), 'not a directory');
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /agent.*directory|destination parent/i);
+    assert.deepEqual(readJson(path.join(dir, 'opencode.json')), { model: 'old/model' });
+    assert.equal(fs.readFileSync(path.join(dir, 'agent'), 'utf8'), 'not a directory');
+    assert.ok(!fs.existsSync(path.join(dir, '.fusion-install.json')));
+  });
+
   test('unknown role or extra is refused before any filesystem change', () => {
     for (const args of [applyArgs(['--roles', 'build,hacker']), applyArgs(['--extras', 'rootkit'])]) {
       const result = run(args);
@@ -164,6 +319,71 @@ describe('fusion-setup deterministic installer', () => {
     const result = run(applyArgs());
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /WARNING:.*ghost/);
+  });
+
+  test('warns when small_model references a provider with no block', () => {
+    writeJson(fragmentPath, { ...fragment, small_model: 'small-provider/model' });
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /WARNING:.*small-provider/);
+  });
+
+  test('undo rejects a manifest path that escapes the config directory', () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const victim = path.join(path.dirname(dir), `${path.basename(dir)}-victim`);
+    fs.writeFileSync(victim, 'keep me');
+    try {
+      const manifestPath = path.join(dir, '.fusion-install.json');
+      const manifest = readJson(manifestPath);
+      manifest.files = [{
+        path: `../${path.basename(victim)}`,
+        existed: false,
+        originalContent: null,
+        originalMode: null,
+        installedHash: '0'.repeat(64),
+      }];
+      writeJson(manifestPath, manifest);
+
+      const result = run(['undo', '--config-dir', dir]);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /unsafe|outside|manifest/i);
+      assert.equal(fs.readFileSync(victim, 'utf8'), 'keep me');
+      assert.ok(fs.existsSync(manifestPath));
+    } finally {
+      fs.rmSync(victim, { force: true });
+    }
+  });
+
+  test('preserves private config permissions on POSIX', { skip: process.platform === 'win32' }, () => {
+    const configPath = path.join(dir, 'opencode.json');
+    writeJson(configPath, { model: 'old/model' });
+    fs.chmodSync(configPath, 0o600);
+    assert.equal(run(applyArgs()).status, 0);
+    assert.equal(fs.statSync(configPath).mode & 0o777, 0o600);
+  });
+
+  test('undo refuses a mode-only change to a managed file on POSIX', {
+    skip: process.platform === 'win32',
+  }, () => {
+    assert.equal(run(applyArgs()).status, 0);
+    const prompt = path.join(dir, 'agent', 'build.md');
+    const installedMode = fs.statSync(prompt).mode & 0o777;
+    fs.chmodSync(prompt, installedMode === 0o600 ? 0o644 : 0o600);
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /mode|modified/i);
+    assert.ok(fs.existsSync(path.join(dir, '.fusion-install.json')));
+  });
+
+  test('apply and undo work when the config directory contains spaces', () => {
+    const spacedDir = path.join(dir, 'config dir with spaces');
+    const args = ['apply', '--config', fragmentPath, '--config-dir', spacedDir];
+    const applied = run(args);
+    assert.equal(applied.status, 0, applied.stderr);
+    const undone = run(['undo', '--config-dir', spacedDir]);
+    assert.equal(undone.status, 0, undone.stderr);
+    assert.ok(!fs.existsSync(path.join(spacedDir, 'opencode.json')));
   });
 
   test('undo restores the pre-install config and removes installed files', () => {
