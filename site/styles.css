@@ -646,7 +646,7 @@ a.nav-ext {
 
 /* Full-bleed ambient video (blue/amber fusion light). Decorative only.
    Poster + soft canvas veil keep text readable if the file is slow or paused.
-   Mask fades the media into the page canvas so the handoff into .problem
+   Mask fades the media into the page canvas so the handoff into the problem section
    reads as a soft blend, not a hard crop line. */
 .hero-media {
   position: absolute;
