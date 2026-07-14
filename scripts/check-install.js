@@ -12,7 +12,10 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const OPTIONAL_ROLES = new Set(['vision.md']);
+// The setup skill always installs these; research/design/reviewer/vision are
+// optional a-la-carte picks, so their absence is a choice, not drift. An
+// installed copy of any role must still match the repo byte-for-byte.
+const CORE_ROLES = new Set(['build.md', 'plan.md', 'sidekick.md']);
 
 const repoAgentDir = path.join(__dirname, '..', 'agent');
 const installedDir = path.join(os.homedir(), '.config', 'opencode', 'agent');
@@ -28,11 +31,11 @@ const names = fs.readdirSync(repoAgentDir).filter((f) => f.endsWith('.md')).sort
 for (const name of names) {
   const installedFile = path.join(installedDir, name);
   if (!fs.existsSync(installedFile)) {
-    if (OPTIONAL_ROLES.has(name)) {
-      console.log(`${name}: not installed (optional role)`);
-    } else {
+    if (CORE_ROLES.has(name)) {
       console.log(`${name}: NOT INSTALLED`);
       drift++;
+    } else {
+      console.log(`${name}: not installed (optional role)`);
     }
     continue;
   }
