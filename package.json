@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "test": "node --test",
+    "test:integration": "node scripts/run-integration.js",
     "check-install": "node scripts/check-install.js"
   }
 }
