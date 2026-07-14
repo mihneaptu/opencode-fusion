@@ -10,7 +10,7 @@ const skillRoot = path.join(root, '.opencode', 'skills', 'fusion-setup');
 
 // The fusion-setup skill ships byte-identical copies of the agent prompts,
 // the slash command, and the audit plugin. Any drift means one side was
-// edited without the other.
+// edited without the other; `npm run sync` refreshes the copies from source.
 const mirroredDirs = [
   { source: path.join(root, 'agent'), copy: path.join(skillRoot, 'agent') },
   { source: path.join(root, '.opencode', 'commands'), copy: path.join(skillRoot, 'commands') },
@@ -23,14 +23,14 @@ for (const { source, copy } of mirroredDirs) {
   test(`${rel(copy)} mirrors ${rel(source)}`, () => {
     const sourceFiles = fs.readdirSync(source).sort();
     const copyFiles = fs.readdirSync(copy).sort();
-    assert.deepEqual(copyFiles, sourceFiles, `file lists of ${rel(source)} and ${rel(copy)} differ`);
+    assert.deepEqual(copyFiles, sourceFiles, `file lists of ${rel(source)} and ${rel(copy)} differ - run \`npm run sync\``);
 
     for (const name of sourceFiles) {
       const sourceBytes = fs.readFileSync(path.join(source, name));
       const copyBytes = fs.readFileSync(path.join(copy, name));
       assert.ok(
         sourceBytes.equals(copyBytes),
-        `${rel(path.join(copy, name))} is not byte-identical to ${rel(path.join(source, name))}`
+        `${rel(path.join(copy, name))} is not byte-identical to ${rel(path.join(source, name))} - run \`npm run sync\``
       );
     }
   });

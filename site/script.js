@@ -1,6 +1,7 @@
 /* =========================================================================
    opencode Fusion - interactions
-   Classic script (no modules). Runs from file:// with zero network access.
+   Classic script (no modules). Runs from file://; the only network call is
+   the optional GitHub star-count fetch, which fails silently offline.
    ========================================================================= */
 (function () {
   'use strict';
@@ -181,7 +182,14 @@
     }
 
     toggle.addEventListener('click', function () {
-      setOpen(!isOpen());
+      var open = !isOpen();
+      setOpen(open);
+      // The nav sits before the toggle in DOM order, so Tab from the toggle
+      // would skip the menu it just opened. Move focus to the first item.
+      if (open) {
+        var first = nav.querySelector('a');
+        if (first) first.focus();
+      }
     });
 
     // Close the menu after following an in-page link.

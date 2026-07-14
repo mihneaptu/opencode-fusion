@@ -170,6 +170,8 @@
           <div class="docs-callout">
             <p><strong>Built for OpenCode.</strong> The v1 reference implementation with mechanical edit deny, multi-provider models, and a setup skill.</p>
           </div>
+
+          <p class="docs-note">This page is the short version. The <a href="https://github.com/mihneaptu/opencode-fusion#readme" target="_blank" rel="noopener noreferrer">README</a> is the canonical reference — full setup, provider examples, FAQ, and the complete troubleshooting list live there.</p>
         </section>
 
         <section id="how-it-works" class="docs-section">
@@ -302,15 +304,8 @@
 
         <section id="customize" class="docs-section">
           <h2>Customize</h2>
-
-          <h3>Swap models</h3>
-          <p>Edit <code>~/.config/opencode/opencode.json</code> under <code>agent.&lt;role&gt;.model</code>. Restart after changes. Keep the sidekick cheaper and faster than main when you can. OpenCode’s multi-provider setup makes cross-family main/sidekick pairs easy.</p>
-
-          <h3>Role behavior</h3>
-          <p>Agent prompts live under <code>~/.config/opencode/agent/</code> after setup (and under <code>agent/</code> in this repo). Edit those role files when you want different behavior, then restart OpenCode so config reloads.</p>
-
-          <h3>Bash allowlist (OpenCode main)</h3>
-          <p>Main agent bash is allowlisted for verify and git. Keep <code>"*": "deny"</code> first. Do not chain commands with <code>&amp;&amp;</code>, <code>||</code>, <code>;</code>, or <code>|</code> — each call is matched alone.</p>
+          <p>Models live in <code>~/.config/opencode/opencode.json</code> under <code>agent.&lt;role&gt;.model</code>; role behavior lives in the agent prompts under <code>~/.config/opencode/agent/</code>. Edit either, then restart OpenCode — config loads at startup. Keep the sidekick cheaper and faster than main when you can.</p>
+          <p>The README covers the rest: <a href="https://github.com/mihneaptu/opencode-fusion#customize" target="_blank" rel="noopener noreferrer">swapping models per provider</a>, <a href="https://github.com/mihneaptu/opencode-fusion#adjust-the-bash-allowlist" target="_blank" rel="noopener noreferrer">adjusting the main agent’s bash allowlist</a> (keep <code>"*": "deny"</code> first; never chain commands — each call is matched alone), and optional hardening keys.</p>
         </section>
 
         <section id="troubleshooting" class="docs-section">
@@ -327,19 +322,9 @@
               <dt>Main agent edits files directly</dt>
               <dd>Config was not loaded. Fully quit and restart OpenCode. Confirm <code>edit: deny</code> in the installed <code>~/.config/opencode/agent/build.md</code> frontmatter.</dd>
             </div>
-            <div class="docs-faq-item">
-              <dt>Sidekick is never invoked</dt>
-              <dd>Check the build agent's <code>permission.task</code> graph in <code>~/.config/opencode/agent/build.md</code>: broad <code>"*": deny</code> first, then <code>"sidekick": allow</code>. Do not use bare <code>task: allow</code> - that exposes every subagent, including the built-in <code>general</code>.</dd>
-            </div>
-            <div class="docs-faq-item">
-              <dt>Model returns 404 or 400</dt>
-              <dd>Check exact <code>provider-id/model-id</code>, provider <code>baseURL</code>, and credentials. Some local proxies omit models from <code>/v1/models</code> even when the id works.</dd>
-            </div>
-            <div class="docs-faq-item">
-              <dt>Bash command blocked unexpectedly</dt>
-              <dd>Denials of non-allowlisted commands are expected and self-recovering. If an <em>allowlisted</em> command is blocked: the allowlist matches whole commands, so chaining or wrapping breaks the match. Run each allowed command as its own call.</dd>
-            </div>
           </dl>
+
+          <p>More cases — sidekick never invoked, model 404/400, a blocked bash command, searches missing gitignored files — are in the <a href="https://github.com/mihneaptu/opencode-fusion#troubleshooting" target="_blank" rel="noopener noreferrer">README’s troubleshooting section</a>.</p>
         </section>
 
         <section id="limitations" class="docs-section">
