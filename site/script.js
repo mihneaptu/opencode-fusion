@@ -8,6 +8,29 @@
   var reduceMotion = window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* ---- Shared helpers -------------------------------------------------- */
+  // localStorage can throw (private mode / file:// quirks); treat it as optional.
+  function readStorage(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  function writeStorage(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* best-effort */ }
+  }
+
+  // Coalesce bursts of events (scroll/resize) into one update per frame.
+  function rafThrottle(update) {
+    var ticking = false;
+    return function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(function () {
+        update();
+        ticking = false;
+      });
+    };
+  }
+
   /* ---- Scroll reveal --------------------------------------------------- */
   function initReveal() {
     var revealEls = document.querySelectorAll('.reveal');
@@ -20,26 +43,21 @@
       return;
     }
 
-    var observer = new IntersectionObserver(function (entries) {
+    function onReveal(entries, obs) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
+          obs.unobserve(entry.target);
         }
       });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+    }
+
+    var observer = new IntersectionObserver(onReveal, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
 
     /* Late reveals (e.g. flow diagram) use a stricter root margin so they
        enter a touch later than default reveals, without a scroll gate that
        could strand them invisible when already on screen at load. */
-    var lateObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          lateObserver.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: '0px 0px -18% 0px', threshold: 0.2 });
+    var lateObserver = new IntersectionObserver(onReveal, { rootMargin: '0px 0px -18% 0px', threshold: 0.2 });
 
     revealEls.forEach(function (el) {
       if (el.classList.contains('reveal-late')) lateObserver.observe(el);
@@ -53,7 +71,7 @@
     if (!buttons.length) return;
 
     buttons.forEach(function (btn) {
-      var label = btn.querySelector('.copy-btn-text') || btn;
+      var label = btn.querySelector('.copy-btn-text');
       var status = document.getElementById('copy-status');
       var revertTimer = null;
 
@@ -131,8 +149,7 @@
 
     /* Paint the last-known count immediately so a refresh never flashes the
        "GitHub" fallback while the API round-trip is in flight. */
-    var cached = null;
-    try { cached = localStorage.getItem('gh-stars'); } catch (e) {}
+    var cached = readStorage('gh-stars');
     if (cached) show(cached);
 
     fetch('https://api.github.com/repos/mihneaptu/opencode-fusion')
@@ -141,7 +158,7 @@
         if (d && typeof d.stargazers_count === 'number') {
           var count = d.stargazers_count.toLocaleString('en-US');
           show(count);
-          try { localStorage.setItem('gh-stars', count); } catch (e) {}
+          writeStorage('gh-stars', count);
         }
       })
       .catch(function () { /* keep whatever label is showing */ });
@@ -224,18 +241,11 @@
     var header = document.querySelector('.site-header');
     if (!header) return;
 
-    var ticking = false;
     function update() {
       header.classList.toggle('is-scrolled', window.scrollY > 8);
-      ticking = false;
     }
     // rAF-throttled scroll handler; CSS owns the (reduced-motion-aware) transition.
-    window.addEventListener('scroll', function () {
-      if (!ticking) {
-        window.requestAnimationFrame(update);
-        ticking = true;
-      }
-    }, { passive: true });
+    window.addEventListener('scroll', rafThrottle(update), { passive: true });
     update();
   }
 
@@ -258,17 +268,19 @@
   // Apply theme to the DOM only. Does NOT write localStorage - persistence
   // is reserved for explicit user toggles. Behavior: initial = system until
   // first click, then sticky light/dark (no UI path back to "follow OS").
-  function applyTheme(theme, options) {
-    var opts = options || {};
+  function applyTheme(theme) {
     var next = theme === 'dark' ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', next);
     updateThemeToggleLabel(next);
     // Keep browser chrome (mobile address bar) in step with the chosen theme,
     // which may differ from the OS preference the static metas follow.
-    var chrome = next === 'dark' ? '#0d1117' : '#fbfbfd';
-    var metas = document.querySelectorAll('meta[name="theme-color"]');
-    for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', chrome);
-    if (opts.syncVideo !== false) syncHeroVideo(next);
+    // The stylesheet owns the color; read --bg back rather than restating it.
+    var chrome = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if (chrome) {
+      var metas = document.querySelectorAll('meta[name="theme-color"]');
+      for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', chrome);
+    }
+    syncHeroVideo(next);
   }
 
   function initTheme() {
@@ -276,14 +288,13 @@
     // enable smooth color transitions only after the first paint.
     // Stored value wins only if the user explicitly chose light/dark; otherwise
     // follow the OS preference without writing it to storage.
-    var stored = null;
-    try { stored = localStorage.getItem(THEME_KEY); } catch (e) { stored = null; }
+    var stored = readStorage(THEME_KEY);
     var theme = (stored === 'light' || stored === 'dark')
       ? stored
       : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
           ? 'dark'
           : 'light');
-    applyTheme(theme, { syncVideo: true });
+    applyTheme(theme);
 
     // Defer theme-ready so the initial theme does not animate in.
     requestAnimationFrame(function () {
@@ -299,7 +310,7 @@
         applyTheme(next);
         // Persist only on explicit user action so OS preference can still win
         // until the user has chosen.
-        try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* private mode / file:// quirks */ }
+        writeStorage(THEME_KEY, next);
       });
     }
 
@@ -307,8 +318,7 @@
     if (window.matchMedia) {
       var mq = window.matchMedia('(prefers-color-scheme: dark)');
       var onChange = function (e) {
-        var userPick = null;
-        try { userPick = localStorage.getItem(THEME_KEY); } catch (err) { userPick = null; }
+        var userPick = readStorage(THEME_KEY);
         if (userPick === 'light' || userPick === 'dark') return;
         applyTheme(e.matches ? 'dark' : 'light');
       };
@@ -336,7 +346,7 @@
   var heroVideoGen = 0;
 
   function syncHeroVideo(theme) {
-    var video = document.getElementById('hero-video') || document.querySelector('.hero-video');
+    var video = document.getElementById('hero-video');
     if (!video) return;
 
     var gen = ++heroVideoGen;
@@ -365,7 +375,7 @@
     else if (video.getAttribute('src')) current = video.getAttribute('src');
 
     if (current === src) {
-      if (gen === heroVideoGen) markVideoReady(video);
+      markVideoReady(video);
       return;
     }
 
@@ -427,7 +437,12 @@
     });
     if (!sections.length) return;
 
+    // Skip the per-link DOM writes on the (frequent) frames where the active
+    // section hasn't changed.
+    var lastActive = null;
     function setActive(id) {
+      if (id === lastActive) return;
+      lastActive = id;
       links.forEach(function (link) {
         var on = link.getAttribute('href') === '#' + id;
         link.classList.toggle('is-active', on);
@@ -449,16 +464,9 @@
       setActive(active);
     }
 
-    var ticking = false;
-    window.addEventListener('scroll', function () {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(function () {
-        update();
-        ticking = false;
-      });
-    }, { passive: true });
-    window.addEventListener('resize', update, { passive: true });
+    var requestUpdate = rafThrottle(update);
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
     update();
   }
 

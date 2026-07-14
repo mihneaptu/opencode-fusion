@@ -9,10 +9,15 @@ const agentDir = path.join(__dirname, '..', 'agent');
 
 // Hand-rolled YAML helpers - not a general parser. Indent assumes 2-space YAML.
 
-function extractFrontmatter(source, fileName) {
+/** Split an agent source into frontmatter and body from a single parse, so the
+    two can never disagree about where the closing --- sits. */
+function parseAgentSource(source, fileName) {
   const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   assert.ok(match, `agent/${fileName} is missing YAML frontmatter delimiters`);
-  return match[1];
+  return {
+    frontmatter: match[1],
+    body: source.slice(match[0].length).replace(/^\r?\n/, ''),
+  };
 }
 
 function linesOf(text) {
@@ -65,20 +70,28 @@ function findNamedBlock(frontmatter, blockName) {
   return null;
 }
 
-function bodyHasAny(body, phrases) {
-  const n = body.toLowerCase().replace(/\s+/g, ' ');
-  return phrases.some((p) => n.includes(p.toLowerCase().replace(/\s+/g, ' ')));
+function normalizeWs(s) {
+  return s.toLowerCase().replace(/\s+/g, ' ');
 }
 
-function bodyMentions(body, ...phrases) {
-  const n = body.toLowerCase().replace(/\s+/g, ' ');
-  return phrases.every((p) => n.includes(p.toLowerCase().replace(/\s+/g, ' ')));
+function bodyHasAny(body, phrases) {
+  const n = normalizeWs(body);
+  return phrases.some((p) => n.includes(normalizeWs(p)));
+}
+
+function bodyMentions(body, phrase) {
+  return bodyHasAny(body, [phrase]);
 }
 
 function requireBlock(frontmatter, blockName, role) {
   const block = findNamedBlock(frontmatter, blockName);
   assert.ok(block, `contract violated: ${role} frontmatter missing ${blockName} block`);
   return block;
+}
+
+/** Map of a block's child keys to their values. */
+function childValues(block) {
+  return Object.fromEntries(block.children.map((c) => [c.key, c.value]));
 }
 
 function assertPermissionValue(role, key, expected) {
@@ -102,7 +115,7 @@ function assertWildcardDenyFirst(block, role, blockName) {
 function assertTaskMap(role, expectedAllows) {
   const task = requireBlock(agents[role].frontmatter, 'task', role);
   assertWildcardDenyFirst(task, role, 'task');
-  const actual = Object.fromEntries(task.children.map((c) => [c.key, c.value]));
+  const actual = childValues(task);
   const expected = { '*': 'deny' };
   for (const name of expectedAllows) expected[name] = 'allow';
 
@@ -120,14 +133,9 @@ function assertTaskMap(role, expectedAllows) {
       `contract violated: ${role} task.${key} must be ${expected[key]}, got ${actual[key]}`
     );
   }
-  // Named allows must appear after the leading wildcard deny (order among allows is free).
-  const keys = task.children.map((c) => c.key);
-  for (const name of expectedAllows) {
-    assert.ok(
-      keys.indexOf(name) > keys.indexOf('*'),
-      `contract violated: ${role} task allow for ${name} must appear after wildcard deny`
-    );
-  }
+  // Allow ordering needs no separate check: assertWildcardDenyFirst pins the
+  // wildcard deny to the first child, so every named allow follows it.
+  return task;
 }
 
 function bashKeyMatchesCommand(key, cmd) {
@@ -164,11 +172,8 @@ const agentFiles = fs
 
 const agents = Object.fromEntries(
   agentFiles.map((name) => {
-    const full = path.join(agentDir, name);
-    const source = fs.readFileSync(full, 'utf8');
-    const frontmatter = extractFrontmatter(source, name);
-    const body = source.slice(source.indexOf('---', 3) + 3).replace(/^\r?\n/, '');
-    return [name.replace(/\.md$/, ''), { name, full, source, frontmatter, body }];
+    const source = fs.readFileSync(path.join(agentDir, name), 'utf8');
+    return [name.replace(/\.md$/, ''), parseAgentSource(source, name)];
   })
 );
 
@@ -184,7 +189,10 @@ const REQUIRED_AGENTS = [
 
 describe('agent frontmatter contracts', () => {
   test('loads every top-level agent/*.md source file', () => {
-    assert.ok(agentFiles.length >= 7, `expected at least 7 agent files, got ${agentFiles.length}`);
+    assert.ok(
+      agentFiles.length >= REQUIRED_AGENTS.length,
+      `expected at least ${REQUIRED_AGENTS.length} agent files, got ${agentFiles.length}`
+    );
     for (const required of REQUIRED_AGENTS) {
       assert.ok(agents[required], `missing agent/${required}.md`);
     }
@@ -210,31 +218,23 @@ describe('agent frontmatter contracts', () => {
   test('build bash has wildcard deny before specific allows', () => {
     const bash = requireBlock(agents.build.frontmatter, 'bash', 'build');
     assertWildcardDenyFirst(bash, 'build', 'bash');
+    // assertWildcardDenyFirst pins the deny to the first child, and children
+    // are collected in line order, so any allow necessarily comes after it.
     const allows = bash.children.filter((c) => c.value === 'allow');
     assert.ok(
       allows.length > 0,
       'contract violated: build bash must allow some verification/git commands after the wildcard deny'
     );
-    const wildcardIndex = bash.children[0].index;
-    for (const allow of allows) {
-      assert.ok(
-        allow.index > wildcardIndex,
-        `contract violated: build bash allow for ${allow.key} must come after "*": deny`
-      );
-    }
   });
 
   for (const [role, expectedAllows] of Object.entries(TASK_MAPS)) {
     test(`${role} task map is wildcard deny plus exact named allows`, () => {
-      assertTaskMap(role, expectedAllows);
+      const values = childValues(assertTaskMap(role, expectedAllows));
+      // Guards on TASK_MAPS itself: these roles must never join the allow lists.
       if (role === 'build') {
-        const task = requireBlock(agents.build.frontmatter, 'task', 'build');
-        const values = Object.fromEntries(task.children.map((c) => [c.key, c.value]));
         assert.notEqual(values.general, 'allow', 'contract violated: build task must not allow general');
       }
       if (role === 'plan') {
-        const task = requireBlock(agents.plan.frontmatter, 'task', 'plan');
-        const values = Object.fromEntries(task.children.map((c) => [c.key, c.value]));
         assert.notEqual(
           values.sidekick,
           'allow',
@@ -275,7 +275,7 @@ describe('agent frontmatter contracts', () => {
   test('executors deny git commit and git push entirely', () => {
     for (const role of ['sidekick', 'design']) {
       const bash = requireBlock(agents[role].frontmatter, 'bash', role);
-      const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+      const rules = childValues(bash);
       assert.equal(
         rules['git commit*'],
         'deny',
@@ -303,7 +303,7 @@ describe('agent frontmatter contracts', () => {
 
   test('build asks on commit/push and denies dangerous push variants after git push*', () => {
     const bash = requireBlock(agents.build.frontmatter, 'bash', 'build');
-    const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+    const rules = childValues(bash);
     assert.equal(rules['git add*'], 'allow', 'contract violated: build bash must allow git add*');
     assert.equal(rules['git commit*'], 'ask', 'contract violated: build bash git commit* must be ask');
     assert.equal(rules['git push*'], 'ask', 'contract violated: build bash git push* must be ask');
@@ -396,7 +396,7 @@ describe('agent frontmatter contracts', () => {
       assert.equal(task.scalar, 'deny', `contract violated: vision task must be deny, got ${task.scalar}`);
       return;
     }
-    const values = Object.fromEntries(task.children.map((c) => [c.key, c.value]));
+    const values = childValues(task);
     assert.equal(
       values['*'],
       'deny',
