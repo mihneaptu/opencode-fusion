@@ -13,7 +13,7 @@ Fusion splits work across agents with asymmetric permissions:
 
 - `build` (main, primary): a strong model that plans, makes judgment calls, and reviews. It CANNOT edit files, search the codebase, or run arbitrary shell. Its only path to changing files is delegating to the sidekick via the `task` tool.
 - `plan` (primary): plan mode - the same planning brain as build. Produces a reviewed plan and delegates exploration, but does not execute; switch to build to carry it out. Overrides opencode's built-in plan agent so plan mode stays Fusion-aware.
-- `sidekick` (subagent): a cheaper, fast model with full `edit` and `bash` access. It executes precise specs handed to it by the main agent.
+- `sidekick` (subagent): a cheaper, fast model with full `edit` and broad `bash` access (`git commit`/`git push` are denied - committing stays with the main agent). It executes precise specs handed to it by the main agent.
 - `explore` (subagent): a cheap model used for read-only codebase exploration.
 - `research` (subagent): read-only external research - web search and docs. No edit access.
 - `design` (subagent): frontend/UI implementation. Loads design skills, edits files, runs the dev/build tooling.
@@ -143,13 +143,13 @@ The skill bundles three optional extras next to it. Install them if the user wan
 
 - Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
 - Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files). It only reports - it changes nothing.
-- Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/task tool calls) via opencode's logger for auditing. It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
+- Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/patch/task tool calls) via opencode's logger for auditing. It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
 
 ## Step 5 - Validate and finish
 
 1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
 2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the commands or plugin, confirm `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
-3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from (`echo $VAR` in their shell, `echo %VAR%` in cmd). An unset variable becomes an empty string and shows up later as auth errors.
+3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from - using a presence-only check that never prints the secret: `[ -n "$VAR" ] && echo set || echo missing` in bash/zsh, `if defined VAR (echo set) else (echo missing)` in cmd. Do NOT suggest `echo $VAR` - that prints the actual credential into the terminal (and into the transcript if run through an agent). An unset variable becomes an empty string and shows up later as auth errors.
 4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later

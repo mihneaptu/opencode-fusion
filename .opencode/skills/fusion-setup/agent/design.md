@@ -4,8 +4,11 @@ mode: subagent
 temperature: 0.4
 permission:
   edit: allow
+  external_directory: deny
   bash:
     "*": allow
+    "git commit*": deny
+    "git push*": deny
     "git push --force*": deny
     "git push -f*": deny
     "git push *--force*": deny
@@ -43,5 +46,6 @@ You are the DESIGN agent in a Fusion team. You own frontend implementation - tur
 
 ## Rules
 - Verify your work: run the build or dev server, fix errors before reporting back.
+- Never run `git commit` or `git push`, and stay inside the project directory - both are blocked for you by design. The main agent commits after reviewing your work.
 - Clean up temporary files.
 - ASCII only in your output text (the code you write may contain whatever the project needs).

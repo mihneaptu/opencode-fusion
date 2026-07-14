@@ -1,7 +1,7 @@
 // fusion-audit: read-only observability for the Fusion delegation tree.
 // opencode's tool hooks do NOT expose the calling agent, so this plugin
 // cannot enforce who-does-what (permissions do that). It logs the shape of
-// delegation - subagent sessions as they spawn, and edit/write tool calls -
+// delegation - subagent sessions as they spawn, and edit/write/patch tool calls -
 // so a maintainer can audit that the main agent delegated instead of editing.
 // Logs go through client.app.log (service "fusion-audit"); view them in
 // opencode's logs. This is an aid on top of the ground-truth session DB.
@@ -26,7 +26,14 @@ export const FusionAudit = async ({ client }) => {
     },
     "tool.execute.after": async (input) => {
       // Surface the file-mutating and delegation tools for the audit trail.
-      if (input.tool === "edit" || input.tool === "write" || input.tool === "task") {
+      // "patch" is the third mutation tool gated by the edit permission
+      // (opencode names it patch, not apply_patch).
+      if (
+        input.tool === "edit" ||
+        input.tool === "write" ||
+        input.tool === "patch" ||
+        input.tool === "task"
+      ) {
         log("tool executed", { tool: input.tool, sessionID: input.sessionID });
       }
     },

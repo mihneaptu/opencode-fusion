@@ -251,6 +251,51 @@ describe('agent frontmatter contracts', () => {
     );
   });
 
+  test('executors deny git commit and git push entirely', () => {
+    for (const role of ['sidekick', 'design']) {
+      const bash = requireBlock(agents[role].frontmatter, 'bash', role);
+      const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+      assert.equal(
+        rules['git commit*'],
+        'deny',
+        `contract violated: ${role} bash must deny git commit* (committing belongs to the main agent)`
+      );
+      assert.equal(
+        rules['git push*'],
+        'deny',
+        `contract violated: ${role} bash must deny git push* (pushing belongs to the main agent)`
+      );
+    }
+  });
+
+  test('build asks on commit/push and denies dangerous push variants after git push*', () => {
+    const bash = requireBlock(agents.build.frontmatter, 'bash', 'build');
+    const rules = Object.fromEntries(bash.children.map((c) => [c.key, c.value]));
+    assert.equal(rules['git add*'], 'allow', 'contract violated: build bash must allow git add*');
+    assert.equal(rules['git commit*'], 'ask', 'contract violated: build bash git commit* must be ask');
+    assert.equal(rules['git push*'], 'ask', 'contract violated: build bash git push* must be ask');
+    for (const key of ['git push --force*', 'git push -f*', 'git push --mirror*', 'git push --delete*']) {
+      assert.equal(rules[key], 'deny', `contract violated: build bash must deny ${key}`);
+    }
+    // opencode resolves overlapping bash patterns last-match-wins, so every
+    // push deny must appear AFTER the broad "git push*" ask to actually win.
+    const pushAsk = bash.children.find((c) => c.key === 'git push*');
+    const pushDenies = bash.children.filter(
+      (c) => c.value === 'deny' && c.key.startsWith('git push')
+    );
+    assert.ok(pushDenies.length >= 4, 'contract violated: build bash must keep the dangerous-push denylist');
+    for (const deny of pushDenies) {
+      assert.ok(
+        deny.index > pushAsk.index,
+        `contract violated: ${deny.key} deny must appear after "git push*" (last-match-wins)`
+      );
+    }
+  });
+
+  test('design is fenced to the workspace', () => {
+    assertPermissionValue('design', 'external_directory', 'deny');
+  });
+
   test('design has edit allow and the destructive-command denylist', () => {
     assertPermissionValue('design', 'edit', 'allow');
     const bash = requireBlock(agents.design.frontmatter, 'bash', 'design');

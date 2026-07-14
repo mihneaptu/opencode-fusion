@@ -68,12 +68,19 @@ The pattern's guarantees live in two different layers, and being precise about w
 **Enforced - the permission layer.** opencode checks these on every tool call, no matter what the model reads, remembers, or intends:
 
 - The main agent's `edit`, `grep`, `glob`, and `list` are denied. Denied tools are removed from the model's tool schema entirely - there is no edit tool for it to decline to use.
-- Its bash is deny-by-default with a short verification and git allowlist, so file-writing commands are blocked.
+- Its bash is deny-by-default with a short verification and git allowlist, so file-writing commands are blocked. `git commit` and `git push` additionally require per-command user approval, and force/mirror/delete-ref pushes are denied outright.
+- The executors cannot commit or push - `git commit` and `git push` are denied for the sidekick and design agents, so review-then-commit is mechanically the main agent's job, not a convention.
 - Delegation is bounded by an explicit `task` allowlist: the main agent reaches only its named specialists, and the sidekick can spawn only read-only searchers.
 
 If the main agent "won't delegate," the result is visible inaction - nothing on disk changes. The failure mode is never a silent bypass.
 
 **Advised - the prompt layer.** Spec precision, diff-review rigor, cost discipline, parallelization, and skill usage are instructions in the agent prompts. opencode loads skills at the model's discretion - nothing can force an agent to read or apply one - which is exactly why no guarantee here depends on them; the skill in this repo is just the installer. If the model slacks at this layer, the cost is quality or wasted tokens, never an unauthorized edit.
+
+**Not guaranteed - the threat model.** The permission layer bounds which tools each agent can call. It is not a sandbox, and it is worth being precise about what it does not protect:
+
+- The `.env` denies on the executors stop the common accidental read - `cat .env` landing a key in a transcript - not a determined one. An agent with broad bash has many equivalent ways to read a file or the process environment, so treat those rules as accidental-leak prevention, not secret isolation. The `{env:VAR}` config syntax keeps keys out of plaintext config and out of the chat; it does not hide them from the environment agents run in.
+- Git safety protects against surprise commits and history rewrites, not against a bad edit - editing files is the sidekick's job, and catching a wrong edit is what the main agent's diff review (and the optional reviewer) are for.
+- The design agent is fenced to the workspace (`external_directory: deny`). The sidekick keeps opencode's default `ask` for paths outside the project, because setup and reconfigure legitimately write the global config - note that `--auto` mode auto-approves `ask` rules, so add an explicit deny to the sidekick too if it should never leave the repo.
 
 **Auditable - verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-audit-plugin) logs the delegation tree, and opencode's session DB records every agent's actual tool calls (`opencode db path` prints its location - typically `~/.local/share/opencode/opencode.db`). "Did it really delegate?" is checkable ground truth, not vibes.
 
@@ -177,7 +184,7 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 
 ### Adjust the bash allowlist
 
-The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`, `git commit`, `git push`). Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default. Note that the allowlist matches each command individually - do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
+The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"` - opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually - do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
 <details>
 <summary><b>Optional hardening</b></summary>
@@ -188,7 +195,7 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - `"enabled_providers": ["..."]` (top level) - allowlist the providers opencode loads, so a stray credential elsewhere cannot add models to the picker.
 - `"compaction": { "prune": true }` (top level) - drops stale tool outputs when compacting, cutting main-agent token cost in a delegation-heavy flow.
 - `"limit": { "context": <n>, "output": <n> }` (inside a custom model block) - lets opencode track remaining context for models not on models.dev, such as local gateways. Use the model's real window; do not guess.
-- Sidekick bash denylist - the sidekick has full `bash`, but its prompt frontmatter denies force-push and blocks reading `.env`, and asks before `git reset --hard`, `git clean`, and `rm -rf`. Defense-in-depth on your least-careful, most-powerful agent.
+- Sidekick bash denylist - the sidekick has broad `bash`, but its prompt frontmatter denies `git commit` and `git push` entirely (committing is the main agent's job, after review), blocks reading `.env`, and asks before `git reset --hard`, `git clean`, and `rm -rf`. Defense-in-depth on your least-careful, most-powerful agent.
 
 </details>
 
@@ -280,7 +287,7 @@ Three optional extras ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`) - a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
 - **`/fusion-status` command** (`commands/fusion-status.md`) - a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, and the installed agent files. It only reports - it changes nothing. Install it to `~/.config/opencode/commands/`.
-- **`fusion-audit` plugin** (`plugins/fusion-audit.js`) - logs the delegation tree (subagent spawns and edit/write/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer - the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
+- **`fusion-audit` plugin** (`plugins/fusion-audit.js`) - logs the delegation tree (subagent spawns and edit/write/patch/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer - the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
 
 </details>
 
