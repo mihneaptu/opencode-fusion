@@ -17,16 +17,14 @@ const CORE_ROLES = ['build', 'plan', 'sidekick'];
 const OPTIONAL_ROLES = ['research', 'design', 'reviewer', 'vision'];
 const ALL_ROLES = [...CORE_ROLES, ...OPTIONAL_ROLES];
 const MODEL_MODALITIES = new Set(['text', 'audio', 'image', 'video', 'pdf']);
+// Bundled extras: the same skill-relative path is both source and destination.
 const EXTRAS = {
-  commands: [
-    { from: ['commands', 'fusion-setup.md'], to: ['commands', 'fusion-setup.md'] },
-    { from: ['commands', 'fusion-status.md'], to: ['commands', 'fusion-status.md'] },
-  ],
-  plugin: [{ from: ['plugins', 'fusion-audit.js'], to: ['plugins', 'fusion-audit.js'] }],
+  commands: ['commands/fusion-setup.md', 'commands/fusion-status.md'],
+  plugin: ['plugins/fusion-audit.js'],
 };
 const KNOWN_DESTINATIONS = new Set([
   ...ALL_ROLES.map((role) => `agent/${role}.md`),
-  ...Object.values(EXTRAS).flat().map((item) => item.to.join('/')),
+  ...Object.values(EXTRAS).flat(),
 ]);
 
 function fail(message) {
@@ -395,14 +393,14 @@ function selectedSources(opts) {
     const source = path.join(skillDir, 'agent', `${role}.md`);
     const snapshot = snapshotFile(source, `bundled prompt ${source}`);
     if (!snapshot.existed) fail(`bundled prompt missing: ${source}`);
-    sources.push({ from: source, to: `agent/${role}.md`, bytes: snapshot.bytes, mode: snapshot.mode });
+    sources.push({ to: `agent/${role}.md`, bytes: snapshot.bytes, mode: snapshot.mode });
   }
   for (const extra of opts.extras) {
-    for (const item of EXTRAS[extra]) {
-      const source = path.join(skillDir, ...item.from);
+    for (const rel of EXTRAS[extra]) {
+      const source = path.join(skillDir, ...rel.split('/'));
       const snapshot = snapshotFile(source, `bundled extra ${source}`);
       if (!snapshot.existed) fail(`bundled extra missing: ${source}`);
-      sources.push({ from: source, to: item.to.join('/'), bytes: snapshot.bytes, mode: snapshot.mode });
+      sources.push({ to: rel, bytes: snapshot.bytes, mode: snapshot.mode });
     }
   }
   return sources;
