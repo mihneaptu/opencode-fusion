@@ -30,6 +30,9 @@ const rel = (p) => path.relative(root, p).split(path.sep).join('/');
 let changed = 0;
 
 for (const { source, copy } of mirroredDirs) {
+  // A missing mirror directory (e.g. a deleted skill subtree) must be
+  // restorable, not a crash.
+  fs.mkdirSync(copy, { recursive: true });
   const sourceFiles = fs.readdirSync(source).sort();
 
   for (const name of sourceFiles) {
