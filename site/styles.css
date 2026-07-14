@@ -132,7 +132,9 @@ html[data-theme="dark"] {
 
   --text-high: #e6edf3;
   --text-mid: #9198a1;
-  --text-low: #6e7681;
+  /* Primer's dark fg.muted: the older #6e7681 lands at 4.12:1 on this bg,
+     under the 4.5:1 AA floor for the small text this tier is used on. */
+  --text-low: #7d8590;
 
   --header-bg: rgba(13, 17, 23, 0.72);
   --header-bg-scrolled: rgba(13, 17, 23, 0.88);
@@ -437,6 +439,13 @@ strong { color: var(--text-high); font-weight: 600; }
   display: flex;
   align-items: center;
   gap: var(--space-xs);
+}
+
+/* Very narrow phones: tighten the rail so wordmark + controls fit at 320px
+   without horizontal overflow. */
+@media (max-width: 359px) {
+  .header-inner { gap: var(--space-xs); padding-inline: var(--space-xs); }
+  .header-pill { padding-inline: var(--space-xs); }
 }
 
 /* Subtle elevation + a hair of contraction once the page scrolls under the
@@ -854,6 +863,17 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   margin-top: clamp(1.75rem, 1.25rem + 1.5vw, 2.5rem);
 }
 
+/* Non-affiliation disclosure: quiet but on the first screen, not footer-only. */
+.hero-disclosure {
+  margin-top: var(--space-md);
+  margin-inline: auto;
+  font-size: var(--step--1);
+  color: var(--text-low);
+  max-width: 48ch;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
 /* Flow band sits under the hero so the diagram is off-screen until scroll. */
 .flow-band {
   position: relative;
@@ -1072,11 +1092,8 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
               border-color var(--theme-dur) var(--ease),
               color var(--theme-dur) var(--ease);
 }
-.flow-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
-}
+/* No hover lift: flow cards are not interactive, so they should not
+   advertise clickability. */
 .flow-num {
   position: absolute;
   top: var(--space-md);
@@ -1137,7 +1154,7 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
               border-color var(--theme-dur) var(--ease),
               color var(--theme-dur) var(--ease);
 }
-.feature-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+/* No hover lift: feature items are not interactive (see .flow-card note). */
 .feature-item-lead {
   background: var(--surface);
   border: 1px solid var(--accent-line);
@@ -1600,11 +1617,6 @@ html[data-theme="dark"] .term {
 .cta-actions { justify-content: center; margin-top: var(--space-2xl); }
 
 @media (hover: none) {
-  .flow-card:hover,
-  .feature-item:hover {
-    transform: none;
-    box-shadow: none;
-  }
   /* Tap-triggered sticky hovers should not leave things floated or nudged. */
   .btn-primary:hover {
     transform: none;
@@ -1719,8 +1731,21 @@ html[data-theme="dark"] .term {
   gap: var(--space-xl);
   align-items: start;
 }
+/* Grid children default to min-width:auto, which lets a wide table inflate
+   the column past the viewport instead of scrolling inside its wrapper. */
+.docs-shell > * {
+  min-width: 0;
+}
+/* Long unbreakable inline-code tokens (Windows paths, npx one-liners) must
+   wrap rather than widen the page on narrow screens. */
+.docs-section p code,
+.docs-section dd code {
+  overflow-wrap: anywhere;
+}
+/* On mobile the TOC renders as a plain "On this page" block above the
+   article; the desktop media query below makes it a sticky sidebar. */
 .docs-toc {
-  display: none;
+  display: block;
 }
 .docs-toc-label {
   font-family: var(--font-mono);
