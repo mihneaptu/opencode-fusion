@@ -102,7 +102,7 @@ Or copy the `fusion-setup` folder from this repo's `.opencode/skills/` into `~/.
 set up fusion
 ```
 
-It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)). Setup backs up any existing config before overwriting, and "undo fusion" walks the restore path.
+It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. The mechanical steps - timestamped backup, config merge, atomic write, file copies, validation, and undo - run through a small deterministic script bundled with the skill, so the sensitive part of setup does not depend on model compliance. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)); "undo fusion" restores the recorded backup and removes exactly what was installed.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
@@ -306,6 +306,8 @@ Three optional extras ship with the skill:
 | `agent/reviewer.md` | Optional reviewer specialist: critiques plans and audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
 | `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, command, and plugin |
+| `.opencode/skills/fusion-setup/scripts/install.js` | Deterministic installer the skill drives: backup, merge, atomic write, manifest, undo |
+| `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
 | `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
 | `.opencode/commands/fusion-status.md` | Optional `/fusion-status` health check: verifies the setup is installed, loaded, and enforcing |
 | `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
