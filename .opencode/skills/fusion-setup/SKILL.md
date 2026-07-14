@@ -89,9 +89,9 @@ If two roles use different models from the SAME provider (for example a main mod
 }
 ```
 
-## Step 3 - Write ~/.config/opencode/opencode.json
+## Step 3 - Build the config fragment
 
-Write the global config using this exact structure. Replace the `<...>` placeholders with the user's choices. Model references are always `provider-id/model-id`. The JSON only assigns models - each role's mode, permissions, and prompt come from its agent file (Step 4), and the build agent's permission frontmatter is the core of Fusion and must not be loosened.
+Build a config FRAGMENT with this exact structure and save it to a temporary file (OS temp dir is fine). Do NOT write `~/.config/opencode/opencode.json` yourself - the installer script in Step 4 merges the fragment in deterministically. When running as the restricted Fusion build agent, delegate creation of the temporary fragment and the Step 4 installer command together in one sidekick task so build never needs direct filesystem access. In plan mode, stop after specifying the choices and tell the user to switch to build (or run the command themselves); plan must not execute the install. Replace the `<...>` placeholders with the user's choices. Model references are always `provider-id/model-id`. The JSON only assigns models - each role's mode, permissions, and prompt come from its agent file (Step 4), and the build agent's permission frontmatter is the core of Fusion and must not be loosened.
 
 ```json
 {
@@ -115,7 +115,7 @@ Write the global config using this exact structure. Replace the `<...>` placehol
 Notes:
 - Replace the two `"<...-provider-id>": { ... }` placeholder lines under `provider` with the ACTUAL provider block(s) you built in Step 2. If your main and sidekick share one provider, that is a single block (see Step 2 on merging models); if they use different providers, include one block each. The placeholder shape shown is not valid config on its own - it must be filled in.
 - opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition: frontmatter supplies the role's `mode` and `permission`, and the body is its prompt. No `prompt` fields belong in opencode.json - Step 4 installs the files that carry them.
-- If the user already has a `~/.config/opencode/opencode.json`, first back it up (copy to `opencode.json.backup.<timestamp>`), then merge or overwrite per the user's wishes. Never silently discard an existing config.
+- Backup and merge are the installer's job (Step 4): it backs up any existing config to `opencode.json.backup.<timestamp>` and deep-merges the fragment - your fragment wins on conflicting keys, everything else in the user's config is preserved. Never silently discard an existing config: if the user explicitly wants a clean overwrite instead of a merge, they should move the old `opencode.json` aside first.
 - Add `"vision": { "model": "<vision-provider>/<vision-model-id>" }` to the `agent` block ONLY if the user configured a vision role (main model lacks image input). Omit it otherwise.
 - OPTIONAL top-level hardening keys (documented opencode fields; add if the user wants a tighter, cheaper, more private local setup):
   - `"small_model": "<cheap-provider>/<cheap-model-id>"` - opencode uses a small model for background tasks like title generation; if unset it may fall back to a remote default. Pin it to one of the user's own cheap local models to keep everything on their providers.
@@ -123,9 +123,23 @@ Notes:
   - `"compaction": { "prune": true }` - drops stale tool outputs when compacting context, which cuts main-agent token cost in a delegation-heavy Fusion flow.
   - Per custom model, an optional `"limit": { "context": <n>, "output": <n> }` inside the model block lets opencode track remaining context accurately (models on models.dev supply this automatically; custom local gateways do not). Use the real context/output window for that model; do not guess.
 
-## Step 4 - Install the agent prompt files
+## Step 4 - Run the deterministic installer
 
-Copy the prompt files bundled with this skill into the global agent folder (one per role you configured). `<this-skill-dir>` is the directory this SKILL.md lives in - its bundled prompts are in the `agent/` subfolder next to this file. Every configured role except `explore` needs its agent file installed (explore is opencode's built-in read-only subagent and only gets a model in the JSON); in particular the sidekick DOES need its `agent/sidekick.md` file - its permissions and prompt come entirely from that file:
+The skill bundles an installer at `<this-skill-dir>/scripts/install.js` (plain Node, no dependencies). It owns every mechanical step - timestamped backup, deep merge, atomic write, prompt-file copies, an undo manifest, and post-install validation - so none of that depends on improvised file operations. Its version-2 manifest stores the original bytes and permissions of every managed file, plus hashes of the exact installed state. Reapply and undo refuse before writing if the config or a managed file changed after installation; they never guess which content belongs to Fusion. Run it with the fragment from Step 3:
+
+```bash
+node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> --roles build,plan,sidekick --extras commands,plugin
+```
+
+- `--roles` is comma-separated and defaults to the core `build,plan,sidekick` (explore needs no file by design). Append exactly the optional roles the user configured, e.g. `--roles build,plan,sidekick,research,reviewer`; include `vision` only if a vision role was configured.
+- `--extras commands,plugin` installs the optional slash commands and audit plugin described below; trim or omit per the user's wishes.
+- Add `--dry-run` to print the full plan (backup name, merged keys, files) without writing anything - offer this if the user seems cautious.
+- The script refuses with exit 1 and changes nothing when validation or ownership checks fail, including invalid JSON/config shapes, unsafe paths, changed managed files, and invalid destination parents. It warns when a model references a provider that has no provider block.
+- If the agent running this skill cannot execute bash (for example the Fusion build agent's allowlist), delegate both the fragment creation and this exact command to the sidekick. In plan mode, switch to build or have the user run it. Use the manual fallback below only when Node is unavailable.
+
+### Manual fallback - install the agent prompt files by hand
+
+Only when Node is unavailable. Before merging or copying anything, make a timestamped backup of `opencode.json` and of every destination file that already exists, and record which destinations did not exist. Then copy the prompt files bundled with this skill into the global agent folder (one per role you configured). `<this-skill-dir>` is the directory this SKILL.md lives in - its bundled prompts are in the `agent/` subfolder next to this file. Every configured role except `explore` needs its agent file installed (explore is opencode's built-in read-only subagent and only gets a model in the JSON); in particular the sidekick DOES need its `agent/sidekick.md` file - its permissions and prompt come entirely from that file:
 
 - `<this-skill-dir>/agent/build.md` -> `~/.config/opencode/agent/build.md`
 - `<this-skill-dir>/agent/plan.md` -> `~/.config/opencode/agent/plan.md`
@@ -137,9 +151,9 @@ Copy the prompt files bundled with this skill into the global agent folder (one 
 
 These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode` and `permission`; the files deliberately ship WITHOUT a `model` key, because markdown frontmatter overrides opencode.json on any key it sets - a model baked into the file would silently override the user's Step 3 choice. Models come only from opencode.json. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
 
-## Step 4b - Install the optional slash command and audit plugin
+## Step 4b - The optional slash commands and audit plugin
 
-The skill bundles three optional extras next to it. Install them if the user wants them:
+Three optional extras ship next to the skill; the installer's `--extras commands,plugin` flag installs them (manual copy paths below if the script cannot run):
 
 - Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
 - Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files). It only reports - it changes nothing.
@@ -147,22 +161,28 @@ The skill bundles three optional extras next to it. Install them if the user wan
 
 ## Step 5 - Validate and finish
 
-1. Confirm `~/.config/opencode/opencode.json` is valid JSON (parse it).
-2. Confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum, plus any specialists configured). If you installed the commands or plugin, confirm `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
+1. The installer validates automatically (it re-parses the written config and checks every installed file exists, failing loudly otherwise). If you used the manual fallback instead, do the same checks yourself: parse `~/.config/opencode/opencode.json`, and confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum).
+2. If you installed the commands or plugin manually, confirm `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
 3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from - using a presence-only check that never prints the secret: `[ -n "$VAR" ] && echo set || echo missing` in bash/zsh, `if defined VAR (echo set) else (echo missing)` in cmd. Do NOT suggest `echo $VAR` - that prints the actual credential into the terminal (and into the transcript if run through an agent). An unset variable becomes an empty string and shows up later as auth errors.
 4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
 
 ## Reconfiguring later
 
-To change a model, edit `agent.<role>.model` (and add a `provider` block if the new model uses a new provider) in `~/.config/opencode/opencode.json`, then restart opencode. No scripts or presets are involved - this skill and a plain JSON edit are the whole surface.
+To change a model, build a small fragment with `agent.<role>.model` (and a `provider` block if the new model uses a new provider), then rerun the installer and restart opencode. Do not edit an installer-managed config in place: the ownership check intentionally treats that as a local customization and refuses to overwrite it. Reapply preserves the original pre-Fusion baseline and keeps all previously managed files recorded for a complete undo.
 
 ## Undoing Fusion
 
-To remove Fusion entirely:
+Run the bundled undo. It restores the exact pre-install config and every destination that Fusion replaced, removes only destinations Fusion originally created, keeps every timestamped config backup, and refuses before changing anything if the installed state was edited afterward or the manifest is unsafe:
 
-1. Restore the pre-Fusion config: copy the `opencode.json.backup.<timestamp>` created in Step 3 back over `~/.config/opencode/opencode.json`. If no backup exists (Fusion was the first config), delete the Fusion `agent` entries and provider blocks from the file, or delete the file.
-2. Delete the installed agent files under `~/.config/opencode/agent/`: `build.md`, `plan.md`, `sidekick.md`, plus any installed specialists (`research.md`, `design.md`, `reviewer.md`, `vision.md`).
-3. Remove the optional extras if installed: `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and `~/.config/opencode/plugins/fusion-audit.js`.
+```bash
+node <this-skill-dir>/scripts/install.js undo
+```
+
+Manual fallback after a manual install (no Node):
+
+1. Restore `opencode.json` and every destination that existed before installation from the backups made during the manual install.
+2. For destinations recorded as newly created, remove them only if they are still byte-for-byte identical to the bundled file that was installed. If any file changed, leave it in place and report the conflict instead of deleting user work.
+3. Apply the same restore-or-remove rule to optional commands and the audit plugin.
 4. Tell the user to restart opencode - it falls back to its built-in build/plan agents.
 
-Confirm with the user before deleting anything, and never delete the backups themselves.
+For an automatic install when Node is temporarily unavailable, wait until Node is available and use the manifest-driven undo. If an automatic manifest is missing, the timestamped files recover only `opencode.json`; do not remove prompts or extras unless independent backups or byte-for-byte ownership evidence prove they are still Fusion-owned. Confirm with the user before deleting anything, and never delete the backups themselves.
