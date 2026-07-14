@@ -463,8 +463,9 @@ strong { color: var(--text-high); font-weight: 600; }
 .theme-toggle {
   display: inline-grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  /* 40px is the minimum comfortable touch target. */
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
   padding: 0;
   border: 1px solid var(--border-strong);
@@ -1553,6 +1554,13 @@ html[data-theme="dark"] .term {
   border-radius: 2px;
 }
 
+/* The visible pill is 30px tall; ::after stretches the tap target to the
+   40px touch minimum without overlapping horizontal neighbors. */
+.copy-btn::after {
+  content: "";
+  position: absolute;
+  inset: -5px 0;
+}
 .copy-btn {
   position: relative;
   flex-shrink: 0;
@@ -2054,16 +2062,6 @@ html[data-theme="dark"] .term {
 .js .hero-inner > .reveal.is-visible:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
 .js .hero-inner > .reveal.is-visible:nth-child(4) { animation-delay: calc(var(--stagger-step) * 3); }
 .js .hero-inner > .reveal.is-visible:nth-child(n+5) { animation-delay: calc(var(--stagger-step) * 4); }
-
-.js .flow > .reveal.is-visible:nth-child(2) { animation-delay: calc(var(--stagger-step) * 1); }
-.js .flow > .reveal.is-visible:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
-.js .flow > .reveal.is-visible:nth-child(n+4) { animation-delay: calc(var(--stagger-step) * 3); }
-
-.js .feature-grid > .reveal.is-visible:nth-child(2) { animation-delay: calc(var(--stagger-step) * 1); }
-.js .feature-grid > .reveal.is-visible:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
-.js .feature-grid > .reveal.is-visible:nth-child(4) { animation-delay: calc(var(--stagger-step) * 3); }
-.js .feature-grid > .reveal.is-visible:nth-child(5) { animation-delay: calc(var(--stagger-step) * 4); }
-.js .feature-grid > .reveal.is-visible:nth-child(n+6) { animation-delay: calc(var(--stagger-step) * 5); }
 
 /* =========================================================================
    Responsive: mobile-first above, wider layouts below
