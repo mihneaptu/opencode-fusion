@@ -111,14 +111,14 @@ If your models come from a subscription, skip the per-role interview: name the s
 | Profile | Subscription | Main / sidekick | Beyond the core roles |
 |---------|--------------|-----------------|-----------------------|
 | `opencode-go` | [OpenCode Go](https://opencode.ai/go) | GLM 5.2 / DeepSeek V4 Flash | research, design, reviewer, vision |
-| `opencode-zen` | [OpenCode Zen](https://opencode.ai/docs/zen/) pay-as-you-go | Claude Opus 4.8 / GLM 5.2 | research, design, reviewer |
+| `opencode-zen` | [OpenCode Zen](https://opencode.ai/docs/zen/) pay-as-you-go | Claude Fable 5 / GLM 5.2 | research, design, reviewer |
 | `opencode-zen-free` | OpenCode Zen free-tier models | Big Pickle / MiMo V2.5 Free | vision |
-| `chatgpt` | ChatGPT Plus or Pro | GPT-5.3 Codex / GPT-5.3 Codex Spark | core roles only |
-| `github-copilot` | GitHub Copilot | Claude Fable 5 / GPT-5.4 Mini | research, reviewer |
+| `chatgpt` | ChatGPT Plus or Pro | GPT-5.6 Sol / GPT-5.6 Luna | core roles only |
+| `github-copilot` | GitHub Copilot | Claude Sonnet 5 / GPT-5.4 Mini | research, reviewer |
 
 Authentication stays out-of-band: connect the provider once with `opencode auth login` (or `/connect` inside opencode). Profiles contain no keys, adapters, or endpoints - opencode knows these providers natively - and the skill never asks for a key in chat. To adjust a pick, keep the profile and add a small override fragment (`--profile <name> --config <delta.json>` - your fragment wins on conflicts).
 
-Three notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead - through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
+Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model) - OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity - override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead - through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
