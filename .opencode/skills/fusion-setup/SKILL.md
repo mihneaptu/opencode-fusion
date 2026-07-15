@@ -1,6 +1,6 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", changing which models the main, sidekick, or explore agents use, or naming a subscription to start from a ready-made profile - e.g. "set up fusion with my OpenCode Go subscription" (also OpenCode Zen, Claude Pro/Max, ChatGPT Plus/Pro, GitHub Copilot). Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", changing which models the main, sidekick, or explore agents use, or naming a subscription to start from a ready-made profile - e.g. "set up fusion with my OpenCode Go subscription" (also OpenCode Zen, ChatGPT Plus/Pro, GitHub Copilot). Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup
@@ -33,7 +33,6 @@ Before the per-role interview, ask whether the user's models come from one of th
 | `opencode-go` | OpenCode Go (low-cost open-model plan on OpenCode Zen) |
 | `opencode-zen` | OpenCode Zen pay-as-you-go credits |
 | `opencode-zen-free` | OpenCode Zen free-tier models only |
-| `claude-pro-max` | Claude Pro or Max |
 | `chatgpt` | ChatGPT Plus or Pro |
 | `github-copilot` | GitHub Copilot |
 
@@ -50,7 +49,7 @@ If the user names one (including as a `/fusion-setup` argument):
    No `--roles` flag is needed: the installer derives the role list from the profile, so every role the profile assigns a model also gets its permission-bearing agent file.
 4. To change one or two picks, keep `--profile <name>` and add `--config <fragment.json>` holding just the delta (for example a different `agent.reviewer.model`, plus a provider block only if that model's provider is outside the profile). The fragment wins over the profile. Removing an optional role a profile assigns cannot be expressed as an override - use the custom interview (Steps 1-4) without `--profile` instead.
 
-Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; the single-vendor profiles (`claude-pro-max`, `chatgpt`) put the reviewer on the same vendor as the main model, so a user with a second provider may want to override the reviewer for cross-vendor review. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
+Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; the single-vendor `chatgpt` profile keeps every role on one vendor, so a user with a second provider may want to override the reviewer for cross-vendor review. There is deliberately NO Claude Pro/Max profile - Anthropic's terms prohibit using those subscriptions outside Claude Code, so never improvise one; a user who wants Claude models gets them the sanctioned ways: `opencode-zen` (Zen resells them pay-as-you-go) or an Anthropic API key via the Step 1 interview. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
 
 If the user has none of these subscriptions, or wants full control over every pick, continue with Step 1.
 

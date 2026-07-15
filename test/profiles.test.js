@@ -16,7 +16,6 @@ const installer = path.join(root, '.opencode', 'skills', 'fusion-setup', 'script
 // update all of them together.
 const EXPECTED_PROFILES = [
   'chatgpt',
-  'claude-pro-max',
   'github-copilot',
   'opencode-go',
   'opencode-zen',
@@ -33,7 +32,7 @@ function readProfile(name) {
   return JSON.parse(fs.readFileSync(path.join(profilesDir, `${name}.json`), 'utf8'));
 }
 
-test('the shipped profile set is exactly the documented six', () => {
+test('the shipped profile set is exactly the documented one', () => {
   const files = fs.readdirSync(profilesDir).sort();
   assert.deepEqual(files, EXPECTED_PROFILES.map((name) => `${name}.json`).sort());
 });
