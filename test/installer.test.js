@@ -412,4 +412,110 @@ describe('fusion-setup deterministic installer', () => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, /nothing recorded to undo/);
   });
+
+  // --profile: bundled subscription profiles as the config fragment.
+  // Expected values are read from the profile source files so refreshing a
+  // profile's model ids never breaks these tests.
+  const profile = (name) =>
+    readJson(path.join(__dirname, '..', 'profiles', `${name}.json`));
+
+  test('apply with only a profile installs its config and derived roles', () => {
+    const zen = profile('opencode-zen');
+    const result = run(['apply', '--profile', 'opencode-zen', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+
+    const config = readJson(path.join(dir, 'opencode.json'));
+    assert.equal(config.model, zen.model);
+    assert.equal(config.agent.sidekick.model, zen.agent.sidekick.model);
+    assert.equal(config.small_model, zen.small_model);
+
+    const optionalRoles = ['research', 'design', 'reviewer', 'vision']
+      .filter((role) => role in zen.agent);
+    assert.ok(optionalRoles.length > 0, 'test profile must assign optional roles');
+    const manifest = readJson(path.join(dir, '.fusion-install.json'));
+    for (const role of ['build', 'plan', 'sidekick', ...optionalRoles]) {
+      assert.ok(fs.existsSync(path.join(dir, 'agent', `${role}.md`)), `missing agent/${role}.md`);
+      assert.ok(manifest.roles.includes(role), `manifest missing role ${role}`);
+    }
+  });
+
+  test('a --config fragment overrides the profile it is applied with', () => {
+    const zen = profile('opencode-zen');
+    writeJson(fragmentPath, {
+      model: 'prov/override-model',
+      provider: { prov: { npm: '@ai-sdk/openai-compatible', options: { baseURL: 'http://x', apiKey: '{env:K}' } } },
+      agent: { build: { model: 'prov/override-model' } },
+    });
+    const result = run(['apply', '--profile', 'opencode-zen', '--config', fragmentPath, '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+
+    const config = readJson(path.join(dir, 'opencode.json'));
+    assert.equal(config.model, 'prov/override-model', 'fragment must win over the profile');
+    assert.equal(config.agent.build.model, 'prov/override-model');
+    assert.equal(config.agent.sidekick.model, zen.agent.sidekick.model, 'untouched profile keys must survive');
+  });
+
+  test('unknown profile is refused with the available names, nothing written', () => {
+    const result = run(['apply', '--profile', 'nope', '--config-dir', dir]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /unknown profile "nope"/);
+    assert.match(result.stderr, /opencode-go/);
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('a profile name with path characters is refused before any file access', () => {
+    for (const name of ['../evil', 'evil/../../x', '.hidden', 'UPPER']) {
+      const result = run(['apply', '--profile', name, '--config-dir', dir]);
+      assert.equal(result.status, 1, `expected refusal for ${name}`);
+      assert.match(result.stderr, /invalid profile name/);
+    }
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('apply requires a profile or a config fragment', () => {
+    const result = run(['apply', '--config-dir', dir]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /requires --profile <name> and\/or --config/);
+  });
+
+  test('dry run with a profile reports it and writes nothing', () => {
+    const result = run(['apply', '--profile', 'opencode-zen', '--dry-run', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /profile:\s+opencode-zen/);
+    assert.match(result.stdout, /dry run - nothing written/);
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('explicit --roles that drops a profile-assigned role is refused', () => {
+    const zen = profile('opencode-zen');
+    assert.ok('reviewer' in zen.agent, 'test profile must assign reviewer');
+    const result = run([
+      'apply', '--profile', 'opencode-zen', '--roles', 'build,plan,sidekick', '--config-dir', dir,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /omits role\(s\) the profile requires/);
+    assert.match(result.stderr, /reviewer/);
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('explicit --roles that drops a core role is refused with a profile', () => {
+    // Without sidekick.md the config's agent.sidekick.model would define an
+    // agent with no permission frontmatter - the exact hole Fusion closes.
+    const result = run([
+      'apply', '--profile', 'opencode-zen',
+      '--roles', 'build,plan,research,design,reviewer', '--config-dir', dir,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /omits role\(s\) the profile requires/);
+    assert.match(result.stderr, /sidekick/);
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('undo cleanly reverses a profile apply', () => {
+    assert.equal(run(['apply', '--profile', 'opencode-zen', '--config-dir', dir]).status, 0);
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(!fs.existsSync(path.join(dir, 'opencode.json')));
+    assert.ok(!fs.existsSync(path.join(dir, 'agent', 'reviewer.md')));
+  });
 });

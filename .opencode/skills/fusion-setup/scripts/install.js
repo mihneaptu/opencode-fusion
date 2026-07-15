@@ -26,6 +26,10 @@ const KNOWN_DESTINATIONS = new Set([
   ...ALL_ROLES.map((role) => `agent/${role}.md`),
   ...Object.values(EXTRAS).flat(),
 ]);
+// Bundled subscription profiles: ready-made config fragments shipped with
+// the skill, selected by name via --profile.
+const PROFILES_DIR = path.join(skillDir, 'profiles');
+const PROFILE_NAME = /^[a-z0-9][a-z0-9-]*$/;
 
 function fail(message) {
   throw new Error(message);
@@ -39,13 +43,15 @@ function optionValue(rest, index, option) {
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
-  const opts = { roles: [...CORE_ROLES], extras: [], dryRun: false, configDir: null, config: null };
+  const opts = { roles: [...CORE_ROLES], rolesExplicit: false, extras: [], dryRun: false, configDir: null, config: null, profile: null };
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
     if (arg === '--dry-run') opts.dryRun = true;
     else if (arg === '--config') opts.config = optionValue(rest, i++, arg);
+    else if (arg === '--profile') opts.profile = optionValue(rest, i++, arg);
     else if (arg === '--config-dir') opts.configDir = optionValue(rest, i++, arg);
     else if (arg === '--roles') {
+      opts.rolesExplicit = true;
       opts.roles = optionValue(rest, i++, arg).split(',').map((s) => s.trim()).filter(Boolean);
     } else if (arg === '--extras') {
       opts.extras = optionValue(rest, i++, arg).split(',').map((s) => s.trim()).filter(Boolean);
@@ -387,6 +393,32 @@ function nextBackupName(configDir) {
   return name;
 }
 
+function availableProfiles() {
+  if (!fs.existsSync(PROFILES_DIR)) {
+    fail(`bundled profiles missing next to the skill (expected ${PROFILES_DIR})`);
+  }
+  return fs.readdirSync(PROFILES_DIR)
+    .filter((name) => name.endsWith('.json'))
+    .map((name) => path.basename(name, '.json'))
+    .sort();
+}
+
+function loadProfile(name) {
+  // The name regex rejects path separators and dots before any path join.
+  if (!PROFILE_NAME.test(name)) fail(`invalid profile name "${name}"`);
+  const names = availableProfiles();
+  if (!names.includes(name)) fail(`unknown profile "${name}" (available: ${names.join(', ')})`);
+  let profile;
+  try {
+    profile = JSON.parse(fs.readFileSync(path.join(PROFILES_DIR, `${name}.json`), 'utf8'));
+  } catch (err) {
+    fail(`cannot read profile "${name}": ${err.message}`);
+  }
+  const profileError = validateConfigObject(profile, `profile "${name}"`);
+  if (profileError) fail(profileError);
+  return profile;
+}
+
 function selectedSources(opts) {
   const sources = [];
   for (const role of opts.roles) {
@@ -407,7 +439,7 @@ function selectedSources(opts) {
 }
 
 function apply(opts) {
-  if (!opts.config) fail('apply requires --config <fragment.json>');
+  if (!opts.config && !opts.profile) fail('apply requires --profile <name> and/or --config <fragment.json>');
   for (const role of opts.roles) {
     if (!ALL_ROLES.includes(role)) fail(`unknown role "${role}" (known: ${ALL_ROLES.join(', ')})`);
   }
@@ -417,14 +449,33 @@ function apply(opts) {
   if (new Set(opts.roles).size !== opts.roles.length) fail('duplicate roles are not allowed');
   if (new Set(opts.extras).size !== opts.extras.length) fail('duplicate extras are not allowed');
 
-  let fragment;
-  try {
-    fragment = JSON.parse(fs.readFileSync(path.resolve(opts.config), 'utf8'));
-  } catch (err) {
-    fail(`cannot read fragment: ${err.message}`);
+  let fragment = {};
+  if (opts.config) {
+    try {
+      fragment = JSON.parse(fs.readFileSync(path.resolve(opts.config), 'utf8'));
+    } catch (err) {
+      fail(`cannot read fragment: ${err.message}`);
+    }
+    const fragmentError = validateConfigObject(fragment, 'fragment');
+    if (fragmentError) fail(fragmentError);
   }
-  const fragmentError = validateConfigObject(fragment, 'fragment');
-  if (fragmentError) fail(fragmentError);
+  if (opts.profile) {
+    // The profile is the base; an explicit --config fragment overrides it.
+    fragment = deepMerge(loadProfile(opts.profile), fragment);
+    // Every core role plus every optional role the profile assigns a model.
+    // A model assigned to a role whose permission-bearing agent file is not
+    // installed would run without Fusion's permission frontmatter, so an
+    // explicit --roles may extend this list but never shrink it.
+    const profileRoles = [...CORE_ROLES, ...OPTIONAL_ROLES.filter((role) => role in (fragment.agent || {}))];
+    if (!opts.rolesExplicit) {
+      opts.roles = profileRoles;
+    } else {
+      const missing = profileRoles.filter((role) => !opts.roles.includes(role));
+      if (missing.length) {
+        fail(`--roles omits role(s) the profile requires: ${missing.join(', ')} - include them, or configure without --profile to trim roles`);
+      }
+    }
+  }
 
   inspectConfigDir(opts.configDir);
   const configPath = path.join(opts.configDir, 'opencode.json');
@@ -493,6 +544,7 @@ function apply(opts) {
 
   const planLines = [
     `config dir:   ${opts.configDir}`,
+    ...(opts.profile ? [`profile:      ${opts.profile}`] : []),
     `backup:       ${backupName || '(no existing config - nothing to back up)'}`,
     `merge into:   opencode.json (${Object.keys(fragment).join(', ')})`,
     ...sources.map((source) => `install:      ${source.to}`),

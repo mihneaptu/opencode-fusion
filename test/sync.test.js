@@ -9,10 +9,12 @@ const root = path.join(__dirname, '..');
 const skillRoot = path.join(root, '.opencode', 'skills', 'fusion-setup');
 
 // The fusion-setup skill ships byte-identical copies of the agent prompts,
-// the slash command, and the audit plugin. Any drift means one side was
-// edited without the other; `npm run sync` refreshes the copies from source.
+// the subscription profiles, the slash command, and the audit plugin. Any
+// drift means one side was edited without the other; `npm run sync`
+// refreshes the copies from source.
 const mirroredDirs = [
   { source: path.join(root, 'agent'), copy: path.join(skillRoot, 'agent') },
+  { source: path.join(root, 'profiles'), copy: path.join(skillRoot, 'profiles') },
   { source: path.join(root, '.opencode', 'commands'), copy: path.join(skillRoot, 'commands') },
   { source: path.join(root, '.opencode', 'plugins'), copy: path.join(skillRoot, 'plugins') },
 ];

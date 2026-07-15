@@ -28,7 +28,7 @@ npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
 set up fusion
 ```
 
-The installer needs **Node 20.12 or newer** - on older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. Manual setup and provider examples live in [Setup](#setup).
+The installer needs **Node 20.12 or newer** - on older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. On a subscription - OpenCode Go/Zen, ChatGPT, or GitHub Copilot? Name it and the skill starts from a ready-made [profile](#subscription-profiles) instead of asking per role. Manual setup and provider examples live in [Setup](#setup).
 
 ## Why it works
 
@@ -59,7 +59,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `reviewer` | Critique a plan before implementation; audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
 | `vision` | Transcribe images the main model cannot see | `agent.vision.model` | optional | `gemini-3.5-flash` |
 
-Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.6-sol`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor.
+Models move fast - treat these as 2026 starting points, not requirements. Use any provider you like; in config each model is written as `provider/model-id` (for example `openai/gpt-5.6-sol`), and the sidekick should stay cheaper and faster than the main agent. The mix above spans several vendors on purpose, so the main agent's review of each sidekick diff is cross-vendor. If a subscription covers your models, a [profile](#subscription-profiles) fills this table in for you.
 
 ## Enforced vs. advised
 
@@ -103,6 +103,22 @@ set up fusion
 ```
 
 It asks which model and provider you want for each role, writes `~/.config/opencode/opencode.json`, installs the agent prompts under `~/.config/opencode/agent/`, and tells you to restart. The mechanical steps - timestamped backup, config merge, atomic write, file copies, validation, and undo - run through a small deterministic script bundled with the skill, so the sensitive part of setup does not depend on model compliance. To change models later, say "reconfigure fusion" or edit the config directly (see [Customize](#customize)); "undo fusion" restores the recorded backup and removes exactly what was installed.
+
+### Subscription profiles
+
+If your models come from a subscription, skip the per-role interview: name the subscription during setup (or run `/fusion-setup opencode-go`) and the skill applies a bundled profile - a ready-made role-to-model mapping the installer merges like any other config fragment. Directly: `node <skill-dir>/scripts/install.js apply --profile <name> --extras commands,plugin`.
+
+| Profile | Subscription | Main / sidekick | Beyond the core roles |
+|---------|--------------|-----------------|-----------------------|
+| `opencode-go` | [OpenCode Go](https://opencode.ai/go) | GLM 5.2 / DeepSeek V4 Flash | research, design, reviewer, vision |
+| `opencode-zen` | [OpenCode Zen](https://opencode.ai/docs/zen/) pay-as-you-go | Claude Fable 5 / GLM 5.2 | research, design, reviewer |
+| `opencode-zen-free` | OpenCode Zen free-tier models | Big Pickle / MiMo V2.5 Free | vision |
+| `chatgpt` | ChatGPT Plus or Pro | GPT-5.6 Sol / GPT-5.6 Luna | core roles only |
+| `github-copilot` | GitHub Copilot | Claude Sonnet 5 / GPT-5.4 Mini | research, reviewer |
+
+Authentication stays out-of-band: connect the provider once with `opencode auth login` (or `/connect` inside opencode). Profiles contain no keys, adapters, or endpoints - opencode knows these providers natively - and the skill never asks for a key in chat. To adjust a pick, keep the profile and add a small override fragment (`--profile <name> --config <delta.json>` - your fragment wins on conflicts).
+
+Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model) - OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity - override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead - through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
@@ -305,7 +321,9 @@ Three optional extras ship with the skill:
 | `agent/design.md` | Optional design specialist: frontend/UI, loads design skills |
 | `agent/reviewer.md` | Optional reviewer specialist: critiques plans and audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
-| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, command, and plugin |
+| `profiles/` | Bundled subscription profiles: named per-role model presets applied via `install.js apply --profile <name>` |
+| `scripts/check-profiles.js` | Live check that profile model ids still exist on models.dev (`npm run check-profiles`) |
+| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, profiles, command, and plugin |
 | `.opencode/skills/fusion-setup/scripts/install.js` | Deterministic installer the skill drives: backup, merge, atomic write, manifest, undo |
 | `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
 | `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |

@@ -147,6 +147,7 @@
           <a href="#how-it-works">How it works</a>
           <a href="#guarantees">Enforced vs. advised</a>
           <a href="#install-opencode">Install OpenCode</a>
+          <a href="#profiles">Profiles</a>
           <a href="#verify">Verify</a>
           <a href="#customize">Customize</a>
           <a href="#troubleshooting">Troubleshooting</a>
@@ -278,6 +279,52 @@
 
           <h3>After setup</h3>
           <p>The skill writes <code>~/.config/opencode/opencode.json</code>, installs agent prompts under <code>~/.config/opencode/agent/</code>, and asks you to restart. To change models later, say “reconfigure fusion” or edit the config directly.</p>
+        </section>
+
+        <section id="profiles" class="docs-section">
+          <h2>Subscription profiles</h2>
+          <p>On a subscription? Name it during setup — or run <code>/fusion-setup opencode-go</code> — and the skill starts from a bundled profile, a ready-made role-to-model mapping, instead of interviewing you per role. Authentication stays out-of-band via <code>opencode auth login</code> (or <code>/connect</code>): profiles carry no keys, and the skill never asks for one in chat.</p>
+
+          <div class="docs-table-wrap">
+            <table class="docs-table">
+              <thead>
+                <tr>
+                  <th scope="col">Profile</th>
+                  <th scope="col">Subscription</th>
+                  <th scope="col">Main / sidekick</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>opencode-go</code></td>
+                  <td>OpenCode Go</td>
+                  <td>GLM 5.2 / DeepSeek V4 Flash</td>
+                </tr>
+                <tr>
+                  <td><code>opencode-zen</code></td>
+                  <td>OpenCode Zen pay-as-you-go</td>
+                  <td>Claude Fable 5 / GLM 5.2</td>
+                </tr>
+                <tr>
+                  <td><code>opencode-zen-free</code></td>
+                  <td>OpenCode Zen free tier</td>
+                  <td>Big Pickle / MiMo V2.5 Free</td>
+                </tr>
+                <tr>
+                  <td><code>chatgpt</code></td>
+                  <td>ChatGPT Plus or Pro</td>
+                  <td>GPT-5.6 Sol / GPT-5.6 Luna</td>
+                </tr>
+                <tr>
+                  <td><code>github-copilot</code></td>
+                  <td>GitHub Copilot</td>
+                  <td>Claude Sonnet 5 / GPT-5.4 Mini</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="docs-note">Every pick stays overridable, and model lineups rotate — the <a href="https://github.com/mihneaptu/opencode-fusion#subscription-profiles" target="_blank" rel="noopener noreferrer">README’s profiles section</a> is canonical for the full role tables and caveats.</p>
         </section>
 
         <section id="verify" class="docs-section">

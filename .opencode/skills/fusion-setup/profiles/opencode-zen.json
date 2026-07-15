@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/claude-fable-5",
+  "small_model": "opencode/deepseek-v4-flash",
+  "provider": {
+    "opencode": {
+      "models": {
+        "claude-fable-5": { "name": "Claude Fable 5" },
+        "claude-sonnet-5": { "name": "Claude Sonnet 5" },
+        "glm-5.2": { "name": "GLM 5.2" },
+        "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
+        "gpt-5.6-sol": { "name": "GPT-5.6 Sol" }
+      }
+    }
+  },
+  "agent": {
+    "build": { "model": "opencode/claude-fable-5" },
+    "sidekick": { "model": "opencode/glm-5.2" },
+    "explore": { "model": "opencode/deepseek-v4-flash" },
+    "research": { "model": "opencode/claude-sonnet-5" },
+    "design": { "model": "opencode/glm-5.2" },
+    "reviewer": { "model": "opencode/gpt-5.6-sol" }
+  }
+}
