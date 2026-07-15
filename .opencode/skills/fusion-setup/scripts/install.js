@@ -462,15 +462,17 @@ function apply(opts) {
   if (opts.profile) {
     // The profile is the base; an explicit --config fragment overrides it.
     fragment = deepMerge(loadProfile(opts.profile), fragment);
-    const profileRoles = OPTIONAL_ROLES.filter((role) => role in (fragment.agent || {}));
+    // Every core role plus every optional role the profile assigns a model.
+    // A model assigned to a role whose permission-bearing agent file is not
+    // installed would run without Fusion's permission frontmatter, so an
+    // explicit --roles may extend this list but never shrink it.
+    const profileRoles = [...CORE_ROLES, ...OPTIONAL_ROLES.filter((role) => role in (fragment.agent || {}))];
     if (!opts.rolesExplicit) {
-      // A model assigned to a role whose permission-bearing agent file is not
-      // installed would run without Fusion's permission frontmatter.
-      opts.roles = [...CORE_ROLES, ...profileRoles];
+      opts.roles = profileRoles;
     } else {
       const missing = profileRoles.filter((role) => !opts.roles.includes(role));
       if (missing.length) {
-        fail(`--roles omits role(s) the profile assigns a model to: ${missing.join(', ')} - include them, or configure without --profile to trim roles`);
+        fail(`--roles omits role(s) the profile requires: ${missing.join(', ')} - include them, or configure without --profile to trim roles`);
       }
     }
   }

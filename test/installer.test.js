@@ -493,8 +493,21 @@ describe('fusion-setup deterministic installer', () => {
       'apply', '--profile', 'opencode-zen', '--roles', 'build,plan,sidekick', '--config-dir', dir,
     ]);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /omits role\(s\) the profile assigns a model to/);
+    assert.match(result.stderr, /omits role\(s\) the profile requires/);
     assert.match(result.stderr, /reviewer/);
+    assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
+  });
+
+  test('explicit --roles that drops a core role is refused with a profile', () => {
+    // Without sidekick.md the config's agent.sidekick.model would define an
+    // agent with no permission frontmatter - the exact hole Fusion closes.
+    const result = run([
+      'apply', '--profile', 'opencode-zen',
+      '--roles', 'build,plan,research,design,reviewer', '--config-dir', dir,
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /omits role\(s\) the profile requires/);
+    assert.match(result.stderr, /sidekick/);
     assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
   });
 

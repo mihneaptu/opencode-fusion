@@ -21,7 +21,18 @@ const profilesDir = path.join(root, 'profiles');
 
 function apiUrl(argv) {
   const index = argv.indexOf('--api');
-  return index === -1 ? 'https://models.dev/api.json' : argv[index + 1];
+  if (index === -1) return 'https://models.dev/api.json';
+  const value = argv[index + 1];
+  if (!value || value.startsWith('--')) throw new Error('--api requires a URL value');
+  return value;
+}
+
+// A model reference is "provider/model-id". Profiles are hand-authored, so a
+// malformed one must surface as a clear error, not mangled slicing.
+function splitRef(ref) {
+  const slash = ref.indexOf('/');
+  if (slash < 1 || slash === ref.length - 1) return null;
+  return [ref.slice(0, slash), ref.slice(slash + 1)];
 }
 
 // Every provider/model pair a profile relies on: the role assignments plus
@@ -69,7 +80,12 @@ async function main() {
     const issues = [];
 
     for (const ref of modelRefs(profile)) {
-      const [providerId, modelId] = [ref.slice(0, ref.indexOf('/')), ref.slice(ref.indexOf('/') + 1)];
+      const parts = splitRef(ref);
+      if (!parts) {
+        issues.push({ level: 'error', text: `invalid model reference "${ref}" (expected provider/model-id)` });
+        continue;
+      }
+      const [providerId, modelId] = parts;
       const provider = registry[providerId];
       if (!provider) {
         issues.push({ level: 'error', text: `provider "${providerId}" is not on models.dev` });
@@ -91,8 +107,8 @@ async function main() {
     }
 
     const registryEntry = (ref) => {
-      const [providerId, modelId] = [ref.slice(0, ref.indexOf('/')), ref.slice(ref.indexOf('/') + 1)];
-      return registry[providerId]?.models?.[modelId];
+      const parts = splitRef(ref);
+      return parts ? registry[parts[0]]?.models?.[parts[1]] : undefined;
     };
     const visionModel = profile.agent?.vision?.model;
     const visionEntry = visionModel && registryEntry(visionModel);
