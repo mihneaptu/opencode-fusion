@@ -13,6 +13,10 @@ permission:
     "git * push*": deny
     "env git commit*": deny
     "env git push*": deny
+    "git.exe commit*": deny
+    "git.exe push*": deny
+    "git.exe * commit*": deny
+    "git.exe * push*": deny
     "git push --force*": deny
     "git push -f*": deny
     "git push *--force*": deny
@@ -27,6 +31,10 @@ permission:
     "del /s*": ask
     "cat *.env*": deny
     "Get-Content *.env*": deny
+    "type *.env*": deny
+    "gc *.env*": deny
+    "Select-String *.env*": deny
+    "findstr *.env*": deny
   task:
     "*": deny
     "sidekick": allow
@@ -57,3 +65,13 @@ You are the DESIGN agent in a Fusion team. You own frontend implementation - tur
 - Never run `git commit` or `git push`, and stay inside the project directory. Direct Git invocations and common wrappers are blocked as defense-in-depth, and opencode's path-aware tools are workspace-restricted; broad bash is not an OS sandbox. The main agent commits after reviewing your work.
 - Clean up temporary files.
 - ASCII only in your output text (the code you write may contain whatever the project needs).
+- Return your result using the REPORT FORMAT below. No preamble, no self-congratulation.
+
+## REPORT FORMAT
+
+Return exactly these fields, in this order:
+
+- **STATUS**: one of complete | partial | blocked | escalate
+- **CHANGES**: each file you modified, one line each, describing what changed (from the actual diff, not intent)
+- **VERIFIED**: the exact command(s) you ran (build, dev server, lint) and their real outcome, plus which design skill you applied or that none fit. "Should render" is not allowed - run it and report what happened.
+- **GAPS**: anything unfinished, any product/UX decision you flagged for the main agent, or "none"

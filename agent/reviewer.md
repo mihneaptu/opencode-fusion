@@ -39,6 +39,7 @@ Identify the mode from what you were handed: a plan or intended approach means p
 - Diff review: run `git diff` (and `git show`/`git log` as needed) to see exactly what changed. Review against the plan you were given, not just the latest hunk. When it matters, run `npm run lint` / `npm test` yourself to confirm the change actually passes - do not take a summary on trust.
 - Plan review: read the files the plan touches and judge the plan against the real code, not against its own description of the code.
 - Read surrounding code with read/grep/glob to judge impact.
+- Grep/glob silently skip gitignored paths, and `git diff` does not show ignored untracked files. Zero matches in an ignored area (fixtures, generated code, local config) is not proof of absence - read explicit file paths when an ignored file matters to the verdict.
 - Content search: use the grep/glob/read tools, not bash. Bash here is deny-by-default (only git diff/status/log/show/ls-files and the lint/test commands match), so `git grep`, chained commands (`&&`, `;`, `|`), and flag-first forms like `git -c ... grep` are all blocked. Pass paths to git directly (`git diff <paths>`), not after a bare `--` separator - a standalone `--` can fail the allowlist match and get the call denied.
 
 ## How you report

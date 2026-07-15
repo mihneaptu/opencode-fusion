@@ -291,6 +291,9 @@ describe('agent frontmatter contracts', () => {
         'git -C . commit -m change',
         'git --git-dir .git push origin main',
         'env git push origin main',
+        'git.exe commit -m change',
+        'git.exe push origin main',
+        'git.exe -C . commit -m change',
       ]) {
         assert.equal(
           resolveBashRule(bash, command),
@@ -299,6 +302,39 @@ describe('agent frontmatter contracts', () => {
         );
       }
     }
+  });
+
+  test('executors deny .env reads in Unix, PowerShell, and cmd forms', () => {
+    for (const role of ['sidekick', 'design']) {
+      const bash = requireBlock(agents[role].frontmatter, 'bash', role);
+      for (const command of [
+        'cat .env',
+        'cat .env.local',
+        'Get-Content .env',
+        'type .env',
+        'gc .env',
+        'Select-String -Path .env secret',
+        'findstr secret .env',
+      ]) {
+        assert.equal(
+          resolveBashRule(bash, command),
+          'deny',
+          `contract violated: ${role} must deny .env read form: ${command}`
+        );
+      }
+    }
+  });
+
+  test('sidekick and design share an identical bash guard map', () => {
+    const rulesOf = (role) =>
+      requireBlock(agents[role].frontmatter, 'bash', role).children.map(
+        (c) => `${c.key} => ${c.value}`
+      );
+    assert.deepEqual(
+      rulesOf('design'),
+      rulesOf('sidekick'),
+      'contract violated: sidekick and design bash guard maps must stay identical - a guard added to one must be added to the other'
+    );
   });
 
   test('build asks on commit/push and denies dangerous push variants after git push*', () => {
@@ -381,6 +417,36 @@ describe('agent frontmatter contracts', () => {
     for (const role of ['research', 'reviewer']) {
       assertPermissionValue(role, 'edit', 'deny');
     }
+  });
+
+  test('vision bash is a deny-by-default map allowing only PowerShell', () => {
+    const bash = requireBlock(agents.vision.frontmatter, 'bash', 'vision');
+    assert.equal(bash.scalar, null, 'contract violated: vision bash must be a rule map, not a bare allow');
+    assertWildcardDenyFirst(bash, 'vision', 'bash');
+    const allows = bash.children.filter((c) => c.value === 'allow');
+    assert.ok(
+      allows.length > 0,
+      'contract violated: vision bash must allow a PowerShell form for the clipboard save'
+    );
+    for (const rule of allows) {
+      assert.ok(
+        /^(powershell|pwsh)/i.test(rule.key),
+        `contract violated: vision bash may only allow powershell/pwsh forms, found allow for: ${rule.key}`
+      );
+    }
+    assert.equal(
+      resolveBashRule(bash, 'rm -rf .'),
+      'deny',
+      'contract violated: vision bash must deny non-PowerShell commands'
+    );
+    assert.equal(
+      resolveBashRule(
+        bash,
+        "powershell -NoProfile -Command 'Add-Type -AssemblyName System.Windows.Forms'"
+      ),
+      'allow',
+      'contract violated: vision bash must allow the powershell clipboard-save invocation'
+    );
   });
 
   test('vision is hidden and has task: deny', () => {

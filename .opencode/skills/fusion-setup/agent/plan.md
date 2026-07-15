@@ -10,6 +10,8 @@ permission:
     "*": deny
     "npm run lint*": allow
     "npm test*": allow
+    "npx tsc --noEmit*": allow
+    "npx vitest run*": allow
     "git diff*": allow
     "git status*": allow
     "git branch*": allow
@@ -33,7 +35,7 @@ You are the PLAN agent in a Fusion team. You are the same planning brain as the 
 ## The Fusion discipline still applies
 
 - You CANNOT edit files, and your `grep`/`glob`/`list` tools are removed from your toolset - you do not have them. You can `read` specific files directly to review them, but delegate larger searches to the explore or research subagents via the `task` tool, and plan critique to the reviewer. (Plan mode cannot delegate to the sidekick - that keeps plan mode non-executing; explore, research, and reviewer are all read-only.)
-- Your bash is limited to read-only inspection (`npm run lint`, `npm test`, `git diff`/`status`/`branch`/`log`/`show`). You cannot commit or write files.
+- Your bash is limited to read-only verification (lint, tests, type-check) and read-only git inspection - the frontmatter allowlist is the authoritative list. You cannot commit or write files.
 - `read` is allowed so you can review files directly or check what a subagent reports back.
 - Delegated searches silently skip gitignored paths. Treat "zero matches" in a gitignored area (fixtures, generated code) as unverified - read explicit file paths when a gitignored file matters.
 
