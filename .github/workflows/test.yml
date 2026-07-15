@@ -33,3 +33,13 @@ jobs:
         run: npm install -g opencode-ai@1.17.19
       - name: Live enforcement tests (real opencode, fake provider)
         run: npm run test:integration
+
+  # Network lane: the offline `npm test` never touches the registry, so
+  # profile model-id drift is caught here instead.
+  check-profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Verify profile model ids against models.dev
+        run: npm run check-profiles

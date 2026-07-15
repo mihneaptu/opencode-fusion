@@ -5,8 +5,8 @@
 // prompts, slash commands, and audit plugin; test/sync.test.js fails on any
 // drift. Edit the sources, run this, then `npm test`, then commit both sides.
 //
-// Sources (edit these):        agent/, .opencode/commands/, .opencode/plugins/
-// Copies (never edit by hand): .opencode/skills/fusion-setup/{agent,commands,plugins}/
+// Sources (edit these):        agent/, profiles/, .opencode/commands/, .opencode/plugins/
+// Copies (never edit by hand): .opencode/skills/fusion-setup/{agent,profiles,commands,plugins}/
 //
 // This does NOT touch the installed copies under ~/.config/opencode/ - that
 // drift is a separate concern covered by `npm run check-install`.
@@ -21,6 +21,7 @@ const skillRoot = path.join(root, '.opencode', 'skills', 'fusion-setup');
 
 const mirroredDirs = [
   { source: path.join(root, 'agent'), copy: path.join(skillRoot, 'agent') },
+  { source: path.join(root, 'profiles'), copy: path.join(skillRoot, 'profiles') },
   { source: path.join(root, '.opencode', 'commands'), copy: path.join(skillRoot, 'commands') },
   { source: path.join(root, '.opencode', 'plugins'), copy: path.join(skillRoot, 'plugins') },
 ];

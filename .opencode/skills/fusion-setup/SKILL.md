@@ -1,6 +1,6 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", or changing which models the main, sidekick, or explore agents use. Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", changing which models the main, sidekick, or explore agents use, or naming a subscription to start from a ready-made profile - e.g. "set up fusion with my OpenCode Go subscription" (also OpenCode Zen, Claude Pro/Max, ChatGPT Plus/Pro, GitHub Copilot). Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup
@@ -23,6 +23,36 @@ Fusion splits work across agents with asymmetric permissions:
 Think of the repo as a catalog of roles: the core (build/plan/sidekick/explore) is required, and the rest are optional pieces you install only if your workflow needs them. The research/design/reviewer/vision specialists are optional. Each role's model is chosen independently - that is a key reason to use Fusion: put your favorite design model on `design` and a different reviewer model on `reviewer`.
 
 The asymmetry is enforced by the permission layer, not by convention. Preserving the exact permission frontmatter in the bundled agent files installed during Step 4 is what makes Fusion work.
+
+## Step 0 - Offer a subscription profile
+
+Before the per-role interview, ask whether the user's models come from one of these subscriptions. Each maps to a bundled profile - a ready-made config fragment in `<this-skill-dir>/profiles/` with sane per-role defaults:
+
+| Profile | Subscription |
+| --- | --- |
+| `opencode-go` | OpenCode Go (low-cost open-model plan on OpenCode Zen) |
+| `opencode-zen` | OpenCode Zen pay-as-you-go credits |
+| `opencode-zen-free` | OpenCode Zen free-tier models only |
+| `claude-pro-max` | Claude Pro or Max |
+| `chatgpt` | ChatGPT Plus or Pro |
+| `github-copilot` | GitHub Copilot |
+
+If the user names one (including as a `/fusion-setup` argument):
+
+1. Read `<this-skill-dir>/profiles/<name>.json` and show its role -> model table for confirmation. The JSON is the single source of truth - never quote model ids from memory or from this document.
+2. Remind them that authentication is out-of-band: the provider must be connected once via `opencode auth login` (or `/connect` inside opencode) with their subscription login or key. NEVER ask for a key in the chat. Profile provider blocks deliberately contain no npm adapter, baseURL, or apiKey - opencode knows these providers natively; the blocks only carry display names.
+3. Skip Steps 1-3 and run the installer with the profile (Step 4's delegation rules still apply):
+
+   ```bash
+   node <this-skill-dir>/scripts/install.js apply --profile <name> --extras commands,plugin
+   ```
+
+   No `--roles` flag is needed: the installer derives the role list from the profile, so every role the profile assigns a model also gets its permission-bearing agent file.
+4. To change one or two picks, keep `--profile <name>` and add `--config <fragment.json>` holding just the delta (for example a different `agent.reviewer.model`, plus a provider block only if that model's provider is outside the profile). The fragment wins over the profile. Removing an optional role a profile assigns cannot be expressed as an override - use the custom interview (Steps 1-4) without `--profile` instead.
+
+Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; the single-vendor profiles (`claude-pro-max`, `chatgpt`) put the reviewer on the same vendor as the main model, so a user with a second provider may want to override the reviewer for cross-vendor review. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
+
+If the user has none of these subscriptions, or wants full control over every pick, continue with Step 1.
 
 ## Step 1 - Gather the user's model choices
 
@@ -131,6 +161,7 @@ The skill bundles an installer at `<this-skill-dir>/scripts/install.js` (plain N
 node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> --roles build,plan,sidekick --extras commands,plugin
 ```
 
+- `--profile <name>` applies a bundled subscription profile (Step 0) as the base fragment; a `--config` fragment, when also given, overrides it key by key. With a profile, omit `--roles` - the installer derives the list from the profile - and an explicit `--roles` that drops a profile-assigned role is refused. Unknown profile names fail listing the available ones.
 - `--roles` is comma-separated and defaults to the core `build,plan,sidekick` (explore needs no file by design). Append exactly the optional roles the user configured, e.g. `--roles build,plan,sidekick,research,reviewer`; include `vision` only if a vision role was configured.
 - `--extras commands,plugin` installs the optional slash commands and audit plugin described below; trim or omit per the user's wishes.
 - Add `--dry-run` to print the full plan (backup name, merged keys, files) without writing anything - offer this if the user seems cautious.
@@ -168,7 +199,7 @@ Three optional extras ship next to the skill; the installer's `--extras commands
 
 ## Reconfiguring later
 
-To change a model, build a small fragment with `agent.<role>.model` (and a `provider` block if the new model uses a new provider), then rerun the installer and restart opencode. Do not edit an installer-managed config in place: the ownership check intentionally treats that as a local customization and refuses to overwrite it. Reapply preserves the original pre-Fusion baseline and keeps all previously managed files recorded for a complete undo.
+To change a model, build a small fragment with `agent.<role>.model` (and a `provider` block if the new model uses a new provider), then rerun the installer and restart opencode. For a profile-based install, rerun with the same `--profile <name>` plus the small `--config` delta. Do not edit an installer-managed config in place: the ownership check intentionally treats that as a local customization and refuses to overwrite it. Reapply preserves the original pre-Fusion baseline and keeps all previously managed files recorded for a complete undo.
 
 ## Undoing Fusion
 
