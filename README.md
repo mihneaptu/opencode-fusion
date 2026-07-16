@@ -140,13 +140,13 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
 }
 ```
 
-The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in `agent/research.md`, `agent/design.md`, `agent/reviewer.md`, and `agent/vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model. `explore` is the one role with no prompt file: it is opencode's built-in read-only subagent, so it gets a model entry in the JSON and nothing else; there is intentionally no `agent/explore.md` in this repo.
+The specialists are optional and a-la-carte. To add one, give it a model entry in the `agent` block alongside `explore`/`sidekick`, for example `"reviewer": { "model": "<provider>/<model-id>" }`, and install its prompt file. Their prompts and permissions live in the skill bundle: `.opencode/skills/fusion-setup/agent/` holds `research.md`, `design.md`, `reviewer.md`, and `vision.md`. Add `vision` only if your main model cannot read images. Plan mode uses `agent/plan.md` and reuses the main model. `explore` is the one role with no prompt file: it is opencode's built-in read-only subagent, so it gets a model entry in the JSON and nothing else; there is intentionally no `agent/explore.md` in this repo.
 
 Then install the agent files. opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition. The frontmatter carries the role's mode and permissions (this is where the edit denial is mechanically enforced), and the body is its prompt:
 
 ```bash
 mkdir -p ~/.config/opencode/agent
-cp agent/build.md agent/plan.md agent/sidekick.md ~/.config/opencode/agent/
+cp .opencode/skills/fusion-setup/agent/{build,plan,sidekick}.md ~/.config/opencode/agent/
 ```
 
 Model references are always `provider-id/model-id`. If a model uses a provider opencode does not know yet, add a `provider` block for it (see the OpenAI-compatible template in the `fusion-setup` skill).
@@ -200,7 +200,7 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 
 ### Adjust the bash allowlist
 
-The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit `agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually: do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
+The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit the installed `~/.config/opencode/agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually: do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
 <details>
 <summary><b>Optional hardening</b></summary>
@@ -312,8 +312,11 @@ Three optional extras ship with the skill:
 <details>
 <summary>All files</summary>
 
-| File | Purpose |
+Everything Fusion installs lives in one place, the skill bundle at `.opencode/skills/fusion-setup/`:
+
+| File (inside the skill bundle) | Purpose |
 |------|---------|
+| `SKILL.md` | The conversational setup flow the skill runs |
 | `agent/build.md` | Main agent: edit denied, search denied, bash allowlisted, task allowed, exploration + parallelization rules |
 | `agent/plan.md` | Plan-mode agent: read-only inspection plus delegation, cannot execute or commit |
 | `agent/sidekick.md` | Sidekick prompt (model set in `opencode.json`) |
@@ -322,13 +325,16 @@ Three optional extras ship with the skill:
 | `agent/reviewer.md` | Optional reviewer specialist: critiques plans and audits diffs, read-only plus lint/test |
 | `agent/vision.md` | Optional vision specialist: transcribes images when the main model has no image input |
 | `profiles/` | Bundled subscription profiles: named per-role model presets applied via `install.js apply --profile <name>` |
+| `commands/` | Optional `/fusion-setup` (launches setup) and `/fusion-status` (health check) slash commands |
+| `plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree and per-agent token usage per session for auditing |
+| `scripts/install.js` | Deterministic installer the skill drives: backup, merge, atomic write, manifest, undo |
+
+The rest of the repo supports it:
+
+| File | Purpose |
+|------|---------|
 | `scripts/check-profiles.js` | Live check that profile model ids still exist on models.dev (`npm run check-profiles`) |
-| `.opencode/skills/fusion-setup/` | The `fusion-setup` skill: SKILL.md plus bundled agent prompts, profiles, command, and plugin |
-| `.opencode/skills/fusion-setup/scripts/install.js` | Deterministic installer the skill drives: backup, merge, atomic write, manifest, undo |
 | `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
-| `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
-| `.opencode/commands/fusion-status.md` | Optional `/fusion-status` health check: verifies the setup is installed, loaded, and enforcing |
-| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree and per-agent token usage per session for auditing |
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |

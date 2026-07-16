@@ -17,7 +17,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const profilesDir = path.join(root, 'profiles');
+const profilesDir = path.join(root, '.opencode', 'skills', 'fusion-setup', 'profiles');
 
 function apiUrl(argv) {
   const index = argv.indexOf('--api');

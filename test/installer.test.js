@@ -417,7 +417,7 @@ describe('fusion-setup deterministic installer', () => {
   // Expected values are read from the profile source files so refreshing a
   // profile's model ids never breaks these tests.
   const profile = (name) =>
-    readJson(path.join(__dirname, '..', 'profiles', `${name}.json`));
+    readJson(path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup', 'profiles', `${name}.json`));
 
   test('apply with only a profile installs its config and derived roles', () => {
     const zen = profile('opencode-zen');
