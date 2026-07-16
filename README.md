@@ -303,7 +303,7 @@ Three optional extras ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`): a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
 - **`/fusion-status` command** (`commands/fusion-status.md`): a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, and the installed agent files. It only reports; it changes nothing. Install it to `~/.config/opencode/commands/`.
-- **`fusion-audit` plugin** (`plugins/fusion-audit.js`): logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer; the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
+- **`fusion-audit` plugin** (`plugins/fusion-audit.js`): logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) and aggregates per-agent token usage per session through opencode's logger, so you can audit that the main agent delegated instead of editing and see where each session's tokens went: the raw numbers behind "did Fusion actually save money?". It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer; the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
 
 </details>
 
@@ -328,7 +328,7 @@ Three optional extras ship with the skill:
 | `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
 | `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
 | `.opencode/commands/fusion-status.md` | Optional `/fusion-status` health check: verifies the setup is installed, loaded, and enforcing |
-| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
+| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree and per-agent token usage per session for auditing |
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |

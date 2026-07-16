@@ -247,7 +247,7 @@
           <p>Spec precision, diff-review rigor, cost discipline, and skill usage are instructions in the agent prompts. Skills load at the model’s discretion in OpenCode — nothing can force an agent to read or apply one — which is exactly why no guarantee depends on them; the skill in this repo is just the installer. Slacking here costs quality or tokens, never an unauthorized edit.</p>
 
           <h3>Auditable</h3>
-          <p>The optional <code>fusion-audit</code> plugin logs the delegation tree, and OpenCode’s session DB records every agent’s actual tool calls — “did it really delegate?” is checkable ground truth.</p>
+          <p>The optional <code>fusion-audit</code> plugin logs the delegation tree and aggregates per-agent token usage per session, and OpenCode’s session DB records every agent’s actual tool calls — “did it really delegate?” and “where did the tokens go?” are checkable from recorded data.</p>
         </section>
 
         <section id="install-opencode" class="docs-section">
