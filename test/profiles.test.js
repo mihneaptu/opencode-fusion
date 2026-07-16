@@ -8,7 +8,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
-const profilesDir = path.join(root, 'profiles');
+const profilesDir = path.join(root, '.opencode', 'skills', 'fusion-setup', 'profiles');
 const installer = path.join(root, '.opencode', 'skills', 'fusion-setup', 'scripts', 'install.js');
 
 // The shipped set is public surface: SKILL.md Step 0, the README table, and

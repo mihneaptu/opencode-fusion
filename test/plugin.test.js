@@ -7,7 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
-const pluginSource = path.join(__dirname, '..', '.opencode', 'plugins', 'fusion-audit.js');
+const pluginSource = path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup', 'plugins', 'fusion-audit.js');
 
 // The plugin uses ES module syntax inside a CommonJS package scope. opencode's
 // loader handles that natively; plain Node needs an explicit module scope, so

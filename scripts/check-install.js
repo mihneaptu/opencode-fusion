@@ -17,7 +17,7 @@ const path = require('node:path');
 // installed copy of any role must still match the repo byte-for-byte.
 const CORE_ROLES = new Set(['build.md', 'plan.md', 'sidekick.md']);
 
-const repoAgentDir = path.join(__dirname, '..', 'agent');
+const repoAgentDir = path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup', 'agent');
 const installedDir = path.join(os.homedir(), '.config', 'opencode', 'agent');
 
 if (!fs.existsSync(installedDir)) {
@@ -57,7 +57,7 @@ for (const name of names) {
 
 if (drift > 0) {
   console.log(`\n${drift} file(s) out of sync with the repo.`);
-  console.log(`Update: copy the repo's agent/*.md over ${installedDir}, then fully restart opencode.`);
+  console.log(`Update: copy the repo's .opencode/skills/fusion-setup/agent/*.md over ${installedDir}, then fully restart opencode.`);
   process.exit(1);
 }
 console.log('\nInstalled agents match the repo.');

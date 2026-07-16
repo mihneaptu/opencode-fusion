@@ -61,7 +61,7 @@ async function createEnv(baseURL) {
   fs.mkdirSync(path.join(configDir, 'agent'), { recursive: true });
 
   // Install the repo's agent prompts exactly as the setup skill would.
-  const agentSrc = path.join(repoRoot, 'agent');
+  const agentSrc = path.join(repoRoot, '.opencode', 'skills', 'fusion-setup', 'agent');
   for (const name of fs.readdirSync(agentSrc)) {
     if (!name.endsWith('.md')) continue;
     fs.copyFileSync(path.join(agentSrc, name), path.join(configDir, 'agent', name));

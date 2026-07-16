@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const agentDir = path.join(__dirname, '..', 'agent');
+const agentDir = path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup', 'agent');
 
 // Hand-rolled YAML helpers - not a general parser. Indent assumes 2-space YAML.
 
