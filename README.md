@@ -28,7 +28,7 @@ npx skills add mihneaptu/opencode-fusion --skill fusion-setup -g -a opencode -y
 set up fusion
 ```
 
-The installer needs **Node 20.12 or newer**. On older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. On a subscription (OpenCode Go/Zen, ChatGPT, or GitHub Copilot)? Name it and the skill starts from a ready-made [profile](#subscription-profiles) instead of asking per role. Manual setup and provider examples live in [Setup](#setup).
+The installer needs **Node 20.12 or newer**. On older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. On a subscription (OpenCode Go/Zen, ChatGPT, GitHub Copilot, or Cerebras Code)? Name it and the skill starts from a ready-made [profile](#subscription-profiles) instead of asking per role. Manual setup and provider examples live in [Setup](#setup).
 
 ## Why it works
 

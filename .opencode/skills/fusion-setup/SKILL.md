@@ -1,6 +1,6 @@
 ---
 name: fusion-setup
-description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", changing which models the main, sidekick, or explore agents use, or naming a subscription to start from a ready-made profile - e.g. "set up fusion with my OpenCode Go subscription" (also OpenCode Zen, ChatGPT Plus/Pro, GitHub Copilot). Writes the global opencode config under ~/.config/opencode/.
+description: Use when a user wants to set up, configure, install, or reconfigure the opencode Fusion agent team - a strong main/build agent that plans and reviews but cannot edit files, delegating all edits to a cheaper sidekick subagent, plus an explore search agent and optional research/design/reviewer/vision specialists. Triggers include "set up fusion", "configure fusion", "install fusion", "fusion setup", "undo fusion" / "remove fusion", changing which models the main, sidekick, or explore agents use, or naming a subscription to start from a ready-made profile - e.g. "set up fusion with my OpenCode Go subscription" (also OpenCode Zen, ChatGPT Plus/Pro, GitHub Copilot, Cerebras Code). Writes the global opencode config under ~/.config/opencode/.
 ---
 
 # Fusion setup
