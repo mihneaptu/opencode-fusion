@@ -35,6 +35,7 @@ Before the per-role interview, ask whether the user's models come from one of th
 | `opencode-zen-free` | OpenCode Zen free-tier models only |
 | `chatgpt` | ChatGPT Plus or Pro |
 | `github-copilot` | GitHub Copilot |
+| `cerebras-code` | Cerebras Code |
 
 If the user names one (including as a `/fusion-setup` argument):
 
@@ -49,7 +50,7 @@ If the user names one (including as a `/fusion-setup` argument):
    No `--roles` flag is needed: the installer derives the role list from the profile, so every role the profile assigns a model also gets its permission-bearing agent file.
 4. To change one or two picks, keep `--profile <name>` and add `--config <fragment.json>` holding just the delta (for example a different `agent.reviewer.model`, plus a provider block only if that model's provider is outside the profile). The fragment wins over the profile. Removing an optional role a profile assigns cannot be expressed as an override - use the custom interview (Steps 1-4) without `--profile` instead.
 
-Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; `opencode-zen-free` runs on free-period models whose prompts may be used for training under OpenCode's policy - warn users to keep sensitive code off it; the single-vendor `chatgpt` profile keeps every role on one vendor, so a user with a second provider may want to override the reviewer for cross-vendor review; `github-copilot` defaults its main to Claude Sonnet 5 for credit-cost sanity - a user who wants max quality can override build to `github-copilot/claude-fable-5` (billed much higher per token). There is deliberately NO Claude Pro/Max profile - Anthropic's terms prohibit using those subscriptions outside Claude Code, so never improvise one; a user who wants Claude models gets them the sanctioned ways: `opencode-zen` (Zen resells them pay-as-you-go) or an Anthropic API key via the Step 1 interview. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
+Caveats worth mentioning when they apply: `opencode-go`, `opencode-zen-free`, and `cerebras-code` include a `vision` role because their main models cannot read images; `opencode-zen-free` runs on free-period models whose prompts may be used for training under OpenCode's policy - warn users to keep sensitive code off it; the single-vendor `chatgpt` and `cerebras-code` profiles keep every role on one vendor, so a user with a second provider may want to override the reviewer for cross-vendor review; `github-copilot` defaults its main to Claude Sonnet 5 for credit-cost sanity - a user who wants max quality can override build to `github-copilot/claude-fable-5` (billed much higher per token). There is deliberately NO Claude Pro/Max profile - Anthropic's terms prohibit using those subscriptions outside Claude Code, so never improvise one; a user who wants Claude models gets them the sanctioned ways: `opencode-zen` (Zen resells them pay-as-you-go) or an Anthropic API key via the Step 1 interview. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
 
 If the user has none of these subscriptions, or wants full control over every pick, continue with Step 1.
 
@@ -187,7 +188,7 @@ Three optional extras ship next to the skill; the installer's `--extras commands
 
 - Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
 - Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files). It only reports - it changes nothing.
-- Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) via opencode's logger for auditing. It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
+- Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) and aggregates per-agent token usage per session via opencode's logger for auditing - the raw numbers behind "did Fusion actually save money?". It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
 
 ## Step 5 - Validate and finish
 

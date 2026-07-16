@@ -15,6 +15,7 @@ const installer = path.join(root, '.opencode', 'skills', 'fusion-setup', 'script
 // the site all enumerate these names. Adding or removing a profile must
 // update all of them together.
 const EXPECTED_PROFILES = [
+  'cerebras-code',
   'chatgpt',
   'github-copilot',
   'opencode-go',

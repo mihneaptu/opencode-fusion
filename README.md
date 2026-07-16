@@ -115,10 +115,11 @@ If your models come from a subscription, skip the per-role interview: name the s
 | `opencode-zen-free` | OpenCode Zen free-tier models | Big Pickle / MiMo V2.5 Free | vision |
 | `chatgpt` | ChatGPT Plus or Pro | GPT-5.6 Sol / GPT-5.6 Luna | core roles only |
 | `github-copilot` | GitHub Copilot | Claude Sonnet 5 / GPT-5.4 Mini | research, reviewer |
+| `cerebras-code` | Cerebras Code | Z.AI GLM-4.7 / GPT OSS 120B | vision |
 
 Authentication stays out-of-band: connect the provider once with `opencode auth login` (or `/connect` inside opencode). Profiles contain no keys, adapters, or endpoints (opencode knows these providers natively), and the skill never asks for a key in chat. To adjust a pick, keep the profile and add a small override fragment (`--profile <name> --config <delta.json>`; your fragment wins on conflicts).
 
-Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead: through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
+Four notes. `opencode-go`, `opencode-zen-free`, and `cerebras-code` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` and `cerebras-code` profiles keep every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead: through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
@@ -303,7 +304,7 @@ Three optional extras ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`): a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
 - **`/fusion-status` command** (`commands/fusion-status.md`): a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, and the installed agent files. It only reports; it changes nothing. Install it to `~/.config/opencode/commands/`.
-- **`fusion-audit` plugin** (`plugins/fusion-audit.js`): logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) through opencode's logger, so you can audit that the main agent delegated instead of editing. It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer; the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
+- **`fusion-audit` plugin** (`plugins/fusion-audit.js`): logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) and aggregates per-agent token usage per session through opencode's logger, so you can audit that the main agent delegated instead of editing and see where each session's tokens went: the raw numbers behind "did Fusion actually save money?". It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer; the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
 
 </details>
 
@@ -328,7 +329,7 @@ Three optional extras ship with the skill:
 | `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
 | `.opencode/commands/fusion-setup.md` | Optional `/fusion-setup` slash command that launches setup |
 | `.opencode/commands/fusion-status.md` | Optional `/fusion-status` health check: verifies the setup is installed, loaded, and enforcing |
-| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree for auditing |
+| `.opencode/plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree and per-agent token usage per session for auditing |
 | `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
