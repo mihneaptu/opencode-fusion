@@ -9,7 +9,7 @@ opencode Fusion is a *configuration* project (not an app). Install on OpenCode, 
 - [Landing page](index.html): product overview, how it works, cost split
 - [Full docs](docs.html): install, verify, customize, troubleshoot
 - [Install OpenCode](docs.html#install-opencode)
-- [Subscription profiles](docs.html#profiles): named per-subscription model presets (OpenCode Go/Zen, ChatGPT, GitHub Copilot, Cerebras Code)
+- [Subscription profiles](docs.html#profiles): named per-subscription model presets (OpenCode Go/Zen, ChatGPT, GitHub Copilot)
 - [Verify the flow](docs.html#verify)
 - [Enforced vs. advised](docs.html#guarantees)
 - [Customize models](docs.html#customize)
@@ -51,4 +51,4 @@ cp -r .opencode/skills/fusion-setup ~/.config/opencode/skills/
 7. If the sidekick misses a spec twice, the main agent dictates the exact patch verbatim (file, line range, code) for the sidekick to apply — the retry loop cannot deadlock. If the dictated patch fails verification, the plan is wrong and main revises it.
 8. Provider API keys belong in environment variables: opencode.json supports `{env:VAR}` and `{file:path}` substitution, so a key never sits in plaintext config or passes through the chat. An unset variable resolves to an empty string, which surfaces as auth errors.
 9. The optional `/fusion-status` command health-checks the setup in one shot: live enforcement in the running session (denied tools actually absent from the tool schema), the config on disk, and the installed agent files. It only reports — run it first when troubleshooting.
-10. Bundled subscription profiles (`opencode-go`, `opencode-zen`, `opencode-zen-free`, `chatgpt`, `github-copilot`, `cerebras-code`) are plain config fragments the deterministic installer applies via `--profile <name>`; an optional `--config` fragment overrides them key by key. Provider auth stays out-of-band via `opencode auth login`; profiles never contain keys. There is deliberately no Claude Pro/Max profile: Anthropic prohibits subscription use outside Claude Code, so Claude models come via `opencode-zen` or an Anthropic API key instead.
+10. Bundled subscription profiles (`opencode-go`, `opencode-zen`, `opencode-zen-free`, `chatgpt`, `github-copilot`) are plain config fragments the deterministic installer applies via `--profile <name>`; an optional `--config` fragment overrides them key by key. Provider auth stays out-of-band via `opencode auth login` — profiles never contain keys. There is deliberately no Claude Pro/Max profile: Anthropic prohibits subscription use outside Claude Code — Claude models come via `opencode-zen` or an Anthropic API key instead.
