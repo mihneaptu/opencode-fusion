@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Weekly tick so the canary and profile checks catch upstream drift
+    # even when nothing is being merged.
+    - cron: "43 6 * * 1"
 
 jobs:
   test:
@@ -15,6 +19,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          # Pinned so runner-image Node bumps can't change what we test on.
+          # 22 is the oldest still-supported LTS line (20 went EOL 2026-04).
+          node-version: 22
       - name: Run tests
         run: npm test
 
@@ -27,11 +37,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
       # Pinned: the enforcement assertions are exactly the behavior that
       # could drift between opencode releases. Bump deliberately.
       - name: Install opencode (pinned)
-        run: npm install -g opencode-ai@1.17.19
+        run: npm install -g opencode-ai@1.18.2
       - name: Live enforcement tests (real opencode, fake provider)
+        run: npm run test:integration
+
+  # Canary lane: the same enforcement tests against the latest opencode
+  # release. Non-blocking - a red canary is an early warning that upstream
+  # moved, not a gate. The pinned `integration` job above stays the gate.
+  integration-canary:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Install opencode (latest)
+        run: npm install -g opencode-ai@latest
+      - name: Live enforcement tests against latest opencode
         run: npm run test:integration
 
   # Network lane: the offline `npm test` never touches the registry, so
@@ -41,5 +73,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
       - name: Verify profile model ids against models.dev
         run: npm run check-profiles

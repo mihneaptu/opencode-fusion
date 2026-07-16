@@ -220,7 +220,7 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 - **No dynamic mid-session routing.** Devin Fusion's second technique, swapping the active model mid-task during context compaction, needs Devin's closed product surface and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
 - **Config loads at startup.** opencode reads config once when it launches. Any change to `opencode.json` or an agent prompt requires a full restart to take effect.
 - **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
-- **Targets opencode 1.x.** These files are written against opencode's stable 1.x config schema (verified on 1.17.x). The opencode v2 beta (`opencode2`) uses a different schema (plural `agents`, array-based `permissions`) and is not supported by this repo yet.
+- **Targets opencode 1.x.** These files are written against opencode's stable 1.x config schema (verified on 1.18.x). The opencode v2 beta (`opencode2`) uses a different schema (plural `agents`, array-based `permissions`) and is not supported by this repo yet.
 
 ## FAQ
 
