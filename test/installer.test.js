@@ -325,6 +325,19 @@ describe('fusion-setup deterministic installer', () => {
     assert.equal(Object.getPrototypeOf(JSON.parse(raw)), Object.prototype);
   });
 
+  test('apply replaces a read-only destination file', () => {
+    // Windows refuses rename-over-readonly; the installer clears the bit for
+    // the swap. The pre-existing mode is snapshotted for undo either way.
+    const prompt = path.join(dir, 'agent', 'build.md');
+    fs.mkdirSync(path.dirname(prompt), { recursive: true });
+    fs.writeFileSync(prompt, 'user build prompt\n');
+    fs.chmodSync(prompt, 0o444);
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    assert.notEqual(fs.readFileSync(prompt, 'utf8'), 'user build prompt\n');
+  });
+
   test('invalid destination parent is refused before config changes', () => {
     writeJson(path.join(dir, 'opencode.json'), { model: 'old/model' });
     fs.writeFileSync(path.join(dir, 'agent'), 'not a directory');

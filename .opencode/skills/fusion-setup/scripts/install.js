@@ -349,12 +349,27 @@ function atomicWrite(target, bytes, mode, createdDirs) {
   try {
     fs.writeFileSync(tmp, bytes, { flag: 'wx', mode });
     fs.chmodSync(tmp, mode);
-    // Windows refuses to rename over a read-only file. The caller snapshotted
-    // the target already, so clearing the bit before replacing loses nothing.
-    if (process.platform === 'win32' && fs.existsSync(target)) {
-      try { fs.chmodSync(target, 0o666); } catch { /* let rename surface it */ }
+    // Windows refuses to rename over a read-only file: clear the bit first,
+    // and put it back if the rename still fails (e.g. the target is held by
+    // another process) so a failed operation never leaves permissions changed.
+    let readonlyMode = null;
+    if (process.platform === 'win32') {
+      try {
+        const targetMode = fs.statSync(target).mode & 0o777;
+        if (!(targetMode & 0o200)) {
+          readonlyMode = targetMode;
+          fs.chmodSync(target, 0o666);
+        }
+      } catch { /* no target or unreadable - let rename decide */ }
     }
-    fs.renameSync(tmp, target);
+    try {
+      fs.renameSync(tmp, target);
+    } catch (err) {
+      if (readonlyMode !== null) {
+        try { fs.chmodSync(target, readonlyMode); } catch { /* original error wins */ }
+      }
+      throw err;
+    }
   } finally {
     fs.rmSync(tmp, { force: true });
   }
