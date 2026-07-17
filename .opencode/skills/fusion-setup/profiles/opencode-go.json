@@ -1,24 +1,25 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/glm-5.2",
-  "small_model": "opencode/deepseek-v4-flash",
+  "model": "opencode-go/glm-5.2",
+  "small_model": "opencode-go/deepseek-v4-flash",
   "provider": {
-    "opencode": {
+    "opencode-go": {
       "models": {
         "glm-5.2": { "name": "GLM 5.2" },
         "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
         "kimi-k2.7-code": { "name": "Kimi K2.7 Code" },
+        "kimi-k3": { "name": "Kimi K3" },
         "minimax-m3": { "name": "MiniMax M3" }
       }
     }
   },
   "agent": {
-    "build": { "model": "opencode/glm-5.2" },
-    "sidekick": { "model": "opencode/deepseek-v4-flash" },
-    "explore": { "model": "opencode/deepseek-v4-flash" },
-    "research": { "model": "opencode/kimi-k2.7-code" },
-    "design": { "model": "opencode/glm-5.2" },
-    "reviewer": { "model": "opencode/minimax-m3" },
-    "vision": { "model": "opencode/kimi-k2.7-code" }
+    "build": { "model": "opencode-go/glm-5.2" },
+    "sidekick": { "model": "opencode-go/deepseek-v4-flash" },
+    "explore": { "model": "opencode-go/deepseek-v4-flash" },
+    "research": { "model": "opencode-go/kimi-k2.7-code" },
+    "design": { "model": "opencode-go/kimi-k3" },
+    "reviewer": { "model": "opencode-go/minimax-m3" },
+    "vision": { "model": "opencode-go/kimi-k2.7-code" }
   }
 }
