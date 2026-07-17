@@ -69,7 +69,11 @@ function deepMerge(a, b) {
   if (!isPlainObject(a) || !isPlainObject(b)) return b;
   const out = { ...a };
   for (const [key, value] of Object.entries(b)) {
-    out[key] = key in a ? deepMerge(a[key], value) : value;
+    const merged = Object.hasOwn(a, key) ? deepMerge(a[key], value) : value;
+    // Plain assignment would hit the prototype setter for a key named
+    // "__proto__" and silently drop that subtree from the written config;
+    // defineProperty always creates an ordinary own property.
+    Object.defineProperty(out, key, { value: merged, writable: true, enumerable: true, configurable: true });
   }
   return out;
 }
@@ -345,7 +349,27 @@ function atomicWrite(target, bytes, mode, createdDirs) {
   try {
     fs.writeFileSync(tmp, bytes, { flag: 'wx', mode });
     fs.chmodSync(tmp, mode);
-    fs.renameSync(tmp, target);
+    // Windows refuses to rename over a read-only file: clear the bit first,
+    // and put it back if the rename still fails (e.g. the target is held by
+    // another process) so a failed operation never leaves permissions changed.
+    let readonlyMode = null;
+    if (process.platform === 'win32') {
+      try {
+        const targetMode = fs.statSync(target).mode & 0o777;
+        if (!(targetMode & 0o200)) {
+          readonlyMode = targetMode;
+          fs.chmodSync(target, 0o666);
+        }
+      } catch { /* no target or unreadable - let rename decide */ }
+    }
+    try {
+      fs.renameSync(tmp, target);
+    } catch (err) {
+      if (readonlyMode !== null) {
+        try { fs.chmodSync(target, readonlyMode); } catch { /* original error wins */ }
+      }
+      throw err;
+    }
   } finally {
     fs.rmSync(tmp, { force: true });
   }
@@ -462,18 +486,20 @@ function apply(opts) {
   if (opts.profile) {
     // The profile is the base; an explicit --config fragment overrides it.
     fragment = deepMerge(loadProfile(opts.profile), fragment);
-    // Every core role plus every optional role the profile assigns a model.
-    // A model assigned to a role whose permission-bearing agent file is not
-    // installed would run without Fusion's permission frontmatter, so an
-    // explicit --roles may extend this list but never shrink it.
-    const profileRoles = [...CORE_ROLES, ...OPTIONAL_ROLES.filter((role) => role in (fragment.agent || {}))];
-    if (!opts.rolesExplicit) {
-      opts.roles = profileRoles;
-    } else {
-      const missing = profileRoles.filter((role) => !opts.roles.includes(role));
-      if (missing.length) {
-        fail(`--roles omits role(s) the profile requires: ${missing.join(', ')} - include them, or configure without --profile to trim roles`);
-      }
+  }
+  // Every core role plus every optional role the fragment assigns a model.
+  // A model assigned to a role whose permission-bearing agent file is not
+  // installed would run without Fusion's permission frontmatter, so an
+  // explicit --roles may extend this list but never shrink it. The guard
+  // applies to profile and plain --config installs alike - both can name
+  // optional roles.
+  const requiredRoles = [...CORE_ROLES, ...OPTIONAL_ROLES.filter((role) => role in (fragment.agent || {}))];
+  if (!opts.rolesExplicit) {
+    opts.roles = requiredRoles;
+  } else {
+    const missing = requiredRoles.filter((role) => !opts.roles.includes(role));
+    if (missing.length) {
+      fail(`--roles omits role(s) the config assigns models to: ${missing.join(', ')} - include them, or remove those agent model assignments`);
     }
   }
 

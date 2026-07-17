@@ -14,9 +14,22 @@ permission:
     "npx vitest run*": allow
     "git diff*": allow
     "git status*": allow
-    "git branch*": allow
     "git log*": allow
     "git show*": allow
+    "git diff --output*": deny
+    "git diff *--output*": deny
+    "git log --output*": deny
+    "git log *--output*": deny
+    "git show --output*": deny
+    "git show *--output*": deny
+    "npm run lint *--fix*": deny
+    "npm test * -u*": deny
+    "npm test *--update*": deny
+    "npx vitest run -u*": deny
+    "npx vitest run --update*": deny
+    "npx vitest run * -u*": deny
+    "npx vitest run *--update*": deny
+    "npx tsc --noEmitOnError*": deny
   task:
     "*": deny
     "explore": allow

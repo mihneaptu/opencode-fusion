@@ -157,11 +157,11 @@ Notes:
 The skill bundles an installer at `<this-skill-dir>/scripts/install.js` (plain Node, no dependencies). It owns every mechanical step - timestamped backup, deep merge, atomic write, prompt-file copies, an undo manifest, and post-install validation - so none of that depends on improvised file operations. Its version-2 manifest stores the original bytes and permissions of every managed file, plus hashes of the exact installed state. Reapply and undo refuse before writing if the config or a managed file changed after installation; they never guess which content belongs to Fusion. Run it with the fragment from Step 3:
 
 ```bash
-node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> --roles build,plan,sidekick --extras commands,plugin
+node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> --extras commands,plugin
 ```
 
-- `--profile <name>` applies a bundled subscription profile (Step 0) as the base fragment; a `--config` fragment, when also given, overrides it key by key. With a profile, omit `--roles` - the installer derives the list from the profile - and an explicit `--roles` that drops a profile-assigned role is refused. Unknown profile names fail listing the available ones.
-- `--roles` is comma-separated and defaults to the core `build,plan,sidekick` (explore needs no file by design). Append exactly the optional roles the user configured, e.g. `--roles build,plan,sidekick,research,reviewer`; include `vision` only if a vision role was configured.
+- `--profile <name>` applies a bundled subscription profile (Step 0) as the base fragment; a `--config` fragment, when also given, overrides it key by key. Unknown profile names fail listing the available ones.
+- `--roles` is normally omitted: the installer derives the list from the config - the core `build,plan,sidekick` plus every optional role the fragment or profile assigns a model (explore needs no file by design). An explicit `--roles` can add extra roles, but one that omits a role the config assigns a model is refused: a role with a model and no agent file would run without Fusion's permissions.
 - `--extras commands,plugin` installs the optional slash commands and audit plugin described below; trim or omit per the user's wishes.
 - Add `--dry-run` to print the full plan (backup name, merged keys, files) without writing anything - offer this if the user seems cautious.
 - The script refuses with exit 1 and changes nothing when validation or ownership checks fail, including invalid JSON/config shapes, unsafe paths, changed managed files, and invalid destination parents. It warns when a model references a provider that has no provider block.

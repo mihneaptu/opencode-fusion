@@ -9,7 +9,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const repoRoot = path.join(__dirname, '..', '..');
 const PASSTHROUGH_ENV = new Set([
@@ -140,7 +140,13 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
     child.stdout.on('data', (d) => (stdout += d));
     child.stderr.on('data', (d) => (stderr += d));
     const killTimer = setTimeout(() => {
-      child.kill('SIGKILL');
+      if (process.platform === 'win32') {
+        // shell:true wraps the real process; killing the wrapper alone would
+        // leave a hung opencode running. taskkill fells the whole tree.
+        spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
+      } else {
+        child.kill('SIGKILL');
+      }
       reject(
         new Error(
           `opencode run --agent ${agent} timed out after ${timeoutMs}ms\nstderr: ${stderr.slice(-2000)}`
