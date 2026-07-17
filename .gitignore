@@ -5,13 +5,10 @@ node_modules/
 .env
 .env.local
 
-# Local machine config (not versioned; see agent/*.md and .opencode/skills/ for the versioned surface)
+# Local machine config (not versioned; .opencode/skills/fusion-setup/ is the versioned surface)
 opencode.json
 AGENTS.md
 test-playground/
-
-# Personal roadmap notes (local only)
-gpt5.6-sol-plan.md
 
 # Design-iteration screenshots and browser-tool output; real site images live in site/assets/
 site/*.png
