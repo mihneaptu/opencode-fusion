@@ -154,8 +154,10 @@ function wildcardMatches(pattern, command) {
   if (source.endsWith(' .*')) {
     source = source.slice(0, -3) + '( .*)?';
   }
-  const flags = process.platform === 'win32' ? 'si' : 's';
-  return new RegExp(`^${source}$`, flags).test(normalizedCommand);
+  // Case-sensitive on every platform: opencode's matcher semantics on
+  // Windows are unverified, and a case-insensitive model could hide an
+  // uppercase bypass while these tests stay green.
+  return new RegExp(`^${source}$`, 's').test(normalizedCommand);
 }
 
 function resolveBashRule(block, command) {
@@ -188,14 +190,12 @@ const REQUIRED_AGENTS = [
 ];
 
 describe('agent frontmatter contracts', () => {
-  test('loads every top-level agent/*.md source file', () => {
-    assert.ok(
-      agentFiles.length >= REQUIRED_AGENTS.length,
-      `expected at least ${REQUIRED_AGENTS.length} agent files, got ${agentFiles.length}`
+  test('the agent file set is exactly the reviewed one', () => {
+    assert.deepEqual(
+      agentFiles,
+      REQUIRED_AGENTS.map((role) => `${role}.md`).sort(),
+      'agent/ must contain exactly the contracted files - a new agent file needs contracts here first'
     );
-    for (const required of REQUIRED_AGENTS) {
-      assert.ok(agents[required], `missing agent/${required}.md`);
-    }
   });
 
   test('no source agent frontmatter contains a model: field', () => {
@@ -244,12 +244,14 @@ describe('agent frontmatter contracts', () => {
     });
   }
 
-  test('plan bash has wildcard deny and does not allow git add/commit/push', () => {
+  test('plan bash has wildcard deny and does not allow git add/commit/push/branch', () => {
     const bash = requireBlock(agents.plan.frontmatter, 'bash', 'plan');
     assertWildcardDenyFirst(bash, 'plan', 'bash');
     // Only inspect allow rules - an explicit deny for a forbidden command is fine.
+    // git branch is state-changing (-D deletes, -f force-moves) - plan mode
+    // must never hold it; git status/log cover the read-only need.
     const allowKeys = bash.children.filter((c) => c.value === 'allow').map((c) => c.key);
-    for (const cmd of ['git add', 'git commit', 'git push']) {
+    for (const cmd of ['git add', 'git commit', 'git push', 'git branch']) {
       assert.equal(
         allowKeys.some((k) => bashKeyMatchesCommand(k, cmd)),
         false,
@@ -390,6 +392,63 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
+  // The read-only-verification allowlists must not smuggle in file writes
+  // through arguments: git's --output flag, lint --fix, and snapshot-update
+  // flags all turn an allowed "read-only" command into an editor.
+  for (const role of ['build', 'plan', 'reviewer']) {
+    test(`${role} denies file-writing arguments of allowed read-only commands`, () => {
+      const bash = requireBlock(agents[role].frontmatter, 'bash', role);
+      for (const command of [
+        'git diff --output=hijack.txt',
+        'git diff HEAD~1 --output=hijack.txt',
+        'git log --output=hijack.txt',
+        'git show HEAD --output=hijack.txt',
+        'npm run lint -- --fix',
+        'npm test -- -u',
+        'npm test -- --update-snapshots',
+        'npx vitest run -u',
+        'npx vitest run --update',
+        'npx vitest run src/app.test.ts -u',
+      ]) {
+        assert.equal(
+          resolveBashRule(bash, command),
+          'deny',
+          `contract violated: ${role} must deny the file-writing form: ${command}`
+        );
+      }
+      for (const command of [
+        'git diff',
+        'git log --oneline',
+        'npm run lint',
+        'npm test',
+        'npx vitest run',
+        'npx vitest run my-unit.test.ts',
+      ]) {
+        assert.equal(
+          resolveBashRule(bash, command),
+          'allow',
+          `contract violated: ${role} must still allow the read-only form: ${command}`
+        );
+      }
+    });
+  }
+
+  for (const role of ['build', 'plan']) {
+    test(`${role} denies tsc emit via --noEmitOnError while keeping --noEmit`, () => {
+      const bash = requireBlock(agents[role].frontmatter, 'bash', role);
+      assert.equal(
+        resolveBashRule(bash, 'npx tsc --noEmitOnError src.ts'),
+        'deny',
+        `contract violated: ${role} must deny npx tsc --noEmitOnError (it writes .js output)`
+      );
+      assert.equal(
+        resolveBashRule(bash, 'npx tsc --noEmit'),
+        'allow',
+        `contract violated: ${role} must still allow npx tsc --noEmit`
+      );
+    });
+  }
+
   test('design is fenced to the workspace', () => {
     assertPermissionValue('design', 'external_directory', 'deny');
   });
@@ -419,33 +478,25 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
-  test('vision bash is a deny-by-default map allowing only PowerShell', () => {
-    const bash = requireBlock(agents.vision.frontmatter, 'bash', 'vision');
-    assert.equal(bash.scalar, null, 'contract violated: vision bash must be a rule map, not a bare allow');
-    assertWildcardDenyFirst(bash, 'vision', 'bash');
-    const allows = bash.children.filter((c) => c.value === 'allow');
-    assert.ok(
-      allows.length > 0,
-      'contract violated: vision bash must allow a PowerShell form for the clipboard save'
-    );
-    for (const rule of allows) {
-      assert.ok(
-        /^(powershell|pwsh)/i.test(rule.key),
-        `contract violated: vision bash may only allow powershell/pwsh forms, found allow for: ${rule.key}`
-      );
+  test('vision bash is fully denied - vision reads untrusted content', () => {
+    // No allowlist pattern can safely carve out "just the clipboard save":
+    // any payload fits inside an allowed command's argument string. An agent
+    // whose input is untrusted images gets no shell at all.
+    const bash = findNamedBlock(agents.vision.frontmatter, 'bash');
+    assert.ok(bash, 'contract violated: vision frontmatter missing bash');
+    if (bash.scalar !== null) {
+      assert.equal(bash.scalar, 'deny', `contract violated: vision bash must be deny, got ${bash.scalar}`);
+      return;
     }
     assert.equal(
-      resolveBashRule(bash, 'rm -rf .'),
+      childValues(bash)['*'],
       'deny',
-      'contract violated: vision bash must deny non-PowerShell commands'
+      'contract violated: vision bash map must deny by default'
     );
     assert.equal(
-      resolveBashRule(
-        bash,
-        "powershell -NoProfile -Command 'Add-Type -AssemblyName System.Windows.Forms'"
-      ),
-      'allow',
-      'contract violated: vision bash must allow the powershell clipboard-save invocation'
+      bash.children.some((c) => c.value !== 'deny'),
+      false,
+      'contract violated: vision bash must not allow or ask for anything'
     );
   });
 

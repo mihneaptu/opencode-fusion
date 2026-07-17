@@ -282,6 +282,49 @@ describe('fusion-setup deterministic installer', () => {
     assert.equal(readJson(path.join(dir, 'opencode.json')).agent.custom.permission, 'deny');
   });
 
+  // The unguarded-role refusal must hold on the plain --config path exactly
+  // as it does for profiles: a role with a model but no permission-bearing
+  // agent file would run with opencode's defaults instead of Fusion's guard.
+  test('a fragment that assigns an optional role derives and installs its agent file', () => {
+    writeJson(fragmentPath, {
+      ...fragment,
+      agent: { ...fragment.agent, reviewer: { model: 'prov/main-model' } },
+    });
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(
+      fs.existsSync(path.join(dir, 'agent', 'reviewer.md')),
+      'fragment-assigned optional role file not installed'
+    );
+    const manifest = readJson(path.join(dir, '.fusion-install.json'));
+    assert.ok(manifest.roles.includes('reviewer'), 'manifest missing derived role');
+  });
+
+  test('explicit --roles that drops a fragment-assigned optional role is refused', () => {
+    writeJson(fragmentPath, {
+      ...fragment,
+      agent: { ...fragment.agent, reviewer: { model: 'prov/main-model' } },
+    });
+    const result = run(applyArgs(['--roles', 'build,plan,sidekick']));
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /omits role\(s\) the config assigns models to/);
+    assert.match(result.stderr, /reviewer/);
+    assert.ok(!fs.existsSync(path.join(dir, 'opencode.json')), 'refusal must write nothing');
+  });
+
+  test('a fragment key named __proto__ merges as a literal key without pollution', () => {
+    fs.writeFileSync(
+      fragmentPath,
+      JSON.stringify(fragment).slice(0, -1) + ',"__proto__":{"polluted":true}}'
+    );
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    const raw = fs.readFileSync(path.join(dir, 'opencode.json'), 'utf8');
+    assert.match(raw, /"__proto__"/, 'the subtree must land in the written config, not vanish');
+    assert.equal({}.polluted, undefined, 'Object.prototype must not be polluted');
+    assert.equal(Object.getPrototypeOf(JSON.parse(raw)), Object.prototype);
+  });
+
   test('invalid destination parent is refused before config changes', () => {
     writeJson(path.join(dir, 'opencode.json'), { model: 'old/model' });
     fs.writeFileSync(path.join(dir, 'agent'), 'not a directory');
@@ -493,7 +536,7 @@ describe('fusion-setup deterministic installer', () => {
       'apply', '--profile', 'opencode-zen', '--roles', 'build,plan,sidekick', '--config-dir', dir,
     ]);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /omits role\(s\) the profile requires/);
+    assert.match(result.stderr, /omits role\(s\) the config assigns models to/);
     assert.match(result.stderr, /reviewer/);
     assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
   });
@@ -506,7 +549,7 @@ describe('fusion-setup deterministic installer', () => {
       '--roles', 'build,plan,research,design,reviewer', '--config-dir', dir,
     ]);
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /omits role\(s\) the profile requires/);
+    assert.match(result.stderr, /omits role\(s\) the config assigns models to/);
     assert.match(result.stderr, /sidekick/);
     assert.deepEqual(fs.readdirSync(dir).filter((f) => f !== 'fragment.json'), []);
   });
