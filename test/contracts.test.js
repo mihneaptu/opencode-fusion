@@ -209,6 +209,17 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
+  test('no source agent frontmatter forces a model-specific temperature', () => {
+    for (const [role, agent] of Object.entries(agents)) {
+      const hasTemperature = linesOf(agent.frontmatter).some((line) => /^\s*temperature\s*:/.test(line));
+      assert.equal(
+        hasTemperature,
+        false,
+        `contract violated: agent/${role}.md frontmatter must not set temperature: (sampling support is model-specific)`
+      );
+    }
+  });
+
   test('build denies edit, grep, glob, and list', () => {
     for (const key of ['edit', 'grep', 'glob', 'list']) {
       assertPermissionValue('build', key, 'deny');
