@@ -209,13 +209,20 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
-  test('no source agent frontmatter forces a model-specific temperature', () => {
+  test('source agent frontmatter keeps the reviewed role temperatures', () => {
+    const expected = {
+      design: '0.4',
+      research: '0.3',
+      reviewer: '0.2',
+      sidekick: '0.2',
+      vision: '0.2',
+    };
     for (const [role, agent] of Object.entries(agents)) {
-      const hasTemperature = linesOf(agent.frontmatter).some((line) => /^\s*temperature\s*:/.test(line));
+      const line = linesOf(agent.frontmatter).find((candidate) => /^\s*temperature\s*:/.test(candidate));
       assert.equal(
-        hasTemperature,
-        false,
-        `contract violated: agent/${role}.md frontmatter must not set temperature: (sampling support is model-specific)`
+        line?.split(':', 2)[1]?.trim(),
+        expected[role],
+        `contract violated: agent/${role}.md has an unexpected default temperature`
       );
     }
   });

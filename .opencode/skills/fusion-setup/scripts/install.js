@@ -9,6 +9,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { applyPromptCompatibility } = require('./prompt-compat');
 
 const skillDir = path.join(__dirname, '..');
 const MANIFEST = '.fusion-install.json';
@@ -443,13 +444,15 @@ function loadProfile(name) {
   return profile;
 }
 
-function selectedSources(opts) {
+function selectedSources(opts, config) {
   const sources = [];
   for (const role of opts.roles) {
     const source = path.join(skillDir, 'agent', `${role}.md`);
     const snapshot = snapshotFile(source, `bundled prompt ${source}`);
     if (!snapshot.existed) fail(`bundled prompt missing: ${source}`);
-    sources.push({ to: `agent/${role}.md`, bytes: snapshot.bytes, mode: snapshot.mode });
+    const model = config.agent?.[role]?.model;
+    const bytes = applyPromptCompatibility(snapshot.bytes, model);
+    sources.push({ to: `agent/${role}.md`, bytes, mode: snapshot.mode });
   }
   for (const extra of opts.extras) {
     for (const rel of EXTRAS[extra]) {
@@ -530,12 +533,12 @@ function apply(opts) {
     }
   }
 
-  const sources = selectedSources(opts);
-  for (const source of sources) inspectDestination(opts.configDir, source.to);
   const merged = deepMerge(existing, fragment);
   const mergedError = validateConfigObject(merged, 'merged config');
   if (mergedError) fail(mergedError);
   const mergedBytes = jsonBytes(merged);
+  const sources = selectedSources(opts, merged);
+  for (const source of sources) inspectDestination(opts.configDir, source.to);
 
   const fileRecords = new Map((prior?.files || []).map((record) => [record.path, { ...record }]));
   for (const source of sources) {

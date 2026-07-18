@@ -83,6 +83,25 @@ describe('fusion-setup deterministic installer', () => {
     assert.ok(manifest.files.every((entry) => typeof entry.installedHash === 'string'));
   });
 
+  test('omits temperature only for OpenCode Go Kimi K3 prompts', () => {
+    writeJson(fragmentPath, {
+      ...fragment,
+      agent: {
+        ...fragment.agent,
+        sidekick: { model: 'opencode-go/kimi-k3' },
+        design: { model: 'kimi-for-coding/kimi-k3' },
+      },
+    });
+
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+
+    const sidekick = fs.readFileSync(path.join(dir, 'agent', 'sidekick.md'), 'utf8');
+    const design = fs.readFileSync(path.join(dir, 'agent', 'design.md'), 'utf8');
+    assert.doesNotMatch(sidekick, /^temperature\s*:/m);
+    assert.match(design, /^temperature:\s*0\.4$/m);
+  });
+
   test('apply over an existing config backs it up and preserves unrelated keys', () => {
     fs.writeFileSync(
       path.join(dir, 'opencode.json'),

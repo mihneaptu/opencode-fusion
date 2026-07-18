@@ -164,6 +164,7 @@ node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> 
 - `--roles` is normally omitted: the installer derives the list from the config - the core `build,plan,sidekick` plus every optional role the fragment or profile assigns a model (explore needs no file by design). An explicit `--roles` can add extra roles, but one that omits a role the config assigns a model is refused: a role with a model and no agent file would run without Fusion's permissions.
 - `--extras commands,plugin` installs the optional slash commands and audit plugin described below; trim or omit per the user's wishes.
 - Add `--dry-run` to print the full plan (backup name, merged keys, files) without writing anything - offer this if the user seems cautious.
+- Source prompts keep their normal role temperatures. During installation, provider-qualified compatibility rules omit unsupported frontmatter only for the exact configured model that needs it (currently `opencode-go/kimi-k3` omits `temperature`). The same Kimi model on another provider keeps the role default.
 - The script refuses with exit 1 and changes nothing when validation or ownership checks fail, including invalid JSON/config shapes, unsafe paths, changed managed files, and invalid destination parents. It warns when a model references a provider that has no provider block.
 - If the agent running this skill cannot execute bash (for example the Fusion build agent's allowlist), delegate both the fragment creation and this exact command to the sidekick. In plan mode, switch to build or have the user run it. Use the manual fallback below only when Node is unavailable.
 
@@ -180,6 +181,8 @@ Only when Node is unavailable. Before merging or copying anything, make a timest
 - `<this-skill-dir>/agent/vision.md` -> `~/.config/opencode/agent/vision.md` (only if a vision role was configured)
 
 These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode` and `permission`; the files deliberately ship WITHOUT a `model` key, because markdown frontmatter overrides opencode.json on any key it sets - a model baked into the file would silently override the user's Step 3 choice. Models come only from opencode.json. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
+
+When using this manual fallback, omit the `temperature` line from an installed role whose configured model is exactly `opencode-go/kimi-k3`. Do not remove it for Kimi K3 served by another provider.
 
 ## Step 4b - The optional slash commands and audit plugin
 
