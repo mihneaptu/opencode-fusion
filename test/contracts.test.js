@@ -215,6 +215,19 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
+  test('only build and plan opt in to the optional Claude review tools', () => {
+    for (const role of ['build', 'plan']) {
+      assertPermissionValue(role, 'fusion_claude_status', 'allow');
+      assertPermissionValue(role, 'fusion_claude_review', 'allow');
+    }
+    for (const role of REQUIRED_AGENTS.filter((role) => !['build', 'plan'].includes(role))) {
+      const permission = requireBlock(agents[role].frontmatter, 'permission', role);
+      const values = childValues(permission);
+      assert.notEqual(values.fusion_claude_status, 'allow');
+      assert.notEqual(values.fusion_claude_review, 'allow');
+    }
+  });
+
   test('build bash has wildcard deny before specific allows', () => {
     const bash = requireBlock(agents.build.frontmatter, 'bash', 'build');
     assertWildcardDenyFirst(bash, 'build', 'bash');

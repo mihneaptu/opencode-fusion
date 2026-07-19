@@ -82,7 +82,7 @@ If the main agent "won't delegate," the result is visible inaction: nothing on d
 - Git command rules match command text and are defense-in-depth, not a shell sandbox: wrappers, alternate executables, or obfuscation can bypass a finite pattern list when an executor has broad bash. They protect against common accidental commits and destructive pushes, not a hostile process. Editing files is the sidekick's job, and catching a wrong edit is what the main agent's diff review (and the optional reviewer) are for.
 - The design agent's path-aware opencode tools are fenced to the workspace (`external_directory: deny`), but processes launched through broad bash are not OS-sandboxed by that rule. The sidekick keeps opencode's default `ask` for paths outside the project, because setup and reconfigure legitimately write the global config. Note that `--auto` mode auto-approves `ask` rules, so use external sandboxing too if an executor must never leave the repo.
 
-**Auditable: verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-audit-plugin) logs the delegation tree, and opencode's session DB records every agent's actual tool calls (`opencode db path` prints its location, typically `~/.local/share/opencode/opencode.db`). "Did it really delegate?" is checkable ground truth, not vibes.
+**Auditable: verify instead of trusting.** The optional [`fusion-audit` plugin](#slash-commands-and-optional-plugins) logs the delegation tree, and opencode's session DB records every agent's actual tool calls (`opencode db path` prints its location, typically `~/.local/share/opencode/opencode.db`). "Did it really delegate?" is checkable ground truth, not vibes.
 
 ## Setup
 
@@ -118,7 +118,19 @@ If your models come from a subscription, skip the per-role interview: name the s
 
 Authentication stays out-of-band: connect the provider once with `opencode auth login` (or `/connect` inside opencode). Profiles contain no keys, adapters, or endpoints (opencode knows these providers natively), and the skill never asks for a key in chat. To adjust a pick, keep the profile and add a small override fragment (`--profile <name> --config <delta.json>`; your fragment wins on conflicts).
 
-Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. And there is deliberately no Claude Pro/Max profile: Anthropic's terms prohibit using those subscriptions outside Claude Code (enforced since April 2026), so Claude models are covered the sanctioned ways instead: through `opencode-zen`, or with an Anthropic API key via the regular interview. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
+Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-fable-5` if you want max quality and accept the burn rate. There is no Claude Pro/Max provider profile: a Claude subscription login cannot be placed in `opencode.json` or exposed as `agent.build.model`. The optional bridge below can ask the official Claude Code CLI for a constrained plan review. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
+
+### Optional Claude Pro/Max plan review
+
+The `claude` installer extra adds a small OpenCode plugin that invokes the official Claude Code CLI. It gives the Fusion build and plan agents two custom tools: `fusion_claude_status` and `fusion_claude_review`. Claude receives only the self-contained plan packet that Fusion sends. It cannot inspect the workspace, use tools, edit files, continue the session, or become the main model.
+
+1. [Install Claude Code](https://code.claude.com/docs/en/setup) and run `claude auth login` yourself with a Pro or Max account.
+2. Run the Fusion installer with your normal OpenCode profile or config and add the extra: `--extras commands,plugin,claude`.
+3. Fully quit and restart OpenCode. Ask Fusion to check `fusion_claude_status`, or say: "Have Claude review the plan before implementation."
+
+The plugin never reads or copies Claude's stored OAuth token. Before every review it checks for a first-party Pro/Max login, removes API-key and alternate-provider routing from the Claude process, pins `claude-fable-5` at high effort, uses [Claude Code print mode](https://code.claude.com/docs/en/cli-usage), disables tools and customizations, and turns off session persistence. OpenCode denies these tools globally and grants them only to the build and plan agents through [custom-tool permissions](https://opencode.ai/docs/agents/).
+
+This remains an optional third-party integration. [Anthropic says](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account) subscription usage is designed for its native applications, including Claude Code, and that some third-party-tool access may be allowed at its discretion or charged to usage credits. The bridge does not misrepresent itself or convert OAuth into an API credential, but it is not a promise that subscription access or billing behavior will never change.
 
 <details>
 <summary><b>Manual setup</b> (configure the JSON by hand)</summary>
@@ -294,16 +306,17 @@ The search tools run ripgrep with standard ignore rules, so delegated searches s
 
 </details>
 
-## Slash commands and audit plugin
+## Slash commands and optional plugins
 
 <details>
-<summary>Three optional extras</summary>
+<summary>Four optional pieces</summary>
 
-Three optional extras ship with the skill:
+Four optional pieces ship with the skill:
 
 - **`/fusion-setup` command** (`commands/fusion-setup.md`): a discoverable slash command that launches the setup flow. Run `/fusion-setup` for the full interview, or pass an argument like `/fusion-setup reconfigure sidekick` to jump straight to a targeted change. Install it to `~/.config/opencode/commands/`.
-- **`/fusion-status` command** (`commands/fusion-status.md`): a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, and the installed agent files. It only reports; it changes nothing. Install it to `~/.config/opencode/commands/`.
+- **`/fusion-status` command** (`commands/fusion-status.md`): a health check that verifies the setup is installed, loaded, and enforcing: the live tool schema (denied tools actually absent from the running agent), the config on disk, the installed agent files, and the optional Claude bridge. It only reports; it changes nothing. Install it to `~/.config/opencode/commands/`.
 - **`fusion-audit` plugin** (`plugins/fusion-audit.js`): logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) and aggregates per-agent token usage per session through opencode's logger, so you can audit that the main agent delegated instead of editing and see where each session's tokens went: the raw numbers behind "did Fusion actually save money?". It is observational only: opencode's tool hooks do not expose the calling agent, so enforcement stays with the permission layer; the plugin just makes the delegation visible. Install it to `~/.config/opencode/plugins/`.
+- **`fusion-claude` plugin** (`plugins/fusion-claude.js`): optional Claude Code Pro/Max plan reviewer. It exposes a sanitized status check and a stateless review tool, invokes only the official `claude` CLI, and leaves the OAuth credential inside Claude Code. Install it with the `claude` extra rather than copying it alone, because the installer also adds the global permission deny.
 
 </details>
 
@@ -327,6 +340,7 @@ Everything Fusion installs lives in one place, the skill bundle at `.opencode/sk
 | `profiles/` | Bundled subscription profiles: named per-role model presets applied via `install.js apply --profile <name>` |
 | `commands/` | Optional `/fusion-setup` (launches setup) and `/fusion-status` (health check) slash commands |
 | `plugins/fusion-audit.js` | Optional read-only plugin that logs the delegation tree and per-agent token usage per session for auditing |
+| `plugins/fusion-claude.js` | Optional Claude Code Pro/Max bridge for stateless, read-only plan reviews |
 | `scripts/install.js` | Deterministic installer the skill drives: backup, merge, atomic write, manifest, undo |
 
 The rest of the repo supports it:

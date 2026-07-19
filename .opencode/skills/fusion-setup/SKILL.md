@@ -49,7 +49,15 @@ If the user names one (including as a `/fusion-setup` argument):
    No `--roles` flag is needed: the installer derives the role list from the profile, so every role the profile assigns a model also gets its permission-bearing agent file.
 4. To change one or two picks, keep `--profile <name>` and add `--config <fragment.json>` holding just the delta (for example a different `agent.reviewer.model`, plus a provider block only if that model's provider is outside the profile). The fragment wins over the profile. Removing an optional role a profile assigns cannot be expressed as an override - use the custom interview (Steps 1-4) without `--profile` instead.
 
-Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; `opencode-zen-free` runs on free-period models whose prompts may be used for training under OpenCode's policy - warn users to keep sensitive code off it; the single-vendor `chatgpt` profile keeps every role on one vendor, so a user with a second provider may want to override the reviewer for cross-vendor review; `github-copilot` defaults its main to Claude Sonnet 5 for credit-cost sanity - a user who wants max quality can override build to `github-copilot/claude-fable-5` (billed much higher per token). There is deliberately NO Claude Pro/Max profile - Anthropic's terms prohibit using those subscriptions outside Claude Code, so never improvise one; a user who wants Claude models gets them the sanctioned ways: `opencode-zen` (Zen resells them pay-as-you-go) or an Anthropic API key via the Step 1 interview. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
+Caveats worth mentioning when they apply: `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images; `opencode-zen-free` runs on free-period models whose prompts may be used for training under OpenCode's policy - warn users to keep sensitive code off it; the single-vendor `chatgpt` profile keeps every role on one vendor, so a user with a second provider may want to override the reviewer for cross-vendor review; `github-copilot` defaults its main to Claude Sonnet 5 for credit-cost sanity - a user who wants max quality can override build to `github-copilot/claude-fable-5` (billed much higher per token). There is deliberately NO Claude Pro/Max provider profile. A subscription login cannot become `agent.build.model`. If the user wants a limited Claude Pro/Max integration, offer the optional Claude Code review bridge below. Subscription lineups rotate - if a profile model errors as unknown, the ids may have drifted; fall back to the custom interview and report it.
+
+### Optional Claude Pro/Max review through Claude Code
+
+If the user asks for Claude subscription OAuth, keep another normal OpenCode provider or profile as the build model and offer the `claude` extra. It installs a local OpenCode plugin with two custom tools: a sanitized readiness check and a stateless plan review. Only the build and plan agents may call them.
+
+The bridge invokes Anthropic's official `claude` CLI in print mode. It does not read the credential store, extract an OAuth token, put a token in `opencode.json`, or expose Claude as an OpenCode model. It verifies that `claude auth status` reports a first-party Pro or Max login, removes API-key and third-party routing variables from the child process, pins Claude Fable 5 at high effort, disables tools and customizations, sends the review packet over stdin, and disables session persistence.
+
+Ask the user to install Claude Code and authenticate directly with `claude auth login`; never ask them to paste a token. Then include `claude` in Step 4's extras, for example `--extras commands,plugin,claude`. Do not enable this by default. Anthropic describes subscription usage as intended for its native applications, including Claude Code, and says third-party-tool access may be allowed at its discretion or charged to usage credits. Present this as an optional compatibility bridge, not as a guaranteed subscription entitlement or an API replacement.
 
 If the user has none of these subscriptions, or wants full control over every pick, continue with Step 1.
 
@@ -162,7 +170,7 @@ node <this-skill-dir>/scripts/install.js apply --config <path-to-fragment.json> 
 
 - `--profile <name>` applies a bundled subscription profile (Step 0) as the base fragment; a `--config` fragment, when also given, overrides it key by key. Unknown profile names fail listing the available ones.
 - `--roles` is normally omitted: the installer derives the list from the config - the core `build,plan,sidekick` plus every optional role the fragment or profile assigns a model (explore needs no file by design). An explicit `--roles` can add extra roles, but one that omits a role the config assigns a model is refused: a role with a model and no agent file would run without Fusion's permissions.
-- `--extras commands,plugin` installs the optional slash commands and audit plugin described below; trim or omit per the user's wishes.
+- `--extras commands,plugin` installs the optional slash commands and audit plugin described below. Add `claude` only when the user explicitly wants the Claude Code Pro/Max review bridge: `--extras commands,plugin,claude`.
 - Add `--dry-run` to print the full plan (backup name, merged keys, files) without writing anything - offer this if the user seems cautious.
 - The script refuses with exit 1 and changes nothing when validation or ownership checks fail, including invalid JSON/config shapes, unsafe paths, changed managed files, and invalid destination parents. It warns when a model references a provider that has no provider block.
 - If the agent running this skill cannot execute bash (for example the Fusion build agent's allowlist), delegate both the fragment creation and this exact command to the sidekick. In plan mode, switch to build or have the user run it. Use the manual fallback below only when Node is unavailable.
@@ -181,20 +189,21 @@ Only when Node is unavailable. Before merging or copying anything, make a timest
 
 These carry the full operating instructions and permissions for each role. Each subagent file's frontmatter sets its `mode` and `permission`; the files deliberately ship WITHOUT a `model` key, because markdown frontmatter overrides opencode.json on any key it sets - a model baked into the file would silently override the user's Step 3 choice. Models come only from opencode.json. Install only the files for the roles you configured - if the user skipped research/design/reviewer/vision, skip those.
 
-## Step 4b - The optional slash commands and audit plugin
+## Step 4b - Optional commands and plugins
 
-Three optional extras ship next to the skill; the installer's `--extras commands,plugin` flag installs them (manual copy paths below if the script cannot run):
+Four optional pieces ship next to the skill. The installer groups the two commands under `commands`, the audit plugin under `plugin`, and the Claude Code bridge under `claude` (manual copy paths below if the script cannot run):
 
 - Slash command: copy `<this-skill-dir>/commands/fusion-setup.md` -> `~/.config/opencode/commands/fusion-setup.md` (note the PLURAL `commands/` directory). This gives a discoverable `/fusion-setup` command that launches this setup flow; it accepts optional arguments for a targeted reconfigure.
-- Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files). It only reports - it changes nothing.
+- Status command: copy `<this-skill-dir>/commands/fusion-status.md` -> `~/.config/opencode/commands/fusion-status.md`. This gives a `/fusion-status` health check that verifies the setup is installed, loaded, and enforcing (live tool schema, config on disk, installed agent files, and the optional Claude bridge). It only reports - it changes nothing.
 - Audit plugin: copy `<this-skill-dir>/plugins/fusion-audit.js` -> `~/.config/opencode/plugins/fusion-audit.js` (PLURAL `plugins/`). It logs the delegation tree (subagent spawns and edit/write/apply_patch/task tool calls) and aggregates per-agent token usage per session via opencode's logger for auditing - the raw numbers behind "did Fusion actually save money?". It is observational only - it cannot see the calling agent, so it does not enforce anything; permissions do the enforcing. Skip it if the user does not want extra logging.
+- Claude Code bridge: copy `<this-skill-dir>/plugins/fusion-claude.js` -> `~/.config/opencode/plugins/fusion-claude.js`. Also merge `"fusion_claude_*": "deny"` into the top-level `permission` map. The build and plan agent files contain the two exact allows that override this global deny. If the existing top-level permission is shorthand, preserve it as `"*"` before adding the Claude deny. This bridge is deliberately review-only and optional.
 
 ## Step 5 - Validate and finish
 
 1. The installer validates automatically (it re-parses the written config and checks every installed file exists, failing loudly otherwise). If you used the manual fallback instead, do the same checks yourself: parse `~/.config/opencode/opencode.json`, and confirm every agent prompt file you installed exists under `~/.config/opencode/agent/` (build and sidekick at minimum).
-2. If you installed the commands or plugin manually, confirm `~/.config/opencode/commands/fusion-setup.md`, `~/.config/opencode/commands/fusion-status.md`, and/or `~/.config/opencode/plugins/fusion-audit.js` exist.
+2. If you installed commands or plugins manually, confirm the selected files exist under `~/.config/opencode/commands/` and `~/.config/opencode/plugins/`. For the Claude bridge, also confirm the top-level `fusion_claude_*` deny and the exact build/plan allows are present.
 3. If any provider block references `{env:VAR}`, confirm with the user that the variable is set in the environment they launch opencode from - using a presence-only check that never prints the secret: `[ -n "$VAR" ] && echo set || echo missing` in bash/zsh, `if defined VAR (echo set) else (echo missing)` in cmd. Do NOT suggest `echo $VAR` - that prints the actual credential into the terminal (and into the transcript if run through an agent). An unset variable becomes an empty string and shows up later as auth errors.
-4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent.
+4. Tell the user to fully quit and restart opencode - config is loaded once at startup and is not hot-reloaded. After restart, the status bar should show the main model on the Build agent. If the Claude bridge was installed, call `fusion_claude_status`; it reports readiness without returning account identity or credential data.
 
 ## Reconfiguring later
 
@@ -212,7 +221,7 @@ Manual fallback after a manual install (no Node):
 
 1. Restore `opencode.json` and every destination that existed before installation from the backups made during the manual install.
 2. For destinations recorded as newly created, remove them only if they are still byte-for-byte identical to the bundled file that was installed. If any file changed, leave it in place and report the conflict instead of deleting user work.
-3. Apply the same restore-or-remove rule to optional commands and the audit plugin.
+3. Apply the same restore-or-remove rule to optional commands and plugins.
 4. Tell the user to restart opencode - it falls back to its built-in build/plan agents.
 
 For an automatic install when Node is temporarily unavailable, wait until Node is available and use the manifest-driven undo. If an automatic manifest is missing, the timestamped files recover only `opencode.json`; do not remove prompts or extras unless independent backups or byte-for-byte ownership evidence prove they are still Fusion-owned. Confirm with the user before deleting anything, and never delete the backups themselves.
