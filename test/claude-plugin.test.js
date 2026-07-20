@@ -458,6 +458,23 @@ describe('fusion Claude Code bridge', () => {
 
   const BLOCK_FOREVER = 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);';
 
+  // Deleting the fake-claude dir right after a kill can hit EPERM on Windows:
+  // the pid is gone (process.kill(pid, 0) already throws) but the OS can hold
+  // the .exe lock for a moment while the process finishes tearing down
+  // (observed on windows-latest CI). Retry briefly before giving up.
+  const removeBinDir = async (bin, timeoutMs = 5000) => {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      try {
+        fs.rmSync(bin, { recursive: true, force: true });
+        return;
+      } catch (error) {
+        if (Date.now() > deadline) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+  };
+
   // Poll for the review/status child's pidfile instead of a fixed sleep - the
   // real spawn takes a variable amount of time to boot node on each platform.
   const readPidWhenReady = async (pidfile, timeoutMs = 5000) => {
@@ -507,7 +524,7 @@ describe('fusion Claude Code bridge', () => {
       // rejected the promise.
       await waitForExit(pid);
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 
@@ -544,7 +561,7 @@ describe('fusion Claude Code bridge', () => {
       await waitForExit(childPid);
       await waitForExit(grandchildPid, 10000);
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 
@@ -557,7 +574,7 @@ describe('fusion Claude Code bridge', () => {
         /timed out after 1 second/
       );
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 
@@ -590,7 +607,7 @@ describe('fusion Claude Code bridge', () => {
       await pending;
       await waitForExit(pid);
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 
@@ -635,7 +652,7 @@ describe('fusion Claude Code bridge', () => {
         /more output than the bridge allows/i
       );
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 
@@ -665,7 +682,7 @@ describe('fusion Claude Code bridge', () => {
         }
       );
     } finally {
-      fs.rmSync(bin, { recursive: true, force: true });
+      await removeBinDir(bin);
     }
   });
 });
