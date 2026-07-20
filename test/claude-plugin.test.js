@@ -36,7 +36,7 @@ describe('fusion Claude Code bridge', () => {
       [
         'export const tool = (definition) => definition;',
         'tool.schema = {',
-        '  string: () => ({ max() { return this; }, describe() { return this; } }),',
+        '  string: () => ({ max() { return this; }, describe() { return this; }, optional() { return this; } }),',
         '};',
       ].join('\n')
     );
@@ -61,6 +61,21 @@ describe('fusion Claude Code bridge', () => {
     return tool;
   };
 
+  const recordingRun = (results) => {
+    const calls = [];
+    const run = async (options) => {
+      calls.push(options);
+      return typeof results === 'function' ? results(options) : results.shift();
+    };
+    return { calls, run };
+  };
+
+  const flagValue = (args, flag) => {
+    const index = args.indexOf(flag);
+    assert.notEqual(index, -1, `missing Claude CLI flag: ${flag}`);
+    return args[index + 1];
+  };
+
   const authResult = (overrides = {}) => ({
     code: 0,
     stdout: JSON.stringify({
@@ -74,11 +89,11 @@ describe('fusion Claude Code bridge', () => {
     stderr: '',
   });
 
-  const reviewResult = (result = 'PLAN_APPROVED\nThe plan is focused and testable.') => ({
+  const reviewResult = (result = 'PLAN_APPROVED\nThe plan is focused and testable.', model = 'claude-fable-5') => ({
     code: 0,
     stdout: JSON.stringify({
       result,
-      modelUsage: { 'claude-fable-5': { inputTokens: 10, outputTokens: 8 } },
+      modelUsage: { [model]: { inputTokens: 10, outputTokens: 8 } },
     }),
     stderr: '',
   });
@@ -99,13 +114,8 @@ describe('fusion Claude Code bridge', () => {
     assert.doesNotMatch(output, /must-not-leak|@example\.com/i);
   });
 
-  test('review pins safe CLI flags, sends the packet over stdin, and removes API routing', async () => {
-    const calls = [];
-    const results = [authResult(), reviewResult('PLAN_REVISE\nAdd a rollback test.')];
-    const run = async (options) => {
-      calls.push(options);
-      return results.shift();
-    };
+  test('review pins safe CLI flags as pairs, sends the packet over stdin, and removes API routing', async () => {
+    const { calls, run } = recordingRun([authResult(), reviewResult('PLAN_REVISE\nAdd a rollback test.')]);
     const environment = {
       PATH: 'test-path',
       ANTHROPIC_API_KEY: 'api-secret',
@@ -123,25 +133,79 @@ describe('fusion Claude Code bridge', () => {
     assert.deepEqual(calls[0].args, ['auth', 'status', '--json']);
     assert.equal(calls[1].input, packet);
     assert.equal(calls[1].args.includes(packet), false, 'review packet must not be exposed in process arguments');
-    for (const expected of [
-      '-p', '--model', 'claude-fable-5', '--effort', 'high', '--safe-mode',
-      '--tools', '--permission-mode', 'dontAsk', '--no-session-persistence',
-      '--output-format', 'json', '--max-turns', '1',
-    ]) assert.ok(calls[1].args.includes(expected), `missing Claude CLI argument: ${expected}`);
-    assert.equal(calls[1].env.ANTHROPIC_API_KEY, undefined);
-    assert.equal(calls[1].env.ANTHROPIC_AUTH_TOKEN, undefined);
-    assert.equal(calls[1].env.ANTHROPIC_BASE_URL, undefined);
-    assert.equal(calls[1].env.CLAUDE_CODE_USE_BEDROCK, undefined);
-    assert.equal(calls[1].env.CLAUDE_CODE_OAUTH_TOKEN, undefined);
+    assert.ok(calls[1].args.includes('-p'));
+    assert.ok(calls[1].args.includes('--safe-mode'));
+    assert.ok(calls[1].args.includes('--no-session-persistence'));
+    assert.equal(flagValue(calls[1].args, '--model'), 'claude-fable-5');
+    assert.equal(flagValue(calls[1].args, '--effort'), 'high');
+    assert.equal(flagValue(calls[1].args, '--tools'), '');
+    assert.equal(flagValue(calls[1].args, '--permission-mode'), 'dontAsk');
+    assert.equal(flagValue(calls[1].args, '--prompt-suggestions'), 'false');
+    assert.equal(flagValue(calls[1].args, '--output-format'), 'json');
+    assert.equal(flagValue(calls[1].args, '--max-turns'), '1');
+    assert.match(flagValue(calls[1].args, '--system-prompt'), /PLAN_APPROVED or PLAN_REVISE/);
+    for (const env of [calls[0].env, calls[1].env]) {
+      assert.equal(env.ANTHROPIC_API_KEY, undefined);
+      assert.equal(env.ANTHROPIC_AUTH_TOKEN, undefined);
+      assert.equal(env.ANTHROPIC_BASE_URL, undefined);
+      assert.equal(env.CLAUDE_CODE_USE_BEDROCK, undefined);
+      assert.equal(env.CLAUDE_CODE_OAUTH_TOKEN, undefined);
+      assert.equal(env.PATH, 'test-path');
+    }
+  });
+
+  test('scrubs routing variables case-insensitively - Windows env names ignore case', async () => {
+    const { calls, run } = recordingRun([authResult(), reviewResult()]);
+    const environment = {
+      PATH: 'test-path',
+      Anthropic_Api_Key: 'api-secret',
+      claude_code_use_vertex: '1',
+      ANTHROPIC_CUSTOM_HEADERS: 'x-proxy: on',
+      Claude_Code_Use_Foundry: '1',
+    };
+    const tools = await toolsWith({ run, environment });
+    await tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' });
+    for (const env of [calls[0].env, calls[1].env]) {
+      assert.equal(env.Anthropic_Api_Key, undefined);
+      assert.equal(env.claude_code_use_vertex, undefined);
+      assert.equal(env.ANTHROPIC_CUSTOM_HEADERS, undefined);
+      assert.equal(env.Claude_Code_Use_Foundry, undefined);
+      assert.equal(env.PATH, 'test-path');
+    }
+  });
+
+  test('the caller can pick a Claude model and effort within safe bounds', async () => {
+    const { calls, run } = recordingRun((options) =>
+      options.args[0] === 'auth' ? authResult() : reviewResult('PLAN_APPROVED\nSolid.', 'claude-opus-4-8')
+    );
+    const tools = await toolsWith({ run });
+    const output = await tools.fusion_claude_review.execute(
+      { packet: 'plan', model: 'claude-opus-4-8', effort: 'max' },
+      { directory: 'C:/workspace', agent: 'plan' }
+    );
+    assert.equal(flagValue(calls[1].args, '--model'), 'claude-opus-4-8');
+    assert.equal(flagValue(calls[1].args, '--effort'), 'max');
+    assert.match(output, /claude-opus-4-8.*effort max/i);
+  });
+
+  test('rejects unsafe model or effort choices before any claude invocation', async () => {
+    const { calls, run } = recordingRun([authResult(), reviewResult()]);
+    const tools = await toolsWith({ run });
+    for (const [args, pattern] of [
+      [{ packet: 'plan', model: 'gpt-5' }, /full claude-\* model id/i],
+      [{ packet: 'plan', model: 'claude-fable-5 --dangerously-skip-permissions' }, /full claude-\* model id/i],
+      [{ packet: 'plan', effort: 'ultra' }, /effort must be one of/i],
+    ]) {
+      await assert.rejects(
+        tools.fusion_claude_review.execute(args, { directory: 'C:/workspace', agent: 'build' }),
+        pattern
+      );
+    }
+    assert.equal(calls.length, 0, 'invalid choices must never reach the claude CLI');
   });
 
   test('runs Claude from a neutral temporary directory, never the workspace', async () => {
-    const calls = [];
-    const results = [authResult(), reviewResult()];
-    const run = async (options) => {
-      calls.push(options);
-      return results.shift();
-    };
+    const { calls, run } = recordingRun([authResult(), reviewResult()]);
     const tools = await toolsWith({ run });
     await tools.fusion_claude_review.execute({ packet: 'plan' }, { worktree: 'C:/workspace', directory: 'C:/workspace', agent: 'build' });
     assert.equal(calls[0].cwd, os.tmpdir());
@@ -149,11 +213,7 @@ describe('fusion Claude Code bridge', () => {
   });
 
   test('refuses callers other than the build and plan agents', async () => {
-    const calls = [];
-    const run = async (options) => {
-      calls.push(options);
-      return authResult();
-    };
+    const { calls, run } = recordingRun([authResult()]);
     const tools = await toolsWith({ run });
     for (const agent of ['sidekick', 'reviewer', 'explore', undefined]) {
       await assert.rejects(
@@ -169,12 +229,7 @@ describe('fusion Claude Code bridge', () => {
   });
 
   test('passes the session abort signal through to the Claude process runner', async () => {
-    const calls = [];
-    const results = [authResult(), reviewResult()];
-    const run = async (options) => {
-      calls.push(options);
-      return results.shift();
-    };
+    const { calls, run } = recordingRun([authResult(), reviewResult()]);
     const abort = new AbortController();
     const tools = await toolsWith({ run });
     await tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'plan', abort: abort.signal });
@@ -183,11 +238,7 @@ describe('fusion Claude Code bridge', () => {
   });
 
   test('rejects immediately when the session was already canceled', async () => {
-    const calls = [];
-    const run = async (options) => {
-      calls.push(options);
-      return authResult();
-    };
+    const { calls, run } = recordingRun([authResult()]);
     const abort = new AbortController();
     abort.abort();
     const tools = await toolsWith({ run });
@@ -218,19 +269,60 @@ describe('fusion Claude Code bridge', () => {
     );
   });
 
-  test('a failing auth check reports the exit code and stderr detail', async () => {
+  test('a failing auth check reports the exit code and redacted stderr detail', async () => {
     const tools = await toolsWith({
-      run: async () => ({ code: 1, stdout: '', stderr: 'boom: keychain locked\nsecond line' }),
+      run: async () => ({ code: 1, stdout: '', stderr: 'keychain locked for user@example.com\nsecond line' }),
     });
     await assert.rejects(
       tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
       (error) => {
         assert.match(error.message, /exit code 1/);
-        assert.match(error.message, /boom: keychain locked/);
+        assert.match(error.message, /keychain locked/);
+        assert.doesNotMatch(error.message, /user@example\.com/);
         assert.doesNotMatch(error.message, /second line/);
         assert.match(error.message, /claude auth login/);
         return true;
       }
+    );
+  });
+
+  test('a failing review run reports the exit code and stderr detail', async () => {
+    const tools = await toolsWith({
+      run: async (options) => options.args[0] === 'auth'
+        ? authResult()
+        : { code: 2, stdout: '', stderr: 'error: unknown option --frobnicate' },
+    });
+    await assert.rejects(
+      tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' }),
+      (error) => {
+        assert.match(error.message, /exit code 2/);
+        assert.match(error.message, /unknown option --frobnicate/);
+        return true;
+      }
+    );
+  });
+
+  test('valid but non-object CLI JSON is a controlled error, not a crash', async () => {
+    const nullAuth = await toolsWith({ run: async () => ({ code: 0, stdout: 'null', stderr: '' }) });
+    await assert.rejects(
+      nullAuth.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      /unexpected JSON/i
+    );
+
+    const primitiveReview = await toolsWith({
+      run: async (options) => options.args[0] === 'auth'
+        ? authResult()
+        : { code: 0, stdout: '"PLAN_APPROVED"', stderr: '' },
+    });
+    await assert.rejects(
+      primitiveReview.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' }),
+      /unexpected JSON/i
+    );
+
+    const malformed = await toolsWith({ run: async () => ({ code: 0, stdout: 'not json', stderr: '' }) });
+    await assert.rejects(
+      malformed.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      /invalid JSON/i
     );
   });
 
@@ -270,6 +362,36 @@ describe('fusion Claude Code bridge', () => {
       );
     } finally {
       fs.rmSync(emptyBin, { recursive: true, force: true });
+    }
+  });
+
+  test('a real child process failure propagates its exit code through the spawn wrapper', async () => {
+    // A copy of the node binary named claude exercises the real spawn, pipe
+    // collection, and close handling: `node auth status --json` exits nonzero
+    // with a module-not-found error on stderr.
+    const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'fusion-claude-fakebin-'));
+    const fake = path.join(bin, process.platform === 'win32' ? 'claude.exe' : 'claude');
+    fs.copyFileSync(process.execPath, fake);
+    fs.chmodSync(fake, 0o755);
+    try {
+      const tools = await toolsWith({
+        environment: {
+          PATH: bin,
+          // node.exe needs SystemRoot to boot on Windows; harmless elsewhere.
+          SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot ?? '',
+          WINDIR: process.env.WINDIR ?? process.env.windir ?? '',
+        },
+      });
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+        (error) => {
+          assert.match(error.message, /exit code 1/);
+          assert.match(error.message, /module|MODULE|auth/i);
+          return true;
+        }
+      );
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
     }
   });
 });
