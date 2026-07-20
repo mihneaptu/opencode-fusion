@@ -611,7 +611,22 @@ describe('fusion Claude Code bridge', () => {
   });
 
   test('output beyond the byte limit kills the real child process with a clear error', async () => {
-    const spamThenBlock = `process.stdout.write(Buffer.alloc(80 * 1024, 97)); ${BLOCK_FOREVER}`;
+    // fs.writeSync on fd 1 with a retry loop, NOT process.stdout.write: on
+    // POSIX, stdout to a pipe is async, and the blocked event loop below
+    // would strand whatever did not fit the pipe buffer on the first try -
+    // observed on macOS CI, where the 80 KiB spam arrived short of the 64 KiB
+    // limit and the test timed out instead of overflowing. The blocking
+    // writeSync loop delivers every byte before the child freezes.
+    const spamThenBlock = [
+      'const fs = require("node:fs");',
+      'const spam = Buffer.alloc(80 * 1024, 97);',
+      'let off = 0;',
+      'while (off < spam.length) {',
+      '  try { off += fs.writeSync(1, spam, off); }',
+      '  catch (e) { if (e.code !== "EAGAIN") throw e; }',
+      '}',
+      BLOCK_FOREVER,
+    ].join('\n');
     const { bin, environment } = fakeClaudeBin(spamThenBlock);
     try {
       const tools = await toolsWith({ environment });
