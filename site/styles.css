@@ -247,7 +247,7 @@ strong { color: var(--text-high); font-weight: 600; }
 
 /* ---- Focus + accessibility helpers ------------------------------------ */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-strong);
   outline-offset: 3px;
   border-radius: 5px;
 }
@@ -364,7 +364,13 @@ strong { color: var(--text-high); font-weight: 600; }
   color: var(--text-high);
   border-color: var(--border-strong);
 }
-.btn-ghost:hover { border-color: var(--text-low); background-color: var(--surface-2); }
+.btn-ghost:hover {
+  border-color: var(--text-low);
+  background-color: var(--surface-2);
+  /* Same quiet lift as .btn-primary so both button kinds feel like one system. */
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
 .btn-ghost:active { transform: scale(0.96); }
 
 /* ---- Pills / badges (semantic role markers) --------------------------- */
@@ -524,10 +530,13 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
 .wordmark:hover .wordmark-mark { transform: scale(1.06); }
 .wordmark-mark svg { width: 1.2rem; height: 1.2rem; }
 .wordmark-text { font-size: var(--step-0); }
-/* "Fusion" (header and hero): flat accent blue. */
+/* "Fusion" (header and hero): flat accent blue. --accent-strong (not
+   --accent) keeps the 17px wordmark AA-legible in dark mode, where
+   --accent is a fill blue (#1f6feb) and --accent-strong is the text blue
+   (#58a6ff); in light mode the two are nearly indistinguishable. */
 .wordmark-accent,
 .hero-fusion {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 .wordmark-accent { margin-left: 0.15em; }
 
@@ -1148,6 +1157,9 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   gap: var(--space-sm);
   padding: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem);
   background: var(--surface-2);
+  /* Hairline edge: surface-2 sits only ~2% under the page canvas in light
+     mode, so without a border the cards read as soft grey smudges. */
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   transition: transform var(--dur-fast) var(--ease),
               box-shadow var(--dur-fast) var(--ease),
@@ -1367,7 +1379,9 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   --term-border: rgba(240, 246, 252, 0.14);
   --term-text: #e6edf3;
   --term-muted: #8b949e;
-  --term-faint: rgba(240, 246, 252, 0.38);
+  /* Step comments are instructional text, not decoration: 0.38 alpha landed
+     around 3.4:1 on --term-bg, under AA; 0.55 lands near 5:1. */
+  --term-faint: rgba(240, 246, 252, 0.55);
   --term-shell: #58a6ff;
   --term-oc: #d29922;
   --term-pad-x: clamp(1rem, 0.85rem + 0.6vw, 1.4rem);
@@ -1626,7 +1640,9 @@ html[data-theme="dark"] .term {
 
 @media (hover: none) {
   /* Tap-triggered sticky hovers should not leave things floated or nudged. */
-  .btn-primary:hover {
+  .btn-primary:hover,
+  .btn-ghost:hover,
+  .gh-btn:hover {
     transform: none;
     box-shadow: none;
   }
@@ -1861,10 +1877,15 @@ html[data-theme="dark"] .term {
   color: var(--accent-strong);
   text-decoration: underline;
   text-decoration-thickness: 1px;
+  /* Resting underline is a whisper (accent-line), full strength on hover. */
+  text-decoration-color: var(--accent-line);
   text-underline-offset: 0.15em;
+  transition: text-decoration-color var(--dur-fast) var(--ease),
+              text-decoration-thickness var(--dur-fast) var(--ease);
 }
 .docs-section a:not(.copy-btn):not(.btn):hover {
   text-decoration-thickness: 2px;
+  text-decoration-color: currentColor;
 }
 .docs-section code {
   font-family: var(--font-mono);
@@ -1896,6 +1917,9 @@ html[data-theme="dark"] .term {
   padding: var(--space-md) var(--space-lg);
   background: var(--surface-2);
   border: 1px solid var(--border);
+  /* Quiet accent tick on the leading edge: marks it as a callout, not body
+     text in a grey box, without tinting the whole block. */
+  border-left: 3px solid var(--accent-line);
   border-radius: var(--radius-sm);
   max-width: 62ch;
 }
@@ -1960,6 +1984,11 @@ html[data-theme="dark"] .term {
 }
 .docs-table td {
   color: var(--text-mid);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+/* Quiet row highlight helps the eye track across wider tables. */
+.docs-table tbody tr:hover td {
+  background: var(--surface-2);
 }
 .docs-table tr:last-child td {
   border-bottom: none;
@@ -2190,6 +2219,10 @@ html[data-theme="dark"] .term {
   .btn:active .btn-icon,
   .btn-primary:hover,
   .btn-primary:active,
+  .btn-ghost:hover,
+  .btn-ghost:active,
+  .gh-btn:hover,
+  .theme-toggle:active,
   .wordmark:hover .wordmark-mark,
   .copy-btn:active,
   .install-docs:hover svg { transform: none !important; }
