@@ -448,26 +448,129 @@ describe('fusion Claude Code bridge', () => {
     if (requireSource) {
       const hook = path.join(bin, 'hook.js');
       fs.writeFileSync(hook, requireSource);
-      environment.NODE_OPTIONS = `--require ${hook}`;
+      // Quote the hook path so spaces in temp dirs survive on Windows; use
+      // forward slashes because NODE_OPTIONS parsing eats backslashes inside
+      // quotes (Node treats \ as an escape), and forward slashes work on Win32.
+      environment.NODE_OPTIONS = `--require "${hook.replace(/\\/g, '/')}"`;
     }
     return { bin, environment };
   };
 
   const BLOCK_FOREVER = 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);';
 
+  // Poll for the review/status child's pidfile instead of a fixed sleep - the
+  // real spawn takes a variable amount of time to boot node on each platform.
+  const readPidWhenReady = async (pidfile, timeoutMs = 5000) => {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      try {
+        const raw = fs.readFileSync(pidfile, 'utf8').trim();
+        if (raw) return Number(raw);
+      } catch {
+        /* not written yet */
+      }
+      if (Date.now() > deadline) throw new Error(`pidfile ${pidfile} never appeared`);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  };
+
+  // Proves the kill actually terminated the hung child: process.kill(pid, 0)
+  // throws once the process is gone.
+  const waitForExit = async (pid, timeoutMs = 5000) => {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      try {
+        process.kill(pid, 0);
+      } catch {
+        return;
+      }
+      if (Date.now() > deadline) throw new Error(`process ${pid} still alive after ${timeoutMs}ms`);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  };
+
   test('a mid-flight cancel kills the real child process and reports cancellation', async () => {
-    const { bin, environment } = fakeClaudeBin(BLOCK_FOREVER);
+    const writePidThenBlock = `require("node:fs").writeFileSync(require("node:path").join(__dirname, "status.pid"), String(process.pid)); ${BLOCK_FOREVER}`;
+    const { bin, environment } = fakeClaudeBin(writePidThenBlock);
+    const pidfile = path.join(bin, 'status.pid');
     try {
       const abort = new AbortController();
       const tools = await toolsWith({ environment });
-      setTimeout(() => abort.abort(), 300);
-      await assert.rejects(
+      const pending = assert.rejects(
         tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build', abort: abort.signal }),
         /canceled/i
+      );
+      const pid = await readPidWhenReady(pidfile);
+      abort.abort();
+      await pending;
+      // The kill must have actually terminated the hung child, not just
+      // rejected the promise.
+      await waitForExit(pid);
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  test('a slow auth check times out and reports the configured budget', async () => {
+    const { bin, environment } = fakeClaudeBin(BLOCK_FOREVER);
+    try {
+      const tools = await toolsWith({ environment, timeouts: { authMs: 1000 } });
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+        /timed out after 1 second/
       );
     } finally {
       fs.rmSync(bin, { recursive: true, force: true });
     }
+  });
+
+  test('a cancel between auth and review kills the hung review child', async () => {
+    // Dual-phase fake: the auth call answers with a valid first-party status
+    // and exits before node treats "auth" as a script; the review call writes
+    // its pid and blocks forever so the test can cancel it and prove the kill.
+    const authJson = authResult().stdout;
+    const hookSource = [
+      'const fs = require("node:fs");',
+      'const path = require("node:path");',
+      'if (process.argv.includes("auth")) {',
+      `  fs.writeSync(1, ${JSON.stringify(authJson)});`,
+      '  process.exit(0);',
+      '}',
+      'fs.writeFileSync(path.join(__dirname, "review.pid"), String(process.pid));',
+      BLOCK_FOREVER,
+    ].join('\n');
+    const { bin, environment } = fakeClaudeBin(hookSource);
+    const pidfile = path.join(bin, 'review.pid');
+    try {
+      const abort = new AbortController();
+      const tools = await toolsWith({ environment });
+      const pending = assert.rejects(
+        tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build', abort: abort.signal }),
+        /canceled/i
+      );
+      const pid = await readPidWhenReady(pidfile);
+      abort.abort();
+      await pending;
+      await waitForExit(pid);
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  test('sends the documented time and output budgets to the runner', async () => {
+    const { calls, run } = recordingRun([authResult(), reviewResult()]);
+    const tools = await toolsWith({ run });
+    await tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' });
+    assert.equal(calls[0].timeoutMs, 20000);
+    assert.equal(calls[0].maxOutputBytes, 64 * 1024);
+    assert.equal(calls[1].timeoutMs, 600000);
+    assert.equal(calls[1].maxOutputBytes, 2 * 1024 * 1024);
+  });
+
+  test('a Max subscription is reported as ready', async () => {
+    const tools = await toolsWith({ run: async () => authResult({ subscriptionType: 'max' }) });
+    const output = await tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' });
+    assert.match(output, /MAX/);
   });
 
   test('output beyond the byte limit kills the real child process with a clear error', async () => {

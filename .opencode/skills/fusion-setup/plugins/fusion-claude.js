@@ -122,6 +122,23 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
     let settled = false;
     let killed = false;
     let escalation;
+    let forceFinish;
+
+    // Maps a recorded termination reason to the error the promise should
+    // reject with. Shared by the 'close' handler and the force-finish deadline
+    // so both paths produce identical, unchanged user-facing messages. Reason
+    // "stdin" is handled first-cause by the stdin handler itself, so it only
+    // reaches the generic cancellation fallback here in the (unreachable in
+    // practice) case that it slips through.
+    const errorForReason = (reason) => {
+      if (reason === "timeout") {
+        return new Error(`Claude Code timed out after ${Math.round(timeoutMs / 1000)} seconds`);
+      }
+      if (reason === "overflow") {
+        return new Error("Claude Code returned more output than the bridge allows");
+      }
+      return new Error("The Claude review was canceled");
+    };
 
     // First cause wins: a timeout that fires while an overflow kill is in
     // flight must not relabel the error. kill() alone can leave a
@@ -133,8 +150,31 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
       if (killed) return;
       killed = true;
       child.kill();
-      escalation = setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+      escalation = setTimeout(() => {
+        // On Windows, child.kill only signals the direct child, but Claude
+        // Code is a multi-process CLI - so a plain SIGKILL can orphan its
+        // grandchildren. taskkill /T /F terminates the whole process tree.
+        if (process.platform === "win32") {
+          const killer = spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+            shell: false,
+            windowsHide: true,
+            stdio: "ignore",
+          });
+          // The child may already be dead, or taskkill may be absent; a
+          // failure here must never crash the host.
+          killer.on("error", () => {});
+          killer.unref?.();
+        } else {
+          child.kill("SIGKILL");
+        }
+      }, KILL_GRACE_MS);
       escalation.unref?.();
+      // Hard deadline: if the child ignores the kill and never emits 'close',
+      // finish() would otherwise never run. Force it after the escalation has
+      // had time to land, using the same error the 'close' handler would
+      // produce for the recorded reason.
+      forceFinish = setTimeout(() => finish(errorForReason(terminationReason)), 2 * KILL_GRACE_MS);
+      forceFinish.unref?.();
     };
 
     const onAbort = () => terminate("canceled");
@@ -144,6 +184,11 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      // The escalation and force-finish timers are NOT cleared here: on early
+      // rejection paths (like a stdin write error) the promise settles while
+      // the child may still be alive and ignoring the first kill, so the
+      // SIGKILL backup must stay armed. Both timers are unref'd, and the
+      // 'close' handler clears them once the child is confirmed dead.
       signal?.removeEventListener("abort", onAbort);
       if (error) reject(error);
       else resolve(result);
@@ -166,16 +211,9 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
     });
     child.on("close", (code) => {
       clearTimeout(escalation);
-      if (terminationReason === "canceled") {
-        finish(new Error("The Claude review was canceled"));
-        return;
-      }
-      if (terminationReason === "timeout") {
-        finish(new Error(`Claude Code timed out after ${Math.round(timeoutMs / 1000)} seconds`));
-        return;
-      }
-      if (terminationReason === "overflow") {
-        finish(new Error("Claude Code returned more output than the bridge allows"));
+      clearTimeout(forceFinish);
+      if (terminationReason === "canceled" || terminationReason === "timeout" || terminationReason === "overflow") {
+        finish(errorForReason(terminationReason));
         return;
       }
       finish(null, {
@@ -243,12 +281,12 @@ function resolveModelChoice(model, effort) {
   return { model: chosenModel, effort: chosenEffort };
 }
 
-async function requireFirstPartySubscription(run, environment, signal) {
+async function requireFirstPartySubscription(run, environment, signal, timeoutMs = AUTH_TIMEOUT_MS) {
   const result = await run({
     args: ["auth", "status", "--json"],
     cwd: os.tmpdir(),
     env: environment,
-    timeoutMs: AUTH_TIMEOUT_MS,
+    timeoutMs,
     maxOutputBytes: 64 * 1024,
     signal,
   });
@@ -296,8 +334,13 @@ function reviewArgs(model, effort) {
   ];
 }
 
-function createClaudeTools({ run = runClaudeProcess, environment = process.env } = {}) {
+function createClaudeTools({ run = runClaudeProcess, environment = process.env, timeouts } = {}) {
   const safeEnvironment = cleanEnvironment(environment);
+  // Timeout overrides exist only for test injection through the loader's
+  // options argument, mirroring how `run` and `environment` are injected;
+  // production always uses the constants above.
+  const authMs = timeouts?.authMs ?? AUTH_TIMEOUT_MS;
+  const reviewMs = timeouts?.reviewMs ?? REVIEW_TIMEOUT_MS;
 
   return {
     fusion_claude_status: tool({
@@ -306,7 +349,7 @@ function createClaudeTools({ run = runClaudeProcess, environment = process.env }
       async execute(_args, context) {
         requireFusionCaller(context);
         requireNotCanceled(context);
-        const subscription = await requireFirstPartySubscription(run, safeEnvironment, context?.abort);
+        const subscription = await requireFirstPartySubscription(run, safeEnvironment, context?.abort, authMs);
         return `Claude Code bridge ready: ${subscription.toUpperCase()} subscription, ${DEFAULT_MODEL}, effort ${DEFAULT_EFFORT}.`;
       },
     }),
@@ -322,7 +365,7 @@ function createClaudeTools({ run = runClaudeProcess, environment = process.env }
         requireFusionCaller(context);
         requireNotCanceled(context);
         const choice = resolveModelChoice(model, effort);
-        await requireFirstPartySubscription(run, safeEnvironment, context?.abort);
+        await requireFirstPartySubscription(run, safeEnvironment, context?.abort, authMs);
         const result = await run({
           args: reviewArgs(choice.model, choice.effort),
           input: packet,
@@ -331,7 +374,7 @@ function createClaudeTools({ run = runClaudeProcess, environment = process.env }
           // keeps project settings and the trust model out of the picture.
           cwd: os.tmpdir(),
           env: safeEnvironment,
-          timeoutMs: REVIEW_TIMEOUT_MS,
+          timeoutMs: reviewMs,
           maxOutputBytes: OUTPUT_LIMIT,
           signal: context?.abort,
         });
