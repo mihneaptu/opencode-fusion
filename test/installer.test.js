@@ -193,16 +193,36 @@ describe('fusion-setup deterministic installer', () => {
     assert.ok(!fs.existsSync(path.join(dir, 'plugins', 'fusion-audit.js')));
   });
 
-  test('extras install the commands and the audit plugin', () => {
-    const result = run(applyArgs(['--extras', 'commands,plugin']));
+  test('extras install the commands, audit plugin, and guarded Claude bridge', () => {
+    const result = run(applyArgs(['--extras', 'commands,plugin,claude']));
     assert.equal(result.status, 0, result.stderr);
     for (const rel of [
       ['commands', 'fusion-setup.md'],
       ['commands', 'fusion-status.md'],
       ['plugins', 'fusion-audit.js'],
+      ['plugins', 'fusion-claude.js'],
     ]) {
       assert.ok(fs.existsSync(path.join(dir, ...rel)), `missing ${rel.join('/')}`);
     }
+    assert.equal(
+      readJson(path.join(dir, 'opencode.json')).permission['fusion_claude_*'],
+      'deny',
+      'Claude tools must be denied globally; build and plan opt in through frontmatter'
+    );
+  });
+
+  test('Claude bridge preserves an existing global permission shorthand', () => {
+    const original = { permission: 'ask', theme: 'keep-me' };
+    writeJson(path.join(dir, 'opencode.json'), original);
+    const result = run(applyArgs(['--extras', 'claude']));
+    assert.equal(result.status, 0, result.stderr);
+    const permission = readJson(path.join(dir, 'opencode.json')).permission;
+    assert.deepEqual(permission, { '*': 'ask', 'fusion_claude_*': 'deny' });
+
+    const undo = run(['undo', '--config-dir', dir]);
+    assert.equal(undo.status, 0, undo.stderr);
+    assert.deepEqual(readJson(path.join(dir, 'opencode.json')), original);
+    assert.ok(!fs.existsSync(path.join(dir, 'plugins', 'fusion-claude.js')));
   });
 
   test('invalid fragment JSON changes nothing and exits nonzero', () => {
@@ -261,6 +281,7 @@ describe('fusion-setup deterministic installer', () => {
       { ...fragment, provider: { prov: { models: { model: { modalities: { input: ['bogus'] } } } } } },
       { ...fragment, provider: { prov: { models: { model: { limit: { context: 1000 } } } } } },
       { ...fragment, agent: { build: { model: 'prov/main-model', permission: [] } } },
+      { ...fragment, permission: [] },
       { ...fragment, compaction: [] },
     ]) {
       writeJson(fragmentPath, invalid);

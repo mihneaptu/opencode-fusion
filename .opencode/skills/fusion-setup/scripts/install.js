@@ -21,6 +21,7 @@ const MODEL_MODALITIES = new Set(['text', 'audio', 'image', 'video', 'pdf']);
 const EXTRAS = {
   commands: ['commands/fusion-setup.md', 'commands/fusion-status.md'],
   plugin: ['plugins/fusion-audit.js'],
+  claude: ['plugins/fusion-claude.js'],
 };
 const KNOWN_DESTINATIONS = new Set([
   ...ALL_ROLES.map((role) => `agent/${role}.md`),
@@ -102,6 +103,11 @@ function validateConfigObject(value, label) {
   }
   if ('agent' in value && !isPlainObject(value.agent)) {
     return `${label} "agent" must be an object`;
+  }
+  if ('permission' in value
+    && !isPlainObject(value.permission)
+    && !['allow', 'ask', 'deny'].includes(value.permission)) {
+    return `${label} "permission" must be an object or allow/ask/deny`;
   }
   for (const key of ['model', 'small_model']) {
     if (key in value && !validModelReference(value[key])) {
@@ -462,6 +468,22 @@ function selectedSources(opts) {
   return sources;
 }
 
+function addClaudePermission(config) {
+  const current = config.permission;
+  const rules = isPlainObject(current)
+    ? Object.fromEntries(Object.entries(current).filter(([key]) => key !== 'fusion_claude_*'))
+    : (['allow', 'ask', 'deny'].includes(current) ? { '*': current } : {});
+  return {
+    ...config,
+    permission: {
+      ...rules,
+      // Custom tools are denied globally. Only build and plan opt in through
+      // their permission-bearing agent frontmatter.
+      'fusion_claude_*': 'deny',
+    },
+  };
+}
+
 function apply(opts) {
   if (!opts.config && !opts.profile) fail('apply requires --profile <name> and/or --config <fragment.json>');
   for (const role of opts.roles) {
@@ -532,7 +554,8 @@ function apply(opts) {
 
   const sources = selectedSources(opts);
   for (const source of sources) inspectDestination(opts.configDir, source.to);
-  const merged = deepMerge(existing, fragment);
+  let merged = deepMerge(existing, fragment);
+  if (opts.extras.includes('claude')) merged = addClaudePermission(merged);
   const mergedError = validateConfigObject(merged, 'merged config');
   if (mergedError) fail(mergedError);
   const mergedBytes = jsonBytes(merged);
