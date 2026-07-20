@@ -194,6 +194,10 @@ describe('fusion Claude Code bridge', () => {
     for (const [args, pattern] of [
       [{ packet: 'plan', model: 'gpt-5' }, /full claude-\* model id/i],
       [{ packet: 'plan', model: 'claude-fable-5 --dangerously-skip-permissions' }, /full claude-\* model id/i],
+      [{ packet: 'plan', model: 'claude-a-' }, /full claude-\* model id/i],
+      [{ packet: 'plan', model: 'claude--x' }, /full claude-\* model id/i],
+      [{ packet: 'plan', model: 'CLAUDE-FABLE-5' }, /full claude-\* model id/i],
+      [{ packet: 'plan', model: ' claude-fable-5' }, /full claude-\* model id/i],
       [{ packet: 'plan', effort: 'ultra' }, /effort must be one of/i],
     ]) {
       await assert.rejects(
@@ -319,6 +323,12 @@ describe('fusion Claude Code bridge', () => {
       /unexpected JSON/i
     );
 
+    const arrayAuth = await toolsWith({ run: async () => ({ code: 0, stdout: '[]', stderr: '' }) });
+    await assert.rejects(
+      arrayAuth.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      /unexpected JSON/i
+    );
+
     const malformed = await toolsWith({ run: async () => ({ code: 0, stdout: 'not json', stderr: '' }) });
     await assert.rejects(
       malformed.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
@@ -346,6 +356,63 @@ describe('fusion Claude Code bridge', () => {
     );
   });
 
+  test('the model tamper check accepts only the exact id or a dated variant of it', async () => {
+    // A shorter family name must not be satisfied by a longer model id.
+    const shortName = await toolsWith({
+      run: async (options) => options.args[0] === 'auth'
+        ? authResult()
+        : reviewResult('PLAN_APPROVED\nOk.', 'claude-fable-5'),
+    });
+    await assert.rejects(
+      shortName.fusion_claude_review.execute(
+        { packet: 'plan', model: 'claude-fable' },
+        { directory: 'C:/workspace', agent: 'build' }
+      ),
+      /pinned claude-fable model/
+    );
+
+    // A date-stamped variant of the exact chosen id stays acceptable.
+    const dated = await toolsWith({
+      run: async (options) => options.args[0] === 'auth'
+        ? authResult()
+        : reviewResult('PLAN_APPROVED\nOk.', 'claude-fable-5-20260115'),
+    });
+    const output = await dated.fusion_claude_review.execute(
+      { packet: 'plan' },
+      { directory: 'C:/workspace', agent: 'build' }
+    );
+    assert.match(output, /PLAN_APPROVED/);
+  });
+
+  test('stderr redaction strips key-shaped tokens and applies to review errors too', async () => {
+    const authLeak = await toolsWith({
+      run: async () => ({ code: 1, stdout: '', stderr: 'rejected key sk-ant-api03-AbCdEfGh12 for user@example.com' }),
+    });
+    await assert.rejects(
+      authLeak.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      (error) => {
+        assert.doesNotMatch(error.message, /sk-ant-api03/);
+        assert.doesNotMatch(error.message, /user@example\.com/);
+        assert.match(error.message, /<redacted>/);
+        return true;
+      }
+    );
+
+    const reviewLeak = await toolsWith({
+      run: async (options) => options.args[0] === 'auth'
+        ? authResult()
+        : { code: 2, stdout: '', stderr: 'auth for user@example.com failed' },
+    });
+    await assert.rejects(
+      reviewLeak.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' }),
+      (error) => {
+        assert.doesNotMatch(error.message, /user@example\.com/);
+        assert.match(error.message, /<redacted>/);
+        return true;
+      }
+    );
+  });
+
   test('a missing claude executable produces an actionable install error', async () => {
     // No injected runner: this exercises the real spawn wrapper. The empty
     // PATH directory guarantees resolution fails on every platform.
@@ -362,6 +429,58 @@ describe('fusion Claude Code bridge', () => {
       );
     } finally {
       fs.rmSync(emptyBin, { recursive: true, force: true });
+    }
+  });
+
+  // A copy of the node binary named claude, plus NODE_OPTIONS --require, makes
+  // the real spawn wrapper controllable: the required file runs before node
+  // parses the claude-shaped args, so it can hang or spam output on demand.
+  const fakeClaudeBin = (requireSource) => {
+    const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'fusion-claude-lifebin-'));
+    const fake = path.join(bin, process.platform === 'win32' ? 'claude.exe' : 'claude');
+    fs.copyFileSync(process.execPath, fake);
+    fs.chmodSync(fake, 0o755);
+    const environment = {
+      PATH: bin,
+      SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot ?? '',
+      WINDIR: process.env.WINDIR ?? process.env.windir ?? '',
+    };
+    if (requireSource) {
+      const hook = path.join(bin, 'hook.js');
+      fs.writeFileSync(hook, requireSource);
+      environment.NODE_OPTIONS = `--require ${hook}`;
+    }
+    return { bin, environment };
+  };
+
+  const BLOCK_FOREVER = 'Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);';
+
+  test('a mid-flight cancel kills the real child process and reports cancellation', async () => {
+    const { bin, environment } = fakeClaudeBin(BLOCK_FOREVER);
+    try {
+      const abort = new AbortController();
+      const tools = await toolsWith({ environment });
+      setTimeout(() => abort.abort(), 300);
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build', abort: abort.signal }),
+        /canceled/i
+      );
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
+  test('output beyond the byte limit kills the real child process with a clear error', async () => {
+    const spamThenBlock = `process.stdout.write(Buffer.alloc(80 * 1024, 97)); ${BLOCK_FOREVER}`;
+    const { bin, environment } = fakeClaudeBin(spamThenBlock);
+    try {
+      const tools = await toolsWith({ environment });
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+        /more output than the bridge allows/i
+      );
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
     }
   });
 

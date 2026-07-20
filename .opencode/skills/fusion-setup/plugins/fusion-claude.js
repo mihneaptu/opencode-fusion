@@ -16,7 +16,9 @@ const DEFAULT_MODEL = "claude-fable-5";
 const DEFAULT_EFFORT = "high";
 // Full model ids only (no aliases): the post-review modelUsage check compares
 // against this exact string, and aliases would make that check meaningless.
-const MODEL_PATTERN = /^claude-[a-z0-9][a-z0-9.-]*$/;
+// Segments of [a-z0-9]+ joined by single separators - no trailing or doubled
+// punctuation.
+const MODEL_PATTERN = /^claude-[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const EFFORT_LEVELS = new Set(["low", "medium", "high", "xhigh", "max"]);
 const INPUT_LIMIT = 200_000;
 const AUTH_TIMEOUT_MS = 20_000;
@@ -62,9 +64,15 @@ function firstStderrLine(stderr) {
     .split(/\r?\n/)
     .map((entry) => entry.trim())
     .find(Boolean);
-  // Errors travel into the agent transcript; strip anything email-shaped so a
-  // CLI message can never carry account identity along.
-  return line ? line.slice(0, 200).replace(/\S+@\S+/g, "<redacted>") : "";
+  // Errors travel into the agent transcript; strip the redactable identity
+  // classes - email addresses and key-shaped sk-* tokens. Free-form identity
+  // like an organization name has no reliable pattern, which is why the auth
+  // JSON itself is never echoed anywhere.
+  if (!line) return "";
+  return line
+    .slice(0, 200)
+    .replace(/\bsk-[A-Za-z0-9_-]{8,}/g, "<redacted>")
+    .replace(/\S+@\S+/g, "<redacted>");
 }
 
 function startError(error) {
@@ -183,8 +191,13 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
     child.stdin.on("error", (error) => {
       // EPIPE: the child exited before reading stdin. ERR_STREAM_DESTROYED:
       // the spawn itself failed and the child error event carries the cause.
-      if (!["EPIPE", "ERR_STREAM_DESTROYED"].includes(error.code)) {
-        terminate("stdin");
+      if (["EPIPE", "ERR_STREAM_DESTROYED"].includes(error.code)) return;
+      // Only report the stdin failure when it is the FIRST cause; a write that
+      // breaks because a timeout or cancel already killed the child must not
+      // relabel the error - close() reports the original reason.
+      const isFirstCause = terminationReason === null;
+      terminate("stdin");
+      if (isFirstCause) {
         finish(new Error(`Could not send the review packet to Claude Code: ${error.message}`));
       }
     });
@@ -335,8 +348,12 @@ function createClaudeTools({ run = runClaudeProcess, environment = process.env }
         if (!/^(PLAN_APPROVED|PLAN_REVISE)(?:\r?\n|$)/.test(review)) {
           throw new Error("Claude Code review did not return the required PLAN_APPROVED or PLAN_REVISE signal");
         }
+        // Exact id or a date-stamped variant of it only. A bare startsWith
+        // would let a shorter family name (claude-fable) be satisfied by a
+        // longer model id (claude-fable-5).
+        const datedVariant = new RegExp(`^${choice.model.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-\\d{8}$`);
         const usedModels = Object.keys(response.modelUsage ?? {});
-        if (!usedModels.some((used) => used === choice.model || used.startsWith(`${choice.model}-`))) {
+        if (!usedModels.some((used) => used === choice.model || datedVariant.test(used))) {
           throw new Error(`Claude Code did not report using the pinned ${choice.model} model`);
         }
         return `Claude plan review (${choice.model}, effort ${choice.effort}):\n${review}`;
