@@ -2,8 +2,14 @@
 // This plugin uses the official Claude Code CLI and its own first-party login.
 // Authentication stays inside Claude Code; the plugin never opens its
 // credential store or extracts an OAuth token.
+//
+// opencode's plugin loader invokes EVERY top-level export as a plugin factory
+// and rejects non-function exports, so FusionClaude must stay the only export.
+// The loader calls it as server(input, options); tests inject a fake process
+// runner and environment through that second argument.
 
 import { spawn } from "node:child_process";
+import os from "node:os";
 import { tool } from "@opencode-ai/plugin";
 
 const CLAUDE_MODEL = "claude-fable-5";
@@ -12,6 +18,12 @@ const INPUT_LIMIT = 200_000;
 const AUTH_TIMEOUT_MS = 20_000;
 const REVIEW_TIMEOUT_MS = 600_000;
 const OUTPUT_LIMIT = 2 * 1024 * 1024;
+const KILL_GRACE_MS = 5_000;
+// Mirrors the permission contract (global "fusion_claude_*": "deny", build and
+// plan opt back in). Enforced here as well because opencode's default
+// permission is "*": "allow": a hand-copied plugin without the installer's
+// global deny would otherwise serve every agent.
+const ALLOWED_AGENTS = new Set(["build", "plan"]);
 const ROUTING_ENV_KEYS = [
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_AUTH_TOKEN",
@@ -36,7 +48,30 @@ function cleanEnvironment(source = process.env) {
   return environment;
 }
 
-function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputBytes }) {
+function firstStderrLine(stderr) {
+  const line = String(stderr ?? "")
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .find(Boolean);
+  return line ? line.slice(0, 200) : "";
+}
+
+function startError(error) {
+  // ENOENT: no `claude` on PATH. EINVAL: Node refuses to spawn a .cmd/.bat
+  // shim without a shell (what the npm install provides on Windows). Both mean
+  // the native build is missing; a shell retry is not safe because the
+  // multiline system prompt argument cannot be quoted reliably for cmd.exe.
+  if (error?.code === "ENOENT" || error?.code === "EINVAL") {
+    return new Error(
+      "Claude Code executable not found. The bridge launches `claude` directly without a shell, "
+      + "so it needs the native build on PATH - on Windows use the native installer or `claude install`, "
+      + "not the npm shim (claude.cmd). See https://code.claude.com/docs/en/setup"
+    );
+  }
+  return new Error(`Could not start Claude Code: ${error.message}`);
+}
+
+function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputBytes, signal }) {
   return new Promise((resolve, reject) => {
     let child;
     try {
@@ -48,7 +83,7 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
         stdio: ["pipe", "pipe", "pipe"],
       });
     } catch (error) {
-      reject(new Error(`Could not start Claude Code: ${error.message}`));
+      reject(startError(error));
       return;
     }
 
@@ -57,14 +92,29 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let timedOut = false;
+    let canceled = false;
     let outputExceeded = false;
     let settled = false;
+
+    // kill() alone can leave a SIGTERM-ignoring child running on POSIX; the
+    // unref'd escalation timer never keeps the host process alive.
+    const killChild = () => {
+      child.kill();
+      const escalation = setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+      escalation.unref?.();
+    };
+
+    const onAbort = () => {
+      canceled = true;
+      killChild();
+    };
 
     let timer;
     const finish = (error, result) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
       if (error) reject(error);
       else resolve(result);
     };
@@ -74,7 +124,7 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
       else stderrBytes += chunk.length;
       if (stdoutBytes + stderrBytes > maxOutputBytes) {
         outputExceeded = true;
-        child.kill();
+        killChild();
         return;
       }
       chunks.push(chunk);
@@ -83,9 +133,13 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
     child.stdout.on("data", (chunk) => collect(stdout, chunk, true));
     child.stderr.on("data", (chunk) => collect(stderr, chunk, false));
     child.on("error", (error) => {
-      finish(new Error(`Could not start Claude Code: ${error.message}`));
+      finish(startError(error));
     });
     child.on("close", (code) => {
+      if (canceled) {
+        finish(new Error("The Claude review was canceled"));
+        return;
+      }
       if (timedOut) {
         finish(new Error(`Claude Code timed out after ${Math.round(timeoutMs / 1000)} seconds`));
         return;
@@ -103,11 +157,16 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
 
     timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
+      killChild();
     }, timeoutMs);
+    signal?.addEventListener("abort", onAbort, { once: true });
 
     child.stdin.on("error", (error) => {
-      if (error.code !== "EPIPE") finish(new Error(`Could not send the review packet to Claude Code: ${error.message}`));
+      // EPIPE: the child exited before reading stdin. ERR_STREAM_DESTROYED:
+      // the spawn itself failed and the child error event carries the cause.
+      if (!["EPIPE", "ERR_STREAM_DESTROYED"].includes(error.code)) {
+        finish(new Error(`Could not send the review packet to Claude Code: ${error.message}`));
+      }
     });
     child.stdin.end(input);
   });
@@ -121,16 +180,34 @@ function parseJson(stdout, label) {
   }
 }
 
-async function requireFirstPartySubscription(run, cwd, environment) {
+function requireFusionCaller(context) {
+  const agent = context?.agent;
+  if (!ALLOWED_AGENTS.has(agent)) {
+    throw new Error(`The Claude bridge tools only serve the build and plan agents (caller: ${agent ?? "unknown"}).`);
+  }
+}
+
+function requireNotCanceled(context) {
+  if (context?.abort?.aborted) {
+    throw new Error("The Claude review was canceled before it started");
+  }
+}
+
+async function requireFirstPartySubscription(run, environment, signal) {
   const result = await run({
-    args: ["auth", "status"],
-    cwd,
+    args: ["auth", "status", "--json"],
+    cwd: os.tmpdir(),
     env: environment,
     timeoutMs: AUTH_TIMEOUT_MS,
     maxOutputBytes: 64 * 1024,
+    signal,
   });
   if (result.code !== 0) {
-    throw new Error("Claude Code is not logged in. Run `claude auth login`, then try again.");
+    const detail = firstStderrLine(result.stderr);
+    throw new Error(
+      `Claude Code is not logged in or not working (\`claude auth status\` exit code ${result.code}`
+      + `${detail ? `: ${detail}` : ""}). Run \`claude auth login\`, then try again.`
+    );
   }
 
   const status = parseJson(result.stdout, "`claude auth status`");
@@ -141,7 +218,12 @@ async function requireFirstPartySubscription(run, cwd, environment) {
     status.apiProvider !== "firstParty" ||
     !["pro", "max"].includes(subscription)
   ) {
-    throw new Error("The Claude bridge requires a first-party Claude Pro or Max login from `claude auth login`.");
+    // Only non-identifying enum fields; never echo email or organization.
+    throw new Error(
+      "The Claude bridge requires a first-party Claude Pro or Max login from `claude auth login` "
+      + `(found loggedIn=${status.loggedIn === true}, authMethod=${String(status.authMethod ?? "none")}, `
+      + `apiProvider=${String(status.apiProvider ?? "none")}, subscription=${subscription || "none"}).`
+    );
   }
   return subscription;
 }
@@ -157,12 +239,14 @@ function reviewArgs() {
     "--no-session-persistence",
     "--prompt-suggestions", "false",
     "--output-format", "json",
+    // Hidden from `claude --help` since 2.1.x but still accepted; with tools
+    // disabled it is only a belt-and-braces cap on the single review turn.
     "--max-turns", "1",
     "--system-prompt", REVIEW_SYSTEM_PROMPT,
   ];
 }
 
-export function createClaudeTools({ run = runClaudeProcess, environment = process.env } = {}) {
+function createClaudeTools({ run = runClaudeProcess, environment = process.env } = {}) {
   const safeEnvironment = cleanEnvironment(environment);
 
   return {
@@ -170,7 +254,9 @@ export function createClaudeTools({ run = runClaudeProcess, environment = proces
       description: "Check whether the optional first-party Claude Pro/Max review bridge is ready. Returns no account identity or credential data.",
       args: {},
       async execute(_args, context) {
-        const subscription = await requireFirstPartySubscription(run, context.worktree ?? context.directory, safeEnvironment);
+        requireFusionCaller(context);
+        requireNotCanceled(context);
+        const subscription = await requireFirstPartySubscription(run, safeEnvironment, context?.abort);
         return `Claude Code bridge ready: ${subscription.toUpperCase()} subscription, ${CLAUDE_MODEL}, effort ${CLAUDE_EFFORT}.`;
       },
     }),
@@ -181,18 +267,27 @@ export function createClaudeTools({ run = runClaudeProcess, environment = proces
         packet: tool.schema.string().max(INPUT_LIMIT).describe("The task, relevant context, proposed plan, risks, and verification steps to review."),
       },
       async execute({ packet }, context) {
-        const cwd = context.worktree ?? context.directory;
-        await requireFirstPartySubscription(run, cwd, safeEnvironment);
+        requireFusionCaller(context);
+        requireNotCanceled(context);
+        await requireFirstPartySubscription(run, safeEnvironment, context?.abort);
         const result = await run({
           args: reviewArgs(),
           input: packet,
-          cwd,
+          // The packet is self-contained and the CLI runs with --safe-mode and
+          // no tools, so nothing needs the workspace; a neutral directory
+          // keeps project settings and the trust model out of the picture.
+          cwd: os.tmpdir(),
           env: safeEnvironment,
           timeoutMs: REVIEW_TIMEOUT_MS,
           maxOutputBytes: OUTPUT_LIMIT,
+          signal: context?.abort,
         });
         if (result.code !== 0) {
-          throw new Error(`Claude Code review failed with exit code ${result.code}. Run \`claude -p "hello"\` directly to inspect the CLI error.`);
+          const detail = firstStderrLine(result.stderr);
+          throw new Error(
+            `Claude Code review failed with exit code ${result.code}${detail ? `: ${detail}` : ""}. `
+            + "Run `claude -p \"hello\"` directly to inspect the CLI error."
+          );
         }
 
         const response = parseJson(result.stdout, "Claude Code review");
@@ -210,4 +305,4 @@ export function createClaudeTools({ run = runClaudeProcess, environment = proces
   };
 }
 
-export const FusionClaude = async () => ({ tool: createClaudeTools() });
+export const FusionClaude = async (_input, options) => ({ tool: createClaudeTools(options) });

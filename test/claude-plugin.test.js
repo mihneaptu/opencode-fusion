@@ -19,7 +19,8 @@ const source = path.join(
 
 describe('fusion Claude Code bridge', () => {
   let dir;
-  let createClaudeTools;
+  let mod;
+  let FusionClaude;
 
   before(async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fusion-claude-plugin-'));
@@ -41,12 +42,24 @@ describe('fusion Claude Code bridge', () => {
     );
     const pluginCopy = path.join(dir, 'fusion-claude.js');
     fs.copyFileSync(source, pluginCopy);
-    ({ createClaudeTools } = await import(`${pathToFileURL(pluginCopy).href}?test=${Date.now()}`));
+    mod = await import(`${pathToFileURL(pluginCopy).href}?test=${Date.now()}`);
+    ({ FusionClaude } = mod);
   });
 
   after(() => {
     fs.rmSync(dir, { recursive: true, force: true });
   });
+
+  // opencode's loader calls the plugin as server(input, options); tests inject
+  // the process runner through options. A bogus PATH guarantees that a wiring
+  // bug can never reach the real claude CLI from a unit test.
+  const toolsWith = async (options = {}) => {
+    const { tool } = await FusionClaude(undefined, {
+      environment: { PATH: 'fusion-test-no-such-path' },
+      ...options,
+    });
+    return tool;
+  };
 
   const authResult = (overrides = {}) => ({
     code: 0,
@@ -70,14 +83,18 @@ describe('fusion Claude Code bridge', () => {
     stderr: '',
   });
 
-  test('exposes only status and read-only plan review tools', () => {
-    const tools = createClaudeTools({ run: async () => authResult() });
+  test('FusionClaude is the only export - opencode calls every export as a plugin', () => {
+    assert.deepEqual(Object.keys(mod), ['FusionClaude']);
+  });
+
+  test('exposes only status and read-only plan review tools', async () => {
+    const tools = await toolsWith({ run: async () => authResult() });
     assert.deepEqual(Object.keys(tools).sort(), ['fusion_claude_review', 'fusion_claude_status']);
   });
 
   test('status verifies first-party Pro/Max auth without returning identity data', async () => {
-    const tools = createClaudeTools({ run: async () => authResult() });
-    const output = await tools.fusion_claude_status.execute({}, { directory: 'C:/workspace' });
+    const tools = await toolsWith({ run: async () => authResult() });
+    const output = await tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' });
     assert.match(output, /bridge ready.*PRO.*claude-fable-5/i);
     assert.doesNotMatch(output, /must-not-leak|@example\.com/i);
   });
@@ -97,13 +114,13 @@ describe('fusion Claude Code bridge', () => {
       CLAUDE_CODE_USE_BEDROCK: '1',
       CLAUDE_CODE_OAUTH_TOKEN: 'official-cli-token',
     };
-    const tools = createClaudeTools({ run, environment });
+    const tools = await toolsWith({ run, environment });
     const packet = 'Task and proposed plan';
-    const output = await tools.fusion_claude_review.execute({ packet }, { worktree: 'C:/workspace' });
+    const output = await tools.fusion_claude_review.execute({ packet }, { worktree: 'C:/workspace', agent: 'plan' });
 
     assert.match(output, /PLAN_REVISE\nAdd a rollback test\./);
     assert.equal(calls.length, 2);
-    assert.deepEqual(calls[0].args, ['auth', 'status']);
+    assert.deepEqual(calls[0].args, ['auth', 'status', '--json']);
     assert.equal(calls[1].input, packet);
     assert.equal(calls[1].args.includes(packet), false, 'review packet must not be exposed in process arguments');
     for (const expected of [
@@ -118,38 +135,141 @@ describe('fusion Claude Code bridge', () => {
     assert.equal(calls[1].env.CLAUDE_CODE_OAUTH_TOKEN, undefined);
   });
 
-  test('rejects API-key, proxy, and non-subscription auth', async () => {
+  test('runs Claude from a neutral temporary directory, never the workspace', async () => {
+    const calls = [];
+    const results = [authResult(), reviewResult()];
+    const run = async (options) => {
+      calls.push(options);
+      return results.shift();
+    };
+    const tools = await toolsWith({ run });
+    await tools.fusion_claude_review.execute({ packet: 'plan' }, { worktree: 'C:/workspace', directory: 'C:/workspace', agent: 'build' });
+    assert.equal(calls[0].cwd, os.tmpdir());
+    assert.equal(calls[1].cwd, os.tmpdir());
+  });
+
+  test('refuses callers other than the build and plan agents', async () => {
+    const calls = [];
+    const run = async (options) => {
+      calls.push(options);
+      return authResult();
+    };
+    const tools = await toolsWith({ run });
+    for (const agent of ['sidekick', 'reviewer', 'explore', undefined]) {
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent }),
+        /only serve the build and plan agents/i
+      );
+      await assert.rejects(
+        tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent }),
+        /only serve the build and plan agents/i
+      );
+    }
+    assert.equal(calls.length, 0, 'a refused caller must never reach the claude CLI');
+  });
+
+  test('passes the session abort signal through to the Claude process runner', async () => {
+    const calls = [];
+    const results = [authResult(), reviewResult()];
+    const run = async (options) => {
+      calls.push(options);
+      return results.shift();
+    };
+    const abort = new AbortController();
+    const tools = await toolsWith({ run });
+    await tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'plan', abort: abort.signal });
+    assert.equal(calls[0].signal, abort.signal);
+    assert.equal(calls[1].signal, abort.signal);
+  });
+
+  test('rejects immediately when the session was already canceled', async () => {
+    const calls = [];
+    const run = async (options) => {
+      calls.push(options);
+      return authResult();
+    };
+    const abort = new AbortController();
+    abort.abort();
+    const tools = await toolsWith({ run });
+    await assert.rejects(
+      tools.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build', abort: abort.signal }),
+      /canceled/i
+    );
+    assert.equal(calls.length, 0);
+  });
+
+  test('rejects API-key, proxy, and non-subscription auth, naming what it found', async () => {
     for (const invalid of [
       { authMethod: 'api_key' },
       { apiProvider: 'bedrock' },
       { subscriptionType: 'api' },
       { loggedIn: false },
     ]) {
-      const tools = createClaudeTools({ run: async () => authResult(invalid) });
+      const tools = await toolsWith({ run: async () => authResult(invalid) });
       await assert.rejects(
-        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace' }),
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
         /first-party Claude Pro or Max/i
       );
     }
+    const tools = await toolsWith({ run: async () => authResult({ authMethod: 'api_key' }) });
+    await assert.rejects(
+      tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      /found .*authMethod=api_key/i
+    );
+  });
+
+  test('a failing auth check reports the exit code and stderr detail', async () => {
+    const tools = await toolsWith({
+      run: async () => ({ code: 1, stdout: '', stderr: 'boom: keychain locked\nsecond line' }),
+    });
+    await assert.rejects(
+      tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+      (error) => {
+        assert.match(error.message, /exit code 1/);
+        assert.match(error.message, /boom: keychain locked/);
+        assert.doesNotMatch(error.message, /second line/);
+        assert.match(error.message, /claude auth login/);
+        return true;
+      }
+    );
   });
 
   test('rejects an unstructured review or a response from another model', async () => {
-    const badSignal = createClaudeTools({
+    const badSignal = await toolsWith({
       run: async (options) => options.args[0] === 'auth' ? authResult() : reviewResult('Looks good'),
     });
     await assert.rejects(
-      badSignal.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace' }),
+      badSignal.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' }),
       /required PLAN_APPROVED or PLAN_REVISE/i
     );
 
-    const wrongModel = createClaudeTools({
+    const wrongModel = await toolsWith({
       run: async (options) => options.args[0] === 'auth'
         ? authResult()
         : { ...reviewResult(), stdout: JSON.stringify({ result: 'PLAN_APPROVED', modelUsage: { 'claude-sonnet-5': {} } }) },
     });
     await assert.rejects(
-      wrongModel.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace' }),
+      wrongModel.fusion_claude_review.execute({ packet: 'plan' }, { directory: 'C:/workspace', agent: 'build' }),
       /pinned claude-fable-5/i
     );
+  });
+
+  test('a missing claude executable produces an actionable install error', async () => {
+    // No injected runner: this exercises the real spawn wrapper. The empty
+    // PATH directory guarantees resolution fails on every platform.
+    const emptyBin = fs.mkdtempSync(path.join(os.tmpdir(), 'fusion-claude-nobin-'));
+    try {
+      const tools = await toolsWith({ environment: { PATH: emptyBin } });
+      await assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build' }),
+        (error) => {
+          assert.match(error.message, /native build/i);
+          assert.match(error.message, /npm shim/i);
+          return true;
+        }
+      );
+    } finally {
+      fs.rmSync(emptyBin, { recursive: true, force: true });
+    }
   });
 });
