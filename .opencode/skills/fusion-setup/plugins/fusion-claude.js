@@ -149,25 +149,26 @@ function runClaudeProcess({ args, input = "", cwd, env, timeoutMs, maxOutputByte
       terminationReason ??= reason;
       if (killed) return;
       killed = true;
-      child.kill();
-      escalation = setTimeout(() => {
-        // On Windows, child.kill only signals the direct child, but Claude
-        // Code is a multi-process CLI - so a plain SIGKILL can orphan its
-        // grandchildren. taskkill /T /F terminates the whole process tree.
-        if (process.platform === "win32") {
-          const killer = spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
-            shell: false,
-            windowsHide: true,
-            stdio: "ignore",
-          });
-          // The child may already be dead, or taskkill may be absent; a
-          // failure here must never crash the host.
-          killer.on("error", () => {});
-          killer.unref?.();
-        } else {
-          child.kill("SIGKILL");
-        }
-      }, KILL_GRACE_MS);
+      if (process.platform === "win32") {
+        // On Windows, child.kill terminates only the direct process, and it
+        // does so immediately - orphaning Claude Code's helper processes
+        // before any delayed tree kill could still find them. taskkill /T /F
+        // must therefore run FIRST, while the root pid still anchors the
+        // tree. child.kill is the fallback if taskkill cannot start at all,
+        // and the escalation below is a last-resort direct kill in case
+        // taskkill ran but could not terminate the child.
+        const killer = spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], {
+          shell: false,
+          windowsHide: true,
+          stdio: "ignore",
+        });
+        killer.on("error", () => child.kill());
+        killer.unref?.();
+        escalation = setTimeout(() => child.kill(), KILL_GRACE_MS);
+      } else {
+        child.kill();
+        escalation = setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+      }
       escalation.unref?.();
       // Hard deadline: if the child ignores the kill and never emits 'close',
       // finish() would otherwise never run. Force it after the escalation has

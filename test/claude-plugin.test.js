@@ -511,6 +511,43 @@ describe('fusion Claude Code bridge', () => {
     }
   });
 
+  // The tree-kill guarantee is Windows-specific (taskkill /T); on POSIX the
+  // bridge kills only the direct child, so this proof is skipped there.
+  test('canceling kills the whole process tree, including a detached grandchild', { skip: process.platform !== 'win32' }, async () => {
+    // Claude Code is a multi-process CLI. The fake child spawns a detached
+    // grandchild (plain node blocking forever, NODE_OPTIONS stripped so the
+    // hook does not recurse) and then blocks itself; after the cancel BOTH
+    // pids must be gone, which on Windows only a tree kill can guarantee.
+    const hookSource = [
+      'const fs = require("node:fs");',
+      'const path = require("node:path");',
+      'const { spawn } = require("node:child_process");',
+      'fs.writeFileSync(path.join(__dirname, "tree-child.pid"), String(process.pid));',
+      'const env = { ...process.env };',
+      'delete env.NODE_OPTIONS;',
+      `const grandchild = spawn(process.execPath, ["-e", ${JSON.stringify(BLOCK_FOREVER)}], { detached: true, stdio: "ignore", env });`,
+      'fs.writeFileSync(path.join(__dirname, "tree-grandchild.pid"), String(grandchild.pid));',
+      BLOCK_FOREVER,
+    ].join('\n');
+    const { bin, environment } = fakeClaudeBin(hookSource);
+    try {
+      const abort = new AbortController();
+      const tools = await toolsWith({ environment });
+      const pending = assert.rejects(
+        tools.fusion_claude_status.execute({}, { directory: 'C:/workspace', agent: 'build', abort: abort.signal }),
+        /canceled/i
+      );
+      const childPid = await readPidWhenReady(path.join(bin, 'tree-child.pid'));
+      const grandchildPid = await readPidWhenReady(path.join(bin, 'tree-grandchild.pid'));
+      abort.abort();
+      await pending;
+      await waitForExit(childPid);
+      await waitForExit(grandchildPid, 10000);
+    } finally {
+      fs.rmSync(bin, { recursive: true, force: true });
+    }
+  });
+
   test('a slow auth check times out and reports the configured budget', async () => {
     const { bin, environment } = fakeClaudeBin(BLOCK_FOREVER);
     try {
