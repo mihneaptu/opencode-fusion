@@ -21,6 +21,8 @@
   --accent-soft: rgba(0, 102, 204, 0.08);
   --accent-line: rgba(0, 102, 204, 0.22);
   --selection: rgba(0, 102, 204, 0.18);
+  /* Lighter end of the accent ramp: gradient fills (Fusion bar, hero word). */
+  --accent-bright: #4a90e2;
 
   /* Secondary semantic hue (warm amber) - "edits" role. */
   --secondary: #9a5b00;
@@ -29,6 +31,7 @@
 
   /* Success green (diagram "verified" end state) + lane hatch texture. */
   --ok: #1a7f37;
+  --ok-soft: rgba(26, 127, 55, 0.08);
   --hatch: rgba(29, 29, 31, 0.04);
 
   /* Logo-only orange: more vivid than --secondary, which is tuned for text
@@ -93,6 +96,8 @@
   --shadow-sm: 0 1px 2px rgba(17, 24, 39, 0.05);
   --shadow-md: 0 6px 24px -8px rgba(17, 24, 39, 0.12);
   --shadow-lg: 0 24px 60px -28px rgba(17, 24, 39, 0.22);
+  /* Recessed track depth (cost bars) - an inset, not a drop shadow. */
+  --inset-shadow: inset 0 1px 2px rgba(17, 24, 39, 0.07);
 
   /* Motion */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -120,12 +125,14 @@ html[data-theme="dark"] {
   --accent-soft: rgba(56, 139, 253, 0.15);
   --accent-line: rgba(56, 139, 253, 0.4);
   --selection: rgba(56, 139, 253, 0.32);
+  --accent-bright: #58a6ff;
 
   --secondary: #d29922;
   --secondary-soft: rgba(210, 153, 34, 0.15);
   --secondary-line: rgba(210, 153, 34, 0.4);
 
   --ok: #3fb950;
+  --ok-soft: rgba(63, 185, 80, 0.12);
   --hatch: rgba(240, 246, 252, 0.05);
 
   --mark-orange: #f0883e;
@@ -149,6 +156,7 @@ html[data-theme="dark"] {
   --shadow-sm: 0 1px 2px rgba(1, 4, 9, 0.4);
   --shadow-md: 0 6px 24px -8px rgba(1, 4, 9, 0.55);
   --shadow-lg: 0 24px 60px -28px rgba(1, 4, 9, 0.7);
+  --inset-shadow: inset 0 1px 2px rgba(1, 4, 9, 0.45);
 
   color-scheme: dark;
 }
@@ -165,6 +173,8 @@ html[data-theme="dark"] {
    transform) so hover/press feedback is not clobbered after first paint. */
 html.theme-ready body,
 html.theme-ready .pill,
+html.theme-ready .section-eyebrow,
+html.theme-ready .swim-title,
 html.theme-ready .cost-panel,
 html.theme-ready .hero-diagram,
 html.theme-ready .swim-panel,
@@ -290,13 +300,34 @@ strong { color: var(--text-high); font-weight: 600; }
   padding-block: var(--section-pad);
 }
 
-/* A single quiet hairline separates major movements of the page.
+/* A single quiet hairline separates major movements of the page, dissolving
+   before it hits the viewport edges instead of running hard into them.
    #problem is excluded: it blends out of the hero instead of a hard edge. */
-.section + .section { border-top: 1px solid var(--border); }
+.section + .section { position: relative; }
+.section + .section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 16%, var(--border-strong) 84%, transparent);
+}
 
 .section-head {
   max-width: 42rem;
   margin-bottom: clamp(2.5rem, 1.5rem + 3vw, 4.5rem);
+}
+/* Eyebrow: tiny mono label above a section title; editorial rhythm +
+   wayfinding. Same vocabulary as docs-kicker, tinted with the accent. */
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-bottom: var(--space-sm);
 }
 
 .section-title {
@@ -351,11 +382,14 @@ strong { color: var(--text-high); font-weight: 600; }
 .btn-primary {
   background-color: var(--accent);
   color: var(--accent-ink);
+  /* Quiet sheen + top inner highlight: polished surface, not a flat fill. */
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0) 55%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 .btn-primary:hover {
   background-color: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 .btn-primary:active { transform: scale(0.96); box-shadow: none; }
 
@@ -539,6 +573,15 @@ html[data-theme="dark"] .theme-toggle .icon-moon {
   color: var(--accent-strong);
 }
 .wordmark-accent { margin-left: 0.15em; }
+/* Hero-only: the word carries the brand ramp (blue fusing into amber, like
+   the mark). --accent-strong for the same dark-mode AA reason as the flat
+   wordmark above; that flat color is also the no-background-clip fallback. */
+.hero-fusion {
+  background: linear-gradient(100deg, var(--accent-strong) 15%, var(--mark-orange) 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 .nav {
   display: flex;
@@ -935,8 +978,9 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   line-height: 1.3;
   color: var(--text-high);
 }
-.swim-title-main { grid-column: 1; }
-.swim-title-side { grid-column: 3; }
+/* Lane titles carry the role hues used by the flow cards below. */
+.swim-title-main { grid-column: 1; color: var(--accent-strong); }
+.swim-title-side { grid-column: 3; color: var(--secondary); }
 .swim-box {
   display: grid;
   place-content: center;
@@ -952,12 +996,13 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   font-weight: 500;
   letter-spacing: -0.01em;
   line-height: 1.35;
+  box-shadow: var(--shadow-sm);
 }
 .swim-l { grid-column: 1; }
 .swim-s { grid-column: 3; }
 /* Entry and exit states, tinted like the reference: blue in, green out. */
-.swim-box-start { border-color: var(--accent); }
-.swim-box-done { border-color: var(--ok); }
+.swim-box-start { border-color: var(--accent); background: var(--accent-soft); }
+.swim-box-done { border-color: var(--ok); background: var(--ok-soft); }
 /* Sidekick boxes span the two main-agent rows they converse with, so both
    the outgoing and returning arrow land on their edge. */
 .swim-ce { grid-row: 2 / 4; }
@@ -1170,6 +1215,8 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
 /* No hover lift: feature items are not interactive (see .flow-card note). */
 .feature-item-lead {
   background: var(--surface);
+  /* Faint accent bloom in the top-right corner marks the lead card. */
+  background-image: radial-gradient(130% 150% at 100% 0%, var(--accent-soft) 0%, transparent 55%);
   border: 1px solid var(--accent-line);
 }
 .feature-icon {
@@ -1178,10 +1225,11 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-high);
-  box-shadow: var(--shadow-sm);
+  /* Soft accent tile: white-on-grey read as unstyled next to the solid
+     lead icon; the tint gives the grid one coherent accent rhythm. */
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  color: var(--accent-strong);
 }
 .feature-icon svg { width: 22px; height: 22px; }
 .feature-icon-accent { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); box-shadow: none; }
@@ -1247,6 +1295,7 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
   overflow: hidden;
+  box-shadow: var(--inset-shadow);
 }
 .bar-fill {
   height: 100%;
@@ -1254,7 +1303,9 @@ html[data-theme="dark"] .hero-wordmark-dark { display: block; }
   border-radius: var(--radius-pill);
 }
 .bar-baseline { background: var(--border-strong); }
-.bar-fusion { background: var(--accent); }
+/* Fusion bar runs the accent ramp (deep -> bright) so the eye reads the
+   shorter bar as the vivid one. */
+.bar-fusion { background: linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 100%); }
 /* The bars draw once the panel reveals: baseline first, then Fusion stops
    short - the size of the gap is the message. One-shot, scroll-gated. */
 .js .cost-panel.reveal .bar-fill { width: 0; }
@@ -1418,6 +1469,10 @@ html[data-theme="dark"] .term {
   border-radius: 50%;
   background: rgba(240, 246, 252, 0.14);
 }
+/* macOS traffic lights: the window reads as a terminal at a glance. */
+.term-dot:nth-child(1) { background: #ff5f57; }
+.term-dot:nth-child(2) { background: #febc2e; }
+.term-dot:nth-child(3) { background: #28c840; }
 .term-title {
   margin-right: auto;
   font-family: var(--font-mono);
@@ -1655,9 +1710,18 @@ html[data-theme="dark"] .term {
    Brand + inline nav, then a quiet meta row. */
 .site-footer {
   position: relative;
-  border-top: 1px solid var(--border);
   background: var(--bg);
   padding-block: clamp(2.5rem, 1.5rem + 3vw, 4rem) clamp(1.75rem, 1.2rem + 1.5vw, 2.5rem);
+}
+/* Same edge-fading hairline as the section separators. */
+.site-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-strong) 16%, var(--border-strong) 84%, transparent);
 }
 .footer-shell {
   display: grid;
@@ -2184,6 +2248,17 @@ html[data-theme="dark"] .term {
 @media (max-width: 619px) {
   .swim-box { min-height: 2.5rem; padding: var(--space-2xs) var(--space-xs); }
   .swim-arrow i { display: none; }
+  /* Stacked step cards get a vertical connector in the grid gap, echoing
+     the horizontal one between columns on desktop. */
+  .flow-step:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 1px;
+    height: var(--space-md);
+    background: var(--border-strong);
+  }
 }
 
 /* =========================================================================
@@ -2272,4 +2347,12 @@ html[data-theme="dark"] .term {
   }
   .install-hero::before,
   .term-caret { display: none !important; }
+  /* Gradient text needs its background to render; printers usually drop
+     backgrounds, so fall back to the flat accent underneath. */
+  .hero-fusion {
+    background: none;
+    -webkit-text-fill-color: var(--accent-strong);
+  }
+  /* Ink-friendly dots to match the retinted terminal chrome. */
+  .term-dot { background: #aaaaaa; }
 }
