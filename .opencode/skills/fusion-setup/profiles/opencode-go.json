@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "subagent_depth": 2,
   "model": "opencode-go/glm-5.2",
   "small_model": "opencode-go/deepseek-v4-flash",
   "provider": {

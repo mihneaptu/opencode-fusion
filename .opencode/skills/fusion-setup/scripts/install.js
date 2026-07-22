@@ -92,6 +92,10 @@ function validateConfigObject(value, label) {
     !Array.isArray(value.enabled_providers)
     || value.enabled_providers.some((provider) => typeof provider !== 'string' || !provider)
   )) return `${label} "enabled_providers" must be an array of provider ids`;
+  if ('subagent_depth' in value
+    && (!Number.isInteger(value.subagent_depth) || value.subagent_depth < 0)) {
+    return `${label} "subagent_depth" must be a non-negative integer`;
+  }
   if ('compaction' in value) {
     if (!isPlainObject(value.compaction)) return `${label} "compaction" must be an object`;
     if ('prune' in value.compaction && typeof value.compaction.prune !== 'boolean') {
@@ -484,6 +488,15 @@ function addClaudePermission(config) {
   };
 }
 
+function ensureFusionSubagentDepth(config, existing) {
+  return {
+    ...config,
+    // Fusion permits build -> sidekick -> read-only helper. OpenCode 1.18.2+
+    // defaults this limit to 1, which blocks the second task call.
+    subagent_depth: Math.max(config.subagent_depth ?? 0, existing.subagent_depth ?? 0, 2),
+  };
+}
+
 function apply(opts) {
   if (!opts.config && !opts.profile) fail('apply requires --profile <name> and/or --config <fragment.json>');
   for (const role of opts.roles) {
@@ -554,7 +567,7 @@ function apply(opts) {
 
   const sources = selectedSources(opts);
   for (const source of sources) inspectDestination(opts.configDir, source.to);
-  let merged = deepMerge(existing, fragment);
+  let merged = ensureFusionSubagentDepth(deepMerge(existing, fragment), existing);
   if (opts.extras.includes('claude')) merged = addClaudePermission(merged);
   const mergedError = validateConfigObject(merged, 'merged config');
   if (mergedError) fail(mergedError);

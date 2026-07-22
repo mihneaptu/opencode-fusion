@@ -44,6 +44,7 @@ for (const name of EXPECTED_PROFILES) {
     test('is a config fragment with the opencode schema', () => {
       assert.equal(typeof profile, 'object');
       assert.equal(profile.$schema, 'https://opencode.ai/config.json');
+      assert.equal(profile.subagent_depth, 2, 'nested sidekick delegation must be enabled');
     });
 
     test('assigns the core roles and only known roles', () => {
