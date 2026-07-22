@@ -70,6 +70,7 @@ describe('fusion-setup deterministic installer', () => {
     assert.equal(result.status, 0, result.stderr);
     const config = readJson(path.join(dir, 'opencode.json'));
     assert.equal(config.model, 'prov/main-model');
+    assert.equal(config.subagent_depth, 2, 'Fusion requires build -> sidekick -> helper nesting');
     assert.equal(config.agent.sidekick.model, 'prov/side-model');
     for (const role of ['build', 'plan', 'sidekick']) {
       assert.ok(fs.existsSync(path.join(dir, 'agent', `${role}.md`)), `missing agent/${role}.md`);
@@ -111,6 +112,24 @@ describe('fusion-setup deterministic installer', () => {
     const first = readJson(path.join(dir, 'opencode.json'));
     assert.equal(run(applyArgs()).status, 0);
     assert.deepEqual(readJson(path.join(dir, 'opencode.json')), first);
+  });
+
+  test('raises a shallow subagent limit to 2 and preserves a larger limit', () => {
+    writeJson(path.join(dir, 'opencode.json'), { subagent_depth: 1, theme: 'keep-me' });
+    assert.equal(run(applyArgs()).status, 0);
+    assert.equal(readJson(path.join(dir, 'opencode.json')).subagent_depth, 2);
+
+    const secondDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fusion-installer-depth-'));
+    try {
+      writeJson(path.join(secondDir, 'opencode.json'), { subagent_depth: 4 });
+      const result = run([
+        'apply', '--config', fragmentPath, '--config-dir', secondDir,
+      ]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(readJson(path.join(secondDir, 'opencode.json')).subagent_depth, 4);
+    } finally {
+      fs.rmSync(secondDir, { recursive: true, force: true });
+    }
   });
 
   test('undo restores a prompt that existed before apply', () => {
@@ -271,6 +290,9 @@ describe('fusion-setup deterministic installer', () => {
   test('malformed nested Fusion config fields are refused', () => {
     for (const invalid of [
       { ...fragment, enabled_providers: 'prov' },
+      { ...fragment, subagent_depth: -1 },
+      { ...fragment, subagent_depth: 1.5 },
+      { ...fragment, subagent_depth: '2' },
       { ...fragment, provider: { prov: { models: [] } } },
       { ...fragment, provider: { prov: { options: [] } } },
       { ...fragment, provider: { prov: { models: { model: 'not-an-object' } } } },
@@ -514,6 +536,16 @@ describe('fusion-setup deterministic installer', () => {
       assert.ok(fs.existsSync(path.join(dir, 'agent', `${role}.md`)), `missing agent/${role}.md`);
       assert.ok(manifest.roles.includes(role), `manifest missing role ${role}`);
     }
+  });
+
+  test('a profile preserves an existing subagent depth above the Fusion minimum', () => {
+    writeJson(path.join(dir, 'opencode.json'), { subagent_depth: 4, theme: 'keep-me' });
+    const result = run(['apply', '--profile', 'opencode-zen', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+
+    const config = readJson(path.join(dir, 'opencode.json'));
+    assert.equal(config.subagent_depth, 4);
+    assert.equal(config.theme, 'keep-me');
   });
 
   test('a --config fragment overrides the profile it is applied with', () => {

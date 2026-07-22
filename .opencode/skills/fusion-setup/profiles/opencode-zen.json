@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "subagent_depth": 2,
   "model": "opencode/claude-fable-5",
   "small_model": "opencode/deepseek-v4-flash",
   "provider": {

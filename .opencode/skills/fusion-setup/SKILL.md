@@ -133,6 +133,7 @@ Build a config FRAGMENT with this exact structure and save it to a temporary fil
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
+  "subagent_depth": 2,
   "model": "<main-provider>/<main-model-id>",
   "provider": {
     "<main-provider-id>": { "npm": "...", "options": {}, "models": {} },
@@ -150,6 +151,7 @@ Build a config FRAGMENT with this exact structure and save it to a temporary fil
 ```
 
 Notes:
+- Keep `"subagent_depth": 2`. OpenCode 1.18.2+ defaults to `1`, which lets build start sidekick but prevents sidekick from starting its permitted read-only explore/research helper. The installer enforces a minimum of `2` and preserves a larger existing value.
 - Replace the two `"<...-provider-id>": { ... }` placeholder lines under `provider` with the ACTUAL provider block(s) you built in Step 2. If your main and sidekick share one provider, that is a single block (see Step 2 on merging models); if they use different providers, include one block each. The placeholder shape shown is not valid config on its own - it must be filled in.
 - opencode auto-loads every markdown file in `~/.config/opencode/agent/` as an agent definition: frontmatter supplies the role's `mode` and `permission`, and the body is its prompt. No `prompt` fields belong in opencode.json - Step 4 installs the files that carry them.
 - Backup and merge are the installer's job (Step 4): it backs up any existing config to `opencode.json.backup.<timestamp>` and deep-merges the fragment - your fragment wins on conflicting keys, everything else in the user's config is preserved. Never silently discard an existing config: if the user explicitly wants a clean overwrite instead of a merge, they should move the old `opencode.json` aside first.

@@ -209,6 +209,21 @@ describe('agent frontmatter contracts', () => {
     }
   });
 
+  test('agent frontmatter leaves sampling parameters to the selected model', () => {
+    for (const [role, agent] of Object.entries(agents)) {
+      for (const key of ['temperature', 'top_p', 'top_k', 'topP', 'topK']) {
+        const hasSamplingOverride = linesOf(agent.frontmatter).some(
+          (line) => new RegExp(`^\\s*${key}\\s*:`).test(line)
+        );
+        assert.equal(
+          hasSamplingOverride,
+          false,
+          `contract violated: agent/${role}.md must not set ${key}; model families enforce incompatible sampling rules`
+        );
+      }
+    }
+  });
+
   test('build denies edit, grep, glob, and list', () => {
     for (const key of ['edit', 'grep', 'glob', 'list']) {
       assertPermissionValue('build', key, 'deny');

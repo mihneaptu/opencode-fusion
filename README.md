@@ -140,6 +140,7 @@ Write `~/.config/opencode/opencode.json` yourself. Pick your own models; the str
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
+  "subagent_depth": 2,
   "model": "<main-provider>/<main-model-id>",
   "provider": {
     "<your provider blocks here>": {}
@@ -215,9 +216,11 @@ Change the value, add a `provider` block if the model uses a new provider, and r
 The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit the installed `~/.config/opencode/agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually: do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
 <details>
-<summary><b>Optional hardening</b></summary>
+<summary><b>Depth requirement and optional hardening</b></summary>
 
-These documented opencode config keys make a local Fusion setup cheaper, more private, and more deterministic. All optional:
+`"subagent_depth": 2` (top level) is required when sidekick delegates a read-only lookup to explore or research. OpenCode 1.18.2+ defaults to `1`, which allows the main agent to start sidekick but blocks that nested helper call. The Fusion installer sets a minimum of `2` and preserves larger existing values.
+
+The remaining documented keys make a local Fusion setup cheaper, more private, and more deterministic. They are optional:
 
 - `"small_model": "<provider>/<cheap-model>"` (top level): opencode runs background tasks like session-title generation on a small model; if you do not set this it can fall back to a remote default. Pin it to one of your own cheap local models to keep everything on your providers.
 - `"enabled_providers": ["..."]` (top level): allowlist the providers opencode loads, so a stray credential elsewhere cannot add models to the picker.
@@ -231,7 +234,7 @@ These documented opencode config keys make a local Fusion setup cheaper, more pr
 
 - **No dynamic mid-session routing.** Devin Fusion's second technique, swapping the active model mid-task during context compaction, needs Devin's closed product surface and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
 - **Config loads at startup.** opencode reads config once when it launches. Any change to `opencode.json` or an agent prompt requires a full restart to take effect.
-- **Loop protection is permission-based.** This opencode version has no delegation budget or depth cap in its agent schema, so runaway nesting is bounded by the `task` permission graph (the sidekick may spawn only read-only searchers), not by numeric limits.
+- **Loop protection has two layers.** `subagent_depth: 2` caps Fusion at the required main -> executor -> read-only helper chain. The `task` permission graph independently controls which named agents each role may launch, so allowing the second level does not expose arbitrary subagents.
 - **Targets opencode 1.x.** These files are written against opencode's stable 1.x config schema (verified on 1.18.x). The opencode v2 beta (`opencode2`) uses a different schema (plural `agents`, array-based `permissions`) and is not supported by this repo yet.
 
 ## FAQ
