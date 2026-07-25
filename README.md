@@ -287,6 +287,8 @@ The main agent's prompt carries an explicit escalation ladder, so the retry loop
 
 The mechanical block is on the main agent's *tools*, not on the content of its specs. Dictating an exact diff was always within the rules; the prompt makes it an explicit step instead of an emergent discovery.
 
+The ladder assumes the sidekick *answers*. If its provider is down or out of quota, no rung helps - the main agent has no path to disk at all, and the honest outcome is a reported blocker. Point `agent.sidekick.model` at a working provider and restart, or reach for the [escape hatch](#escape-hatch) if you need to keep moving in that session.
+
 </details>
 
 <details>
