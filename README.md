@@ -110,15 +110,15 @@ If your models come from a subscription, skip the per-role interview: name the s
 
 | Profile | Subscription | Main / sidekick | Beyond the core roles |
 |---------|--------------|-----------------|-----------------------|
-| `opencode-go` | [OpenCode Go](https://opencode.ai/go) | Kimi K3 / DeepSeek V4 Flash | research, design, reviewer, vision |
-| `opencode-zen` | [OpenCode Zen](https://opencode.ai/docs/zen/) pay-as-you-go | Claude Opus 5 / GLM 5.2 | research, design, reviewer |
+| `opencode-go` | [OpenCode Go](https://opencode.ai/go) | Kimi K3 / DeepSeek V4 Pro | research, design, reviewer |
+| `opencode-zen` | [OpenCode Zen](https://opencode.ai/docs/zen/) pay-as-you-go | Claude Opus 5 / GPT-5.6 Luna | research, design, reviewer |
 | `opencode-zen-free` | OpenCode Zen free-tier models | Big Pickle / MiMo V2.5 Free | vision |
-| `chatgpt` | ChatGPT Plus or Pro | GPT-5.6 Sol / GPT-5.6 Luna | core roles only |
-| `github-copilot` | GitHub Copilot | Claude Sonnet 5 / GPT-5.4 Mini | research, reviewer |
+| `chatgpt` | ChatGPT Plus or Pro | GPT-5.6 Sol / GPT-5.6 Luna | reviewer |
+| `github-copilot` | GitHub Copilot | Claude Sonnet 5 / GPT-5.6 Luna | research, reviewer |
 
 Authentication stays out-of-band: connect the provider once with `opencode auth login` (or `/connect` inside opencode). Profiles contain no keys, adapters, or endpoints (opencode knows these providers natively), and the skill never asks for a key in chat. To adjust a pick, keep the profile and add a small override fragment (`--profile <name> --config <delta.json>`; your fragment wins on conflicts).
 
-Four notes. `opencode-go` and `opencode-zen-free` include a `vision` role because their main models cannot read images. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor, so the cross-vendor review benefit needs a one-line reviewer override if you have a second provider; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-opus-5` if you want max quality and accept the burn rate. There is no Claude Pro/Max provider profile: a Claude subscription login cannot be placed in `opencode.json` or exposed as `agent.build.model`. The optional bridge below can ask the official Claude Code CLI for a constrained plan review. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
+Four notes. `opencode-zen-free` includes a `vision` role because its main model cannot read images; the other profiles lead with models that read images directly. `opencode-zen-free` runs on free-period models (Big Pickle is a stealth model). OpenCode's policy allows prompts to be used for training while a model is free, so keep sensitive code off this profile. The single-vendor `chatgpt` profile keeps every role on one vendor - its reviewer runs a different model (GPT-5.6 Terra) than the main agent, but a user with a second provider still gets a stronger check by overriding the reviewer across vendors; `github-copilot` defaults to Claude Sonnet 5 as the main for credit-cost sanity; override `agent.build.model` to `github-copilot/claude-opus-5` if you want max quality and accept the burn rate. There is no Claude Pro/Max provider profile: a Claude subscription login cannot be placed in `opencode.json` or exposed as `agent.build.model`. The optional bridge below can ask the official Claude Code CLI for a constrained plan review. Subscription lineups rotate; `npm run check-profiles` verifies every shipped id against [models.dev](https://models.dev), and CI runs it on each push.
 
 ### Optional Claude Pro/Max plan review
 
