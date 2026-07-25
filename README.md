@@ -243,13 +243,13 @@ Say `undo fusion`, or run the bundled installer directly:
 node <skill-dir>/scripts/install.js undo
 ```
 
-It restores `opencode.json` to its exact pre-install bytes from the recorded manifest, removes only the files Fusion created, restores any it replaced, and keeps every timestamped backup. If you edited an installed agent prompt or the config by hand afterwards, it refuses and names the conflict rather than overwriting your work. Restart opencode when it finishes; it falls back to its built-in build/plan agents.
+It restores `opencode.json` to its exact pre-install bytes, removes only the files Fusion created, restores any it replaced, and keeps every backup. If you hand-edited an installed prompt or the config afterwards, it refuses and names the conflict rather than overwriting your work. Restart opencode when it finishes.
 
-Undo is all or nothing: there is no switch that suspends Fusion for one session and restores it later. Fusion's `build` and `plan` also replace opencode's built-in primaries, so out of the box there is no unrestricted primary to fall back to. If you want one, add it yourself.
+Undo is all or nothing - there is no switch that suspends Fusion for a session. And since `build` and `plan` replace opencode's built-in primaries, out of the box there is no unrestricted primary to fall back to either.
 
 ### Escape hatch
 
-Create `~/.config/opencode/agent/normal.md`:
+If you want one, create `~/.config/opencode/agent/normal.md`:
 
 ```markdown
 ---
@@ -260,12 +260,12 @@ mode: primary
 You are a standard opencode agent with no delegation requirements.
 ```
 
-Restart once, then `Tab` cycles through the primary agents mid-session, so you can switch to it for a quick fix and switch back. Leave out the `model` key and it follows your top-level default. The installer never manages this file, so `undo` and reapply both leave it in place.
+Restart once, then `Tab` cycles through the primary agents mid-session. Leave out the `model` key and it follows your top-level default. The installer never manages this file, so `undo` and reapply leave it alone.
 
-This does not weaken the split: switching primaries is a keybind you press, not a tool the main agent can call, so `build` still cannot edit and still cannot unrestrict itself. Two things to know before you rely on it:
+This does not weaken the split: switching primaries is a keybind you press, not a tool the main agent can call. Two caveats:
 
-- **It has no guardrails at all**, not just no delegation. It inherits opencode's defaults, so destructive shell commands that the sidekick would ask about run without a prompt.
-- **The transcript is shared between primary agents.** After switching, the new agent reads earlier turns as its own work - expect `build` to apologise for a direct edit the escape hatch made. Switch in a fresh session when that would confuse things.
+- **No guardrails at all**, not just no delegation. It inherits opencode's defaults, so destructive shell commands the sidekick would ask about run without a prompt.
+- **The transcript is shared between primary agents.** After switching, the new agent reads earlier turns as its own - expect `build` to apologise for a direct edit the escape hatch made. Start a fresh session if that matters.
 
 ## Limitations
 
@@ -287,7 +287,7 @@ The main agent's prompt carries an explicit escalation ladder, so the retry loop
 
 The mechanical block is on the main agent's *tools*, not on the content of its specs. Dictating an exact diff was always within the rules; the prompt makes it an explicit step instead of an emergent discovery.
 
-The ladder assumes the sidekick *answers*. If its provider is down or out of quota, no rung helps - the main agent has no path to disk at all, and the honest outcome is a reported blocker. Point `agent.sidekick.model` at a working provider and restart, or reach for the [escape hatch](#escape-hatch) if you need to keep moving in that session.
+The ladder assumes the sidekick *answers*. If its provider is down or out of quota, no rung helps: the main agent has no path to disk at all, and the outcome is a reported blocker. Repoint `agent.sidekick.model` and restart, or use the [escape hatch](#escape-hatch) to keep moving in that session.
 
 </details>
 
