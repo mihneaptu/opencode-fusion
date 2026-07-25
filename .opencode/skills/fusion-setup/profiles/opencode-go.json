@@ -7,7 +7,6 @@
     "opencode-go": {
       "models": {
         "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" },
-        "deepseek-v4-pro": { "name": "DeepSeek V4 Pro" },
         "kimi-k2.7-code": { "name": "Kimi K2.7 Code" },
         "kimi-k3": { "name": "Kimi K3" },
         "grok-4.5": { "name": "Grok 4.5" }
@@ -16,7 +15,7 @@
   },
   "agent": {
     "build": { "model": "opencode-go/kimi-k3" },
-    "sidekick": { "model": "opencode-go/deepseek-v4-pro" },
+    "sidekick": { "model": "opencode-go/deepseek-v4-flash" },
     "explore": { "model": "opencode-go/deepseek-v4-flash" },
     "research": { "model": "opencode-go/kimi-k2.7-code" },
     "design": { "model": "opencode-go/kimi-k3" },
