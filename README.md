@@ -235,6 +235,18 @@ The remaining documented keys make a local Fusion setup cheaper, more private, a
 
 </details>
 
+## Uninstall
+
+Say `undo fusion`, or run the bundled installer directly:
+
+```bash
+node <skill-dir>/scripts/install.js undo
+```
+
+It restores `opencode.json` to its exact pre-install bytes from the recorded manifest, removes only the files Fusion created, restores any it replaced, and keeps every timestamped backup. If you edited an installed agent prompt or the config by hand afterwards, it refuses and names the conflict rather than overwriting your work. Restart opencode when it finishes; it falls back to its built-in build/plan agents.
+
+Undo is all or nothing. There is no switch that suspends Fusion for one session and restores it later, and because the installed `build` and `plan` agents override opencode's built-ins, there is no unrestricted primary agent to fall back to while Fusion is installed.
+
 ## Limitations
 
 - **No dynamic mid-session routing.** Devin Fusion's second technique, swapping the active model mid-task during context compaction, needs Devin's closed product surface and is not possible in opencode. This repo implements the sidekick pattern only; model assignments are fixed per role at startup. It is an explicit non-goal, not a missing feature.
