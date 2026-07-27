@@ -618,7 +618,7 @@ describe('fusion-setup deterministic installer', () => {
   // only has to touch install.js and package.json.
   const bundleVersion = () => {
     const source = fs.readFileSync(installer, 'utf8');
-    const match = source.match(/const BUNDLE_VERSION = '([^']+)';/);
+    const match = source.match(/^const BUNDLE_VERSION = '([^']+)';/m);
     assert.ok(match, 'install.js must declare a literal BUNDLE_VERSION');
     return match[1];
   };
@@ -653,6 +653,27 @@ describe('fusion-setup deterministic installer', () => {
     assert.ok(!fs.existsSync(manifestPath), 'manifest not removed');
     const backups = fs.readdirSync(dir).filter((f) => f.startsWith('opencode.json.backup.'));
     assert.equal(backups.length, 1, 'undo must keep backups');
+  });
+
+  // A present bundleVersion must be a string. A non-string means the manifest
+  // was hand-edited or corrupted, so undo refuses rather than acting on it.
+  test('undo refuses a manifest whose bundleVersion is not a string', () => {
+    assert.equal(run(applyArgs(['--extras', 'plugin'])).status, 0);
+
+    const manifestPath = path.join(dir, '.fusion-install.json');
+    const manifest = readJson(manifestPath);
+    manifest.bundleVersion = 2;
+    writeJson(manifestPath, manifest);
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.notEqual(result.status, 0, 'undo must refuse an invalid bundleVersion');
+    assert.match(result.stderr, /invalid bundleVersion/);
+
+    const configPath = path.join(dir, 'opencode.json');
+    assert.ok(fs.existsSync(configPath), 'config removed despite refusal');
+    assert.equal(readJson(configPath).agent.sidekick.model, fragment.agent.sidekick.model);
+    assert.ok(fs.existsSync(path.join(dir, 'agent', 'build.md')), 'installed prompt removed despite refusal');
+    assert.ok(fs.existsSync(manifestPath), 'manifest removed despite refusal');
   });
 
   // --profile: bundled subscription profiles as the config fragment.

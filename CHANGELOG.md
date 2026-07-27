@@ -2,7 +2,7 @@
 
 Notable changes to this project. The version is the skill bundle's version; it
 is recorded as `bundleVersion` in `.fusion-install.json` when you install, so an
-installed copy can be traced back to a release.
+installed copy can be traced back to the release that applied it.
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -12,7 +12,10 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - The skill bundle now has a version. `install.js` records `bundleVersion` in
   `.fusion-install.json` and prints it in the apply plan, and `/fusion-status`
-  reports it, so an installed copy can be traced back to a release.
+  reports it, so an installed copy can be traced back to the release that
+  applied it. Like `installedAt`, it records the most recent apply: a reapply
+  that selects a subset of roles leaves the other managed files as an earlier
+  bundle installed them.
 - Repository, homepage, issue-tracker, and keyword metadata in `package.json`.
 
 ### Changed

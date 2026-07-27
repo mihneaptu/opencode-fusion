@@ -13,8 +13,10 @@ const path = require('node:path');
 const skillDir = path.join(__dirname, '..');
 const MANIFEST = '.fusion-install.json';
 const MANIFEST_VERSION = 2;
-// Bundle version: the released version of this skill bundle, recorded in the
-// manifest so an installed copy traces back to a release. The bundle ships
+// Bundle version: the released version of this skill bundle. Recorded in the
+// manifest to trace an install back to a release - like installedAt, it
+// describes the most recent apply, not every managed file, because a reapply
+// that selects a subset of roles leaves the rest untouched. The bundle ships
 // standalone, so it cannot read the repo's package.json at runtime; a contract
 // test keeps the two in sync instead.
 const BUNDLE_VERSION = '1.1.0';

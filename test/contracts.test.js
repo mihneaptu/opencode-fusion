@@ -744,7 +744,7 @@ describe('bundle inventory contracts', () => {
 describe('bundle version contract', () => {
   const skillDir = path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup');
   const source = fs.readFileSync(path.join(skillDir, 'scripts', 'install.js'), 'utf8');
-  const match = source.match(/const BUNDLE_VERSION = '([^']+)';/);
+  const match = source.match(/^const BUNDLE_VERSION = '([^']+)';/m);
 
   test('install.js declares a literal semver BUNDLE_VERSION', () => {
     assert.ok(match, 'contract violated: install.js must keep a literal BUNDLE_VERSION this test can read');
