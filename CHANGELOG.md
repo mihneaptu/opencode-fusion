@@ -39,6 +39,12 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   substitution. No entries were added to the bundled prompts: a shipped entry
   for a command the user's project does not define cannot verify that project,
   and only broadens a security-sensitive list.
+- An advisory CI lane runs the live enforcement tests against the opencode 2.0
+  beta. `FUSION_OPENCODE_BIN` selects which binary the integration harness
+  spawns, and the harness adapts its arguments: v2's `run` has no directory flag,
+  so the project directory is passed as the child process working directory, and
+  `--auto` is required because v2 otherwise rejects every permission request.
+  Explicit `deny` rules stay enforced, which is what the tests assert.
 
 ### Changed
 

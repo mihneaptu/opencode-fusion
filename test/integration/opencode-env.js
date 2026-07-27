@@ -18,6 +18,13 @@ function opencodeBin() {
   return bin && bin.trim() ? bin.trim() : 'opencode';
 }
 
+/** The v2 beta's `run` has no directory flag and rejects permission requests
+    unless --auto is passed, so the two binaries need different argument
+    shapes. Keyed off the binary name because v2 ships as `opencode2`. */
+function isV2(bin) {
+  return /(^|[\\/])opencode2(\.exe)?$/i.test(bin);
+}
+
 const repoRoot = path.join(__dirname, '..', '..');
 const PASSTHROUGH_ENV = new Set([
   'path',
@@ -132,15 +139,21 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
   return new Promise((resolve, reject) => {
     // Single command string avoids the Windows args-with-shell pitfalls;
     // temp paths never contain quotes.
-    const command = [
-      opencodeBin(),
-      'run',
-      `--dir "${envInfo.projectDir}"`,
-      `--agent ${agent}`,
-      '--log-level ERROR',
-      `"${message}"`,
-    ].join(' ');
-    const child = spawn(command, { env: envInfo.env, shell: true });
+    const bin = opencodeBin();
+    const command = (
+      isV2(bin)
+        ? [bin, 'run', `--agent ${agent}`, '--log-level error', '--auto', `"${message}"`]
+        : [
+            bin,
+            'run',
+            `--dir "${envInfo.projectDir}"`,
+            `--agent ${agent}`,
+            '--log-level ERROR',
+            `"${message}"`,
+          ]
+    ).join(' ');
+    // cwd is how v2 learns the project directory; v1 still gets --dir too.
+    const child = spawn(command, { cwd: envInfo.projectDir, env: envInfo.env, shell: true });
     child.stdin.end(); // opencode run waits for piped stdin until EOF on non-tty
     let stdout = '';
     let stderr = '';
@@ -181,4 +194,4 @@ function opencodeAvailable() {
   return probe.status === 0;
 }
 
-module.exports = { createEnv, runOpencode, opencodeAvailable, opencodeBin };
+module.exports = { createEnv, runOpencode, opencodeAvailable, opencodeBin, isV2 };
