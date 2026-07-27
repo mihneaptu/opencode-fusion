@@ -66,6 +66,29 @@ jobs:
       - name: Live enforcement tests against latest opencode
         run: npm run test:integration
 
+  # Advisory lane: opencode 2.0 reads v1-shaped config and translates it in
+  # memory, so this proves the enforcement guarantees survive that translation.
+  # The beta is a moving prerelease - never a merge gate.
+  integration-v2-canary:
+    name: integration (opencode 2.0 beta, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Install opencode 2.0 beta
+        run: npm install -g @opencode-ai/cli@next
+      - name: Record prerelease version
+        run: opencode2 --version
+      - name: Live enforcement tests against opencode 2.0 beta
+        run: npm run test:integration
+        env:
+          FUSION_OPENCODE_BIN: opencode2
+
   # Network lane: the offline `npm test` never touches the registry, so
   # profile model-id drift is caught here instead.
   check-profiles:

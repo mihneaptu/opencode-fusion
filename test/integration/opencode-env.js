@@ -11,6 +11,13 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawn, spawnSync } = require('node:child_process');
 
+/** The opencode executable under test. The v2 beta ships as `opencode2`
+    alongside v1, so CI can point the same suite at either one. */
+function opencodeBin() {
+  const bin = process.env.FUSION_OPENCODE_BIN;
+  return bin && bin.trim() ? bin.trim() : 'opencode';
+}
+
 const repoRoot = path.join(__dirname, '..', '..');
 const PASSTHROUGH_ENV = new Set([
   'path',
@@ -126,7 +133,7 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
     // Single command string avoids the Windows args-with-shell pitfalls;
     // temp paths never contain quotes.
     const command = [
-      'opencode',
+      opencodeBin(),
       'run',
       `--dir "${envInfo.projectDir}"`,
       `--agent ${agent}`,
@@ -149,7 +156,7 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
       }
       reject(
         new Error(
-          `opencode run --agent ${agent} timed out after ${timeoutMs}ms\nstderr: ${stderr.slice(-2000)}`
+          `${opencodeBin()} run --agent ${agent} timed out after ${timeoutMs}ms\nstderr: ${stderr.slice(-2000)}`
         )
       );
     }, timeoutMs);
@@ -166,7 +173,7 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
 
 /** True when an opencode binary is reachable on PATH. */
 function opencodeAvailable() {
-  const probe = require('node:child_process').spawnSync('opencode --version', {
+  const probe = require('node:child_process').spawnSync(`${opencodeBin()} --version`, {
     shell: true,
     encoding: 'utf8',
     timeout: 30000,
@@ -174,4 +181,4 @@ function opencodeAvailable() {
   return probe.status === 0;
 }
 
-module.exports = { createEnv, runOpencode, opencodeAvailable };
+module.exports = { createEnv, runOpencode, opencodeAvailable, opencodeBin };

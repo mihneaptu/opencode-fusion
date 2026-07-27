@@ -19,6 +19,21 @@ working directory. Build and plan agents should use the tool's working-directory
 parameter because `npm --prefix test-playground run lint` may not match their
 command allowlist.
 
+### opencode 2.0 canary
+
+`FUSION_OPENCODE_BIN` selects which executable the integration harness spawns;
+it defaults to `opencode`. To run the live suite against the v2 beta locally,
+install it with `npm install -g @opencode-ai/cli@next`, then set the variable to
+`opencode2` before `npm run test:integration`:
+
+```powershell
+$env:FUSION_OPENCODE_BIN = 'opencode2'
+npm run test:integration
+```
+
+The CI job for this is advisory only, because the v2 beta and the way it
+translates v1-shaped config are still changing.
+
 ## Manual verification
 
 ### Skill installation
