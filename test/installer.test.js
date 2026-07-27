@@ -614,6 +614,47 @@ describe('fusion-setup deterministic installer', () => {
     assert.match(result.stderr, /nothing recorded to undo/);
   });
 
+  // Read the shipped constant rather than hard-coding it, so a release bump
+  // only has to touch install.js and package.json.
+  const bundleVersion = () => {
+    const source = fs.readFileSync(installer, 'utf8');
+    const match = source.match(/const BUNDLE_VERSION = '([^']+)';/);
+    assert.ok(match, 'install.js must declare a literal BUNDLE_VERSION');
+    return match[1];
+  };
+
+  test('apply records the bundle version in the manifest and the plan', () => {
+    const result = run(applyArgs());
+    assert.equal(result.status, 0, result.stderr);
+    const expected = bundleVersion();
+    const manifest = readJson(path.join(dir, '.fusion-install.json'));
+    assert.match(manifest.bundleVersion, /^\d+\.\d+\.\d+$/, 'bundleVersion must be a semver string');
+    assert.equal(manifest.bundleVersion, expected);
+    assert.equal(manifest.version, 2, 'manifest schema version must stay 2');
+    assert.match(result.stdout, new RegExp(`bundle:\\s+${expected.replace(/\./g, '\\.')}`));
+  });
+
+  // Pre-1.1.0 manifests have no bundleVersion. They are still valid schema 2,
+  // so undo must keep working for anyone who installed before the field existed.
+  test('undo accepts a pre-1.1.0 manifest without a bundleVersion', () => {
+    fs.writeFileSync(path.join(dir, 'opencode.json'), JSON.stringify({ model: 'old/model' }));
+    assert.equal(run(applyArgs(['--extras', 'plugin'])).status, 0);
+
+    const manifestPath = path.join(dir, '.fusion-install.json');
+    const manifest = readJson(manifestPath);
+    delete manifest.bundleVersion;
+    writeJson(manifestPath, manifest);
+
+    const result = run(['undo', '--config-dir', dir]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readJson(path.join(dir, 'opencode.json')).model, 'old/model');
+    assert.ok(!fs.existsSync(path.join(dir, 'agent', 'build.md')), 'installed prompt not removed');
+    assert.ok(!fs.existsSync(path.join(dir, 'plugins', 'fusion-audit.js')), 'plugin not removed');
+    assert.ok(!fs.existsSync(manifestPath), 'manifest not removed');
+    const backups = fs.readdirSync(dir).filter((f) => f.startsWith('opencode.json.backup.'));
+    assert.equal(backups.length, 1, 'undo must keep backups');
+  });
+
   // --profile: bundled subscription profiles as the config fragment.
   // Expected values are read from the profile source files so refreshing a
   // profile's model ids never breaks these tests.

@@ -1,9 +1,26 @@
 {
   "name": "opencode-fusion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "A main agent that can't edit files - it plans and reviews while a cheaper sidekick does the work. Cognition's Devin Fusion pattern for opencode.",
   "license": "MIT",
+  "keywords": [
+    "opencode",
+    "ai-agents",
+    "multi-agent",
+    "subagent",
+    "devin-fusion",
+    "agent-permissions",
+    "llm-cost-optimization"
+  ],
+  "homepage": "https://github.com/mihneaptu/opencode-fusion#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mihneaptu/opencode-fusion.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mihneaptu/opencode-fusion/issues"
+  },
   "scripts": {
     "test": "node --test",
     "test:integration": "node scripts/run-integration.js",

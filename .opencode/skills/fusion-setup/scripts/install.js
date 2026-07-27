@@ -13,6 +13,11 @@ const path = require('node:path');
 const skillDir = path.join(__dirname, '..');
 const MANIFEST = '.fusion-install.json';
 const MANIFEST_VERSION = 2;
+// Bundle version: the released version of this skill bundle, recorded in the
+// manifest so an installed copy traces back to a release. The bundle ships
+// standalone, so it cannot read the repo's package.json at runtime; a contract
+// test keeps the two in sync instead.
+const BUNDLE_VERSION = '1.1.0';
 const CORE_ROLES = ['build', 'plan', 'sidekick'];
 const OPTIONAL_ROLES = ['research', 'design', 'reviewer', 'vision'];
 const ALL_ROLES = [...CORE_ROLES, ...OPTIONAL_ROLES];
@@ -323,6 +328,12 @@ function readManifest(manifestPath) {
   if (!isPlainObject(manifest) || manifest.version !== MANIFEST_VERSION) {
     fail(`manifest version is unsupported or invalid; undo manually per the skill instructions`);
   }
+  // bundleVersion arrived in 1.1.0. Manifests written before it are still
+  // valid schema 2 and must stay undoable, so absent is accepted; a present
+  // value must be a string.
+  if ('bundleVersion' in manifest && typeof manifest.bundleVersion !== 'string') {
+    fail('manifest has an invalid bundleVersion');
+  }
   if (!Array.isArray(manifest.roles) || manifest.roles.some((role) => !ALL_ROLES.includes(role))) {
     fail('manifest has invalid roles');
   }
@@ -628,6 +639,7 @@ function apply(opts) {
   configRecord.installedMode = installedMode(configMode);
   const manifest = {
     version: MANIFEST_VERSION,
+    bundleVersion: BUNDLE_VERSION,
     installedAt: new Date().toISOString(),
     roles: [...new Set([...(prior?.roles || []), ...opts.roles])],
     backups,
@@ -638,6 +650,7 @@ function apply(opts) {
   const orphans = unknownProviders(merged);
 
   const planLines = [
+    `bundle:       ${BUNDLE_VERSION}`,
     `config dir:   ${opts.configDir}`,
     ...(opts.profile ? [`profile:      ${opts.profile}`] : []),
     `backup:       ${backupName || '(no existing config - nothing to back up)'}`,

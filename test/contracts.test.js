@@ -737,3 +737,42 @@ describe('bundle inventory contracts', () => {
     );
   });
 });
+
+// The bundle ships standalone and cannot read package.json at runtime, so the
+// version exists twice. Nothing but these tests keeps the two copies, and the
+// changelog entry that documents them, from drifting.
+describe('bundle version contract', () => {
+  const skillDir = path.join(__dirname, '..', '.opencode', 'skills', 'fusion-setup');
+  const source = fs.readFileSync(path.join(skillDir, 'scripts', 'install.js'), 'utf8');
+  const match = source.match(/const BUNDLE_VERSION = '([^']+)';/);
+
+  test('install.js declares a literal semver BUNDLE_VERSION', () => {
+    assert.ok(match, 'contract violated: install.js must keep a literal BUNDLE_VERSION this test can read');
+    assert.match(
+      match[1],
+      /^\d+\.\d+\.\d+$/,
+      `contract violated: BUNDLE_VERSION must be semver-shaped, got "${match[1]}"`
+    );
+  });
+
+  test('BUNDLE_VERSION equals the root package.json version', () => {
+    assert.ok(match, 'contract violated: install.js must keep a literal BUNDLE_VERSION this test can read');
+    const pkgPath = path.join(__dirname, '..', 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    assert.equal(
+      pkg.version,
+      match[1],
+      `contract violated: the bundle version is a single source of truth kept in sync by hand - package.json "version" (${pkg.version}) must equal BUNDLE_VERSION (${match[1]}); update both ${pkgPath} and ${path.join(skillDir, 'scripts', 'install.js')}`
+    );
+  });
+
+  test('CHANGELOG.md documents the current bundle version', () => {
+    assert.ok(match, 'contract violated: install.js must keep a literal BUNDLE_VERSION this test can read');
+    const changelog = fs.readFileSync(path.join(__dirname, '..', 'CHANGELOG.md'), 'utf8');
+    assert.match(
+      changelog,
+      new RegExp(`^## ${escapeRegExp(match[1])}`, 'm'),
+      `contract violated: CHANGELOG.md must have a "## ${match[1]}" heading for the shipped bundle version`
+    );
+  });
+});
