@@ -27,9 +27,13 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `"ruff check*"` also permits the file-rewriting `--fix` and `--add-noqa`,
   spells out that a narrowing deny must follow the allow it narrows because
   matching is last-match-wins, and records which of the five entries each role
-  actually ships - `plan.md` has no `npm run build*`, and `reviewer.md` has neither that
-  nor `npx tsc --noEmit*`. Step 5 of the setup skill tells the installer to
-  raise it, and both note that the prompts are global rather than per project,
+  actually ships - `plan.md` has no `npm run build*`, and `reviewer.md` has
+  neither that nor `npx tsc --noEmit*`, while `build.md` also allows the
+  read-only `npm --version*`. It also says why the shipped JS entries keep a
+  trailing `*` despite that advice: `npm test` and `npm run lint` take
+  project-specific arguments, so pinning them exactly would deny the run the
+  user wants. Step 5 of the setup skill tells the installer to raise it, and
+  both note that the prompts are global rather than per project,
   so a multi-stack user should add entries alongside the JS ones instead of
   replacing them. The git half of the allowlist is unchanged and needs no
   substitution. No entries were added to the bundled prompts: a shipped entry

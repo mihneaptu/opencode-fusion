@@ -234,6 +234,9 @@ The main agent's bash is allowlisted to verification and git commands (`npm run 
 > | `"npx tsc --noEmit*"` | yes | yes | no |
 > | `"npm run build*"` | yes | no | no |
 >
+> (`build.md` also allows `"npm --version*"`, a read-only probe that needs no
+> per-stack equivalent.)
+>
 > Replace the entries the file actually has, keeping `"*": "deny"` first. These
 > name the tool per stack; the exact pattern is yours to write, and the next
 > paragraph is the part that matters:
@@ -260,6 +263,13 @@ The main agent's bash is allowlisted to verification and git commands (`npm run 
 > allow it narrows: opencode resolves overlapping patterns by last-match-wins,
 > so a deny above its allow is silently overridden. Treat the deny as a
 > backstop, not the primary control - the tight allow is the control.
+>
+> The shipped JS entries are that unavoidable case, which is why they look like
+> the thing this section tells you to avoid. `npm test` and `npm run lint` take
+> project-specific arguments (a path, `--workspace`, a `-t` filter), so pinning
+> them exactly would deny the run you actually want; the trailing `*` stays and
+> the denies below it carry the weight. Where your own command takes no varying
+> arguments, you get the tighter option and should use it.
 >
 > **Keep the commands read-only or idempotent.** The point is that the main
 > agent can verify without being able to mutate, so a formatter that rewrites
