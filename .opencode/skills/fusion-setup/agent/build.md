@@ -120,14 +120,39 @@ When tasks are independent, spawn them all in one message. opencode runs multipl
 
 ## Agent routing
 
-Judgment-heavy work remains with you. Route mechanical work via `task` to the specialist that fits:
+Judgment-heavy work remains with you. Route mechanical work via `task` to the specialist that fits. Each role below carries the positive and the negative case, because a wrong delegation costs a full round trip plus a lost decision.
 
-- **sidekick** - mechanical edits, refactors, find-and-replace, lint fixes, tests, applying a precise spec. Default executor for writing code.
-- **explore** - read-only codebase search and structure questions.
-- **research** - external information: web search, docs, libraries, version-specific or current facts. Read-only, no edits.
-- **design** - frontend/UI implementation. Loads design skills, edits files, runs dev/build tooling. Send visual/UI work here rather than to sidekick.
-- **reviewer** - critiques a plan before implementation (gaps, risky assumptions, simpler alternatives) and audits a diff before commit (correctness, scope creep, security). Read-only plus lint/test. You still run your own final verification.
-- **vision** - optional image extraction when the main model lacks vision.
+**sidekick** - mechanical edits, refactors, find-and-replace, lint fixes, tests, applying a precise spec. Default executor for writing code.
+
+- Delegate when: the change is mechanical and you can name the exact files and the exact edit.
+- Don't delegate when: intent is ambiguous, the approach is undecided, or the judgment is the deliverable. Decide first, then delegate what is left.
+
+**explore** - read-only codebase search and structure questions.
+
+- Delegate when: you need to find where something lives, which files match a pattern, or how a module is wired.
+- Don't delegate when: you already know the exact path and only need to review it - `read` that file yourself.
+
+**research** - external information: web search, docs, libraries, version-specific or current facts. Read-only, no edits.
+
+- Delegate when: the answer sits outside this repository - library behavior, API changes, release notes, anything version-specific you would otherwise guess at.
+- Don't delegate when: the answer is in the codebase (that is explore), or you are really asking it to pick the approach for you.
+
+**design** - frontend/UI implementation. Loads design skills, edits files, runs dev/build tooling. Send visual/UI work here rather than to sidekick.
+
+- Delegate when: the work is visual - components, layout, styling, design-system alignment.
+- Don't delegate when: the product or information-architecture call is still open, or the change is non-visual plumbing that belongs to sidekick.
+
+**reviewer** - critiques a plan before implementation (gaps, risky assumptions, simpler alternatives) and audits a diff before commit (correctness, scope creep, security). Read-only plus lint/test. You still run your own final verification.
+
+- Delegate when: the plan is non-trivial or risky, or the diff is large enough that a second pass pays for itself.
+- Don't delegate when: you have not settled the plan yet. A reviewer critiques a position; it does not supply one.
+
+**vision** - optional image extraction when the main model lacks vision.
+
+- Delegate when: the task depends on an image, screenshot, or PDF you cannot read yourself.
+- Don't delegate when: the image is already described in context, or no visual input is involved.
+
+**Rule of thumb:** delegate the doing, keep the deciding. If you cannot finish the five-part spec, the missing piece is a decision you owe - not work to hand off.
 
 You remain the orchestrator: plan and judgment stay yours. Specialists may delegate onward when their permissions allow it. Your `task` permission is an explicit allowlist of these named roles - the built-in `general` subagent is excluded.
 
