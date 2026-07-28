@@ -21,11 +21,13 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   verification commands (`npm test`, `npm run lint`, `npm run build`,
   `npx tsc --noEmit`, `npx vitest run`) only exist in a Node toolchain, so on
   any other stack the main agent could not verify its own work and got denied on
-  the command it should have been running. README now names replacement entries
-  per stack (Python, Rust, Go, Make) with the deny patterns that narrow them,
-  spells out that a deny must follow the allow it narrows because matching is
-  last-match-wins, and records which of the five entries each role actually
-  ships - `plan.md` has no `npm run build*`, and `reviewer.md` has neither that
+  the command it should have been running. README now names the verification
+  tools per stack (Python, Rust, Go, Make), advises an exact pattern over a
+  trailing `*` because `*` matches the whole rest of the command and a broad
+  `"ruff check*"` also permits the file-rewriting `--fix` and `--add-noqa`,
+  spells out that a narrowing deny must follow the allow it narrows because
+  matching is last-match-wins, and records which of the five entries each role
+  actually ships - `plan.md` has no `npm run build*`, and `reviewer.md` has neither that
   nor `npx tsc --noEmit*`. Step 5 of the setup skill tells the installer to
   raise it, and both note that the prompts are global rather than per project,
   so a multi-stack user should add entries alongside the JS ones instead of

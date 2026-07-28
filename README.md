@@ -235,34 +235,39 @@ The main agent's bash is allowlisted to verification and git commands (`npm run 
 > | `"npm run build*"` | yes | no | no |
 >
 > Replace the entries the file actually has, keeping `"*": "deny"` first. These
-> are starting points, not audited allowlists - read the flags your own tools
-> accept before pasting:
+> name the tool per stack; the exact pattern is yours to write, and the next
+> paragraph is the part that matters:
 >
-> | Stack | Allow | Deny after it |
-> |---|---|---|
-> | Python | `"pytest*"`, `"ruff check*"`, `"mypy*"` | `"pytest *--snapshot-update*"`, `"ruff check *--fix*"`, `"mypy *--install-types*"` |
-> | Rust | `"cargo test*"`, `"cargo clippy*"`, `"cargo check*"` | `"cargo clippy *--fix*"`, `"cargo *--config *"` |
-> | Go | `"go test*"`, `"go vet*"` | `"go test *-exec*"`, `"go test *-o *"` |
-> | Make-driven | `"make test*"`, `"make lint*"` | whatever your recipes shell out to |
+> | Stack | Verification tools |
+> |---|---|
+> | Python | `pytest`, `ruff check`, `mypy` |
+> | Rust | `cargo test`, `cargo clippy`, `cargo check` |
+> | Go | `go test`, `go vet` |
+> | Make-driven | `make test`, `make lint` |
 >
-> Three rules carry over whatever you pick.
+> **Prefer an exact pattern over a trailing `*`.** A trailing `*` matches the
+> entire rest of the command, so `"ruff check*"` also permits
+> `ruff check --fix` and `ruff check --add-noqa`, both of which rewrite your
+> source. `"go test*"` permits `-o`, `-exec`, and the `-coverprofile` family,
+> all of which write files. Enumerating those flags as denies is a losing game -
+> every tool keeps adding more. If you can pin the command your project actually
+> runs (`"pytest"`, `"make test"`, `"cargo test --workspace"`), do that and skip
+> the wildcard. Reach for `*` only where you genuinely need to pass varying
+> paths, and then read your tool's flag list before you paste it.
 >
-> Keep the commands read-only or idempotent. The point is that the main agent
-> can verify without being able to mutate, so a formatter that rewrites files
-> (`ruff format`, `cargo fmt`, `gofmt -w`) belongs with the sidekick, not here.
-> For the same reason `go build` and a `build` Make target are not on the list
+> Denies narrow an allow you cannot avoid making broad, the way the shipped list
+> denies `npm run lint --fix` and `npx vitest run -u`. Put each deny *after* the
+> allow it narrows: opencode resolves overlapping patterns by last-match-wins,
+> so a deny above its allow is silently overridden. Treat the deny as a
+> backstop, not the primary control - the tight allow is the control.
+>
+> **Keep the commands read-only or idempotent.** The point is that the main
+> agent can verify without being able to mutate, so a formatter that rewrites
+> files (`ruff format`, `cargo fmt`, `gofmt -w`) belongs with the sidekick, not
+> here. For the same reason `go build` and a `build` Make target are absent
 > above: `go build` writes an executable, and a Make recipe does whatever the
-> project defined it to do. Add either one only after reading what it runs.
->
-> Add a matching `deny` for any flag that turns a check into a write, the way
-> the shipped list denies `npm run lint --fix` and `npx vitest run -u`. Snapshot
-> updates and autofix are the usual offenders, and a bare `*` in your allow
-> pattern matches the whole rest of the command - so `"ruff check*"` on its own
-> permits `ruff check --fix`.
->
-> Put those denies *after* the allow they narrow. opencode resolves overlapping
-> patterns by last-match-wins, so a deny listed above its allow is silently
-> overridden.
+> project defined it to do - a `test` target that regenerates fixtures is a
+> write, whatever it is called. Read the recipe before allowing it.
 >
 > One more thing worth knowing: these prompts install globally to
 > `~/.config/opencode/agent/`, not per project. If you work across several
