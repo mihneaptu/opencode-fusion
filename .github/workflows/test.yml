@@ -9,6 +9,13 @@ on:
     # even when nothing is being merged.
     - cron: "43 6 * * 1"
 
+# Read-only for every job. The canary lanes install opencode from npm, so the
+# jobs run third-party code by design; none of them needs write access to this
+# repository, and being explicit means a later repo-level default change can't
+# quietly widen it.
+permissions:
+  contents: read
+
 jobs:
   test:
     strategy:

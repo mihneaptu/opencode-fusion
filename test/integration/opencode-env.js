@@ -183,8 +183,12 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
             `"${message}"`,
           ]
     ).join(' ');
-    // cwd is how v2 learns the project directory; v1 still gets --dir too.
-    const child = spawn(command, { cwd: envInfo.projectDir, env: envInfo.env, shell: true });
+    // v2's run has no --dir, so cwd is the only way it learns the project
+    // directory. v1 gets --dir and keeps inheriting the harness's own cwd, so
+    // an unset FUSION_OPENCODE_BIN leaves the v1 lanes exactly as they were.
+    const spawnOptions = { env: envInfo.env, shell: true };
+    if (isV2(bin)) spawnOptions.cwd = envInfo.projectDir;
+    const child = spawn(command, spawnOptions);
     child.stdin.end(); // opencode run waits for piped stdin until EOF on non-tty
     let stdout = '';
     let stderr = '';

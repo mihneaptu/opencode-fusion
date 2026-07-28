@@ -41,12 +41,14 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and only broadens a security-sensitive list.
 - An advisory CI lane runs the live enforcement tests against the opencode 2.0
   beta. `FUSION_OPENCODE_BIN` selects which binary the integration harness
-  spawns, and the harness adapts its arguments: v2's `run` has no directory flag,
-  so the project directory is passed as the child process working directory, and
-  `--auto` is required because v2 otherwise rejects every permission request,
-  `--standalone` because v2 otherwise reuses a shared background service that
-  cannot start under the harness's throwaway HOME. Explicit `deny` rules stay
-  enforced, which is what the tests assert.
+  spawns and defaults to `opencode`, so the existing v1 lanes spawn the same
+  executable, arguments, and working directory they did before. Only the v2
+  branch adapts: its `run` has no directory flag, so the project directory is
+  passed as the child process working directory, `--auto` is required because v2
+  otherwise rejects every permission request, and `--standalone` because v2
+  otherwise reuses a shared background service that cannot start under the
+  harness's throwaway HOME. Explicit `deny` rules stay enforced, which is what
+  the tests assert.
 - The enforcement suite now resolves the two tools v2 renamed (`bash` ->
   `shell`, `task` -> `subagent`, whose delegation argument moved from
   `subagent_type` to `agent`) so one set of assertions covers both binaries.

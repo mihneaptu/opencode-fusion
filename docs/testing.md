@@ -31,8 +31,15 @@ $env:FUSION_OPENCODE_BIN = 'opencode2'
 npm run test:integration
 ```
 
+Leaving the variable unset changes nothing about the v1 runs: same binary, same
+arguments, same working directory. The v2 branch is the only one that passes the
+project directory as the child's `cwd`, because v2's `run` dropped `--dir`.
+
 The CI job for this is advisory only, because the v2 beta and the way it
-translates v1-shaped config are still changing.
+translates v1-shaped config are still changing. It installs `@opencode-ai/cli@next`,
+a floating dist-tag, so the exact prerelease under test moves without a commit
+here - the job prints `opencode2 --version` so each run records what it actually
+exercised. The workflow grants `contents: read` and nothing more.
 
 ## Manual verification
 
