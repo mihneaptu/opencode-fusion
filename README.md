@@ -30,6 +30,8 @@ set up fusion
 
 The installer needs **Node 20.12 or newer**. On older Node (including Ubuntu's apt default) it crashes with a `styleText` error; [Troubleshooting](#troubleshooting) has three workarounds. The skill interviews you for a model per role, writes the global config, installs the agent prompts, and tells you when to restart. On a subscription (OpenCode Go/Zen, ChatGPT, or GitHub Copilot)? Name it and the skill starts from a ready-made [profile](#subscription-profiles) instead of asking per role. Manual setup and provider examples live in [Setup](#setup).
 
+That command tracks `main`. To install an exact release instead, add the tag: `npx skills add mihneaptu/opencode-fusion#v1.1.0 --skill fusion-setup -g -a opencode -y`. Released versions are listed on the [changelog](https://mihneaptu.github.io/opencode-fusion/changelog.html).
+
 ## Why it works
 
 From [Cognition's blog post](https://cognition.com/blog/devin-fusion):
