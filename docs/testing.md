@@ -14,6 +14,27 @@ npm run check-profiles
 bundle's prompts with installed copies under `~/.config/opencode/agent/`.
 `check-profiles` verifies the model IDs in shipped profiles.
 
+### Changelog site page
+
+`site/changelog.html` is generated from `CHANGELOG.md` and committed, because
+GitHub Pages serves `site/` verbatim and the changelog lives outside it. After
+editing `CHANGELOG.md`, regenerate and commit the page:
+
+```powershell
+npm run build:changelog
+```
+
+`npm test` fails when the committed page has drifted from the changelog, so a
+forgotten rebuild is caught before release rather than shipping a stale page.
+`node scripts/build-changelog.js --check` reports the same drift without
+writing, which is the form to use in a pre-commit hook.
+
+Only the markdown `CHANGELOG.md` actually uses is supported: `##`/`###`
+headings, bullets with wrapped continuation lines, paragraphs, inline code,
+links, and emphasis. Anything else (fenced code, tables, nested bullets) makes
+the build fail with the offending line rather than rendering as literal markup.
+Extend the renderer, or reword the entry.
+
 To validate the lint fixture, run `npm run lint` with `test-playground/` as the
 working directory. Build and plan agents should use the tool's working-directory
 parameter because `npm --prefix test-playground run lint` may not match their

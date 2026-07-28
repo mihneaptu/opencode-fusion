@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="opencode Fusion changelog: what changed in each release of the skill bundle.">
+  <title>Changelog — opencode Fusion</title>
+  <link rel="alternate" type="text/markdown" title="LLM-friendly docs" href="llms.txt">
+  <link rel="canonical" href="https://mihneaptu.github.io/opencode-fusion/changelog.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="opencode Fusion">
+  <meta property="og:url" content="https://mihneaptu.github.io/opencode-fusion/changelog.html">
+  <meta property="og:title" content="Changelog — opencode Fusion">
+  <meta property="og:description" content="opencode Fusion changelog: what changed in each release of the skill bundle.">
+  <meta property="og:image" content="https://mihneaptu.github.io/opencode-fusion/assets/hero-poster.jpg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="720">
+  <meta property="og:image:alt" content="Abstract hero art: a blue and an amber gradient glow on a light background">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- Warm up the only cross-origin call (star count fetch in script.js). -->
+  <link rel="preconnect" href="https://api.github.com" crossorigin>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('theme');
+        var theme = (stored === 'light' || stored === 'dark')
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      document.documentElement.classList.remove('no-js');
+      document.documentElement.classList.add('js');
+    })();
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+</head>
+<body class="docs-page changelog-page">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header" id="top">
+    <div class="container header-inner">
+      <a class="wordmark header-pill" href="index.html" aria-label="opencode Fusion home">
+        <span class="wordmark-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <defs>
+              <!-- Main-agent blue blends into sidekick amber across the link. -->
+              <linearGradient id="mark-fuse-h" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                <stop offset="0.35" style="stop-color: var(--accent)"/>
+                <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+              </linearGradient>
+            </defs>
+            <g stroke="url(#mark-fuse-h)">
+              <circle cx="8" cy="8" r="3.2"/>
+              <circle cx="16" cy="16" r="3.2"/>
+              <path d="M10.3 10.3 13.7 13.7"/>
+            </g>
+          </svg>
+        </span>
+        <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+      </a>
+
+      <div class="header-cluster header-pill">
+        <nav class="nav" id="nav-menu" aria-label="Primary">
+          <ul class="nav-list">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="docs.html">Docs</a></li>
+            <li><a href="changelog.html" aria-current="page">Changelog</a></li>
+          </ul>
+          <a class="btn btn-primary btn-sm" href="index.html#get-started">Get started</a>
+          <a class="gh-btn" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer" aria-label="Star opencode-fusion on GitHub">
+            <svg class="gh-btn-mark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+            <span class="gh-btn-count" data-gh-stars>GitHub</span>
+            <svg class="gh-btn-star" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.1l2.05 4.15 4.58.67-3.31 3.23.78 4.56L8 11.56l-4.1 2.15.78-4.56-3.31-3.23 4.58-.67L8 1.1Z"/></svg>
+          </a>
+        </nav>
+
+        <div class="header-actions">
+          <button
+            class="theme-toggle"
+            type="button"
+            id="theme-toggle"
+            aria-label="Toggle color theme"
+            title="Toggle color theme"
+          >
+            <!-- Crescent: the terminator arc's radius must be >= half the
+                 distance between its endpoints, or SVG scales it up and the
+                 curve flattens into a semicircle (a fat blob, not a crescent). -->
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+          </button>
+
+          <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open menu">
+            <span class="nav-toggle-bars" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="docs-main">
+    <div class="container docs-shell">
+
+      <aside class="docs-toc" aria-label="Releases">
+        <p class="docs-toc-label">Releases</p>
+        <!-- Generated from CHANGELOG.md by scripts/build-changelog.js. Edit the
+             changelog, then run `npm run build:changelog`. -->
+        <nav class="docs-toc-nav docs-toc-nav-releases">
+          <!-- generated:toc:start -->
+          <a href="#unreleased">Unreleased<span class="docs-toc-date">in progress</span></a>
+          <a href="#v1-1-0">1.1.0<span class="docs-toc-date">Jul 27, 2026</span></a>
+          <a href="#v1-0-0">1.0.0</a>
+          <!-- generated:toc:end -->
+        </nav>
+      </aside>
+
+      <article class="docs-article">
+        <header class="docs-hero">
+          <p class="docs-kicker">Changelog</p>
+          <h1 class="docs-title">What changed</h1>
+          <!-- generated:intro:start -->
+          <p class="docs-lead">Notable changes to this project. The version is the skill bundle’s version; it is recorded as <code>bundleVersion</code> in <code>.fusion-install.json</code> when you install, so an installed copy can be traced back to the release that applied it.</p>
+          <p class="docs-note docs-hero-note">This project follows <a href="https://semver.org/spec/v2.0.0.html" target="_blank" rel="noopener noreferrer">Semantic Versioning</a>.</p>
+          <!-- generated:intro:end -->
+          <p class="docs-note docs-hero-note">Rendered from <a href="https://github.com/mihneaptu/opencode-fusion/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">CHANGELOG.md</a>, which is canonical.</p>
+        </header>
+
+        <!-- generated:releases:start -->
+        <section id="unreleased" class="docs-section release">
+          <div class="release-head">
+            <h2 class="release-version">Unreleased</h2>
+            <span class="pill release-tag">In progress</span>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="added">Added</h3>
+            <ul class="docs-list release-items">
+              <li>The docs site has a changelog page. <code>site/changelog.html</code> is generated from this file by <code>scripts/build-changelog.js</code> (<code>npm run build:changelog</code>) and committed, because GitHub Pages serves <code>site/</code> verbatim and this file lives outside <code>site/</code>, so the page cannot fetch it at runtime. <code>npm test</code> re-renders and fails when the committed page has drifted, so this file stays the single source of truth. The renderer supports only the markdown used here and fails loudly on anything else, rather than printing literal markup on the site.</li>
+            </ul>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="changed">Changed</h3>
+            <ul class="docs-list release-items">
+              <li>The mobile nav now collapses below 940px instead of 900px. The new Changelog link makes the widest desktop nav row need about 930px, and between the old breakpoint and that width the right-hand header pill ran past the rail and gave every page a horizontal scroll. A test pins the breakpoint against the measured width.</li>
+            </ul>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="fixed">Fixed</h3>
+            <ul class="docs-list release-items">
+              <li>The theme toggle’s moon rendered as a lopsided blob rather than a crescent. Its inner arc asked for radius 7 across endpoints 16.3 apart; per the SVG spec a radius too small to span its endpoints is scaled up until it fits, so the terminator became a semicircle mirroring the outer edge and the shape lost its taper. It also overflowed the top and right of its 24x24 viewBox. Replaced with a crescent whose arcs are geometrically consistent, on all three pages.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="v1-1-0" class="docs-section release">
+          <div class="release-head">
+            <h2 class="release-version">1.1.0</h2>
+            <time class="release-date" datetime="2026-07-27">July 27, 2026</time>
+            <span class="pill pill-main release-tag">Latest</span>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="added">Added</h3>
+            <ul class="docs-list release-items">
+              <li>The skill bundle now has a version. <code>install.js</code> records <code>bundleVersion</code> in <code>.fusion-install.json</code> and prints it in the apply plan, and <code>/fusion-status</code> reports it, so an installed copy can be traced back to the release that applied it. Like <code>installedAt</code>, it records the most recent apply: a reapply that selects a subset of roles leaves the other managed files as an earlier bundle installed them.</li>
+              <li>Repository, homepage, issue-tracker, and keyword metadata in <code>package.json</code>.</li>
+              <li>The bash allowlist’s JS assumption is now documented. The shipped verification commands (<code>npm test</code>, <code>npm run lint</code>, <code>npm run build</code>, <code>npx tsc --noEmit</code>, <code>npx vitest run</code>) only exist in a Node toolchain, so on any other stack the main agent could not verify its own work and got denied on the command it should have been running. README now names the verification tools per stack (Python, Rust, Go, Make), advises an exact pattern over a trailing <code>*</code> because <code>*</code> matches the whole rest of the command and a broad <code>&quot;ruff check*&quot;</code> also permits the file-rewriting <code>--fix</code> and <code>--add-noqa</code>, spells out that a narrowing deny must follow the allow it narrows because matching is last-match-wins, and records which of the five entries each role actually ships - <code>plan.md</code> has no <code>npm run build*</code>, and <code>reviewer.md</code> has neither that nor <code>npx tsc --noEmit*</code>, while <code>build.md</code> also allows the read-only <code>npm --version*</code>. It also says why the shipped JS entries keep a trailing <code>*</code> despite that advice: <code>npm test</code> and <code>npm run lint</code> take project-specific arguments, so pinning them exactly would deny the run the user wants. Step 5 of the setup skill tells the installer to raise it, and both note that the prompts are global rather than per project, so a multi-stack user should add entries alongside the JS ones instead of replacing them. The git half of the allowlist is unchanged and needs no substitution. No entries were added to the bundled prompts: a shipped entry for a command the user’s project does not define cannot verify that project, and only broadens a security-sensitive list.</li>
+              <li>An advisory CI lane runs the live enforcement tests against the opencode 2.0 beta. <code>FUSION_OPENCODE_BIN</code> selects which binary the integration harness spawns and defaults to <code>opencode</code>, so the existing v1 lanes spawn the same executable, arguments, and working directory they did before. Only the v2 branch adapts: its <code>run</code> has no directory flag, so the project directory is passed as the child process working directory, <code>--auto</code> is required because v2 otherwise rejects every permission request, and <code>--standalone</code> because v2 otherwise reuses a shared background service that cannot start under the harness’s throwaway HOME. Explicit <code>deny</code> rules stay enforced, which is what the tests assert.</li>
+              <li>The enforcement suite now resolves the two tools v2 renamed (<code>bash</code> -&gt; <code>shell</code>, <code>task</code> -&gt; <code>subagent</code>, whose delegation argument moved from <code>subagent_type</code> to <code>agent</code>) so one set of assertions covers both binaries. Every other tool it names - <code>read</code>, <code>edit</code>, <code>write</code>, <code>grep</code>, <code>glob</code> - kept its v1 name under v2.</li>
+              <li>The suite refuses to pass vacuously. Each “denied tool is absent” assertion now also requires that an unrestricted agent is offered that tool, so an absence caused by a release dropping the tool is reported as inconclusive instead of green. This immediately caught <code>apply_patch</code> and <code>list</code>, which no tested release offers to anyone; they are now asserted defensively rather than counted as evidence of enforcement.</li>
+            </ul>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="changed">Changed</h3>
+            <ul class="docs-list release-items">
+              <li>Agent routing in <code>build.md</code> now gives each role a positive and a negative case (<code>Delegate when</code> / <code>Don't delegate when</code>) plus a rule of thumb, instead of one line per role. <code>sidekick</code>, <code>design</code>, <code>research</code>, and <code>reviewer</code> escalate when handed work that belongs to another role rather than returning partial work. <code>research.md</code> and <code>reviewer.md</code> gained a STATUS / FINDINGS / VERIFIED / GAPS report format, modeled on the STATUS / CHANGES / VERIFIED / GAPS block <code>sidekick.md</code> already used, and <code>plan.md</code> gained a plan format adapted from the five-part delegation spec. Prompt wording only - the mechanical guarantees still come from permission frontmatter.</li>
+              <li><code>plan.md</code> now carries the bash-allowlist guidance <code>build.md</code> already had: do not chain commands, and prefer the tool <code>workdir</code> parameter over <code>cd</code> or flag-first forms. Plan hit both limits in live use and recovered by retrying, which cost a round trip each time.</li>
+              <li>Corrected what chaining actually does, in <code>build.md</code>, <code>plan.md</code>, <code>reviewer.md</code>, README, and <code>site/docs.html</code>. All of them said a chained line matches no pattern and is blocked outright. Probed against opencode 1.18.7 through the integration harness, the permission layer matches each command in the line separately and denies the call only if one of them fails: <code>git status --short &amp;&amp; git log -1</code> runs when both are allowlisted, while <code>git status --short | findstr README</code> is denied because the pipe consumer counts as its own command. The advice to run one command per call is unchanged - a denial then names the command responsible - but the stated reason was wrong. A contract test now pins the disproven wording out of all five surfaces, so the correction cannot rot back in one file at a time.</li>
+              <li><code>plan.md</code> and <code>reviewer.md</code> now state that a denied command is a boundary rather than a puzzle: find an allowed command that answers the same question, or report which one you would need, instead of hunting for a variant that slips through. Only <code>build.md</code> said this before, and in live use a reviewer refused <code>npm run test:integration</code> went looking for a way around it.</li>
+              <li>The harness config now sets <code>subagent_depth: 2</code>, matching what the installer forces on every real install. Without it the suite exercised a nesting limit no Fusion user runs under, so a delegation regression could have passed.</li>
+              <li>The Limitations section now states what opencode 2.0 does and does not carry over. v2 translates v1-shaped configuration in memory, so the config and agent prompts are expected to load under <code>opencode2</code> unconverted; V1 plugins do not run there, three top-level keys have no native equivalent, and subagents do not inherit a parent agent’s permissions.</li>
+              <li><code>vision.md</code>’s clipboard instructions no longer assume Windows. The save-to-file hint now covers macOS and Linux alongside Win+Shift+S, and tells the agent to ask for a path rather than guess the user’s desktop environment.</li>
+            </ul>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="compatibility">Compatibility</h3>
+            <ul class="docs-list release-items">
+              <li>Manifests written before 1.1.0 have no <code>bundleVersion</code>. They are still valid manifest schema 2, and <code>undo</code> continues to accept them.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="v1-0-0" class="docs-section release">
+          <div class="release-head">
+            <h2 class="release-version">1.0.0</h2>
+          </div>
+          <p>Initial release: the mechanically enforced main/sidekick split, the deterministic installer with reversible undo, five subscription profiles, the optional <code>/fusion-setup</code> and <code>/fusion-status</code> commands, the <code>fusion-audit</code> and <code>fusion-claude</code> plugins, and multi-OS CI with live enforcement tests.</p>
+        </section>
+        <!-- generated:releases:end -->
+
+        <footer class="docs-end">
+          <p>Independent project inspired by Cognition’s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, or OpenCode.</p>
+          <p>
+            <a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub repository</a>
+            ·
+            <a href="docs.html">Docs</a>
+            ·
+            <a href="index.html">Back to home</a>
+          </p>
+        </footer>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer" id="footer" aria-label="Site footer">
+    <div class="container footer-shell">
+      <div class="footer-main">
+        <div class="footer-brand">
+          <a class="wordmark" href="index.html" aria-label="opencode Fusion home">
+            <span class="wordmark-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                  <linearGradient id="mark-fuse-f" x1="8" y1="8" x2="16" y2="16" gradientUnits="userSpaceOnUse">
+                    <stop offset="0.35" style="stop-color: var(--accent)"/>
+                    <stop offset="0.65" style="stop-color: var(--mark-orange)"/>
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#mark-fuse-f)">
+                  <circle cx="8" cy="8" r="3.2"/>
+                  <circle cx="16" cy="16" r="3.2"/>
+                  <path d="M10.3 10.3 13.7 13.7"/>
+                </g>
+              </svg>
+            </span>
+            <span class="wordmark-text">opencode<span class="wordmark-accent">Fusion</span></span>
+          </a>
+          <p class="footer-desc">Main agent plans and reviews. Sidekick edits. Built for OpenCode.</p>
+        </div>
+
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="index.html">Home</a>
+          <a href="docs.html">Docs</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="index.html#get-started">Get started</a>
+          <a class="footer-nav-ext" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
+            GitHub
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h7v7M13 3 3 13"/></svg>
+          </a>
+        </nav>
+      </div>
+
+      <div class="footer-meta">
+        <p class="footer-copyright">&copy; 2026 opencode Fusion &middot; Open source</p>
+        <p class="footer-disclaimer">Independent project inspired by Cognition&rsquo;s Devin Fusion. Not affiliated with or endorsed by Cognition, Devin, or OpenCode.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

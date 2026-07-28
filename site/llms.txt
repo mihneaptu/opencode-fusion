@@ -8,6 +8,7 @@ opencode Fusion is a *configuration* project (not an app). Install on OpenCode, 
 
 - [Landing page](index.html): product overview, how it works, cost split
 - [Full docs](docs.html): install, verify, customize, troubleshoot
+- [Changelog](changelog.html): per-release notes, rendered from CHANGELOG.md (canonical)
 - [Install OpenCode](docs.html#install-opencode)
 - [Subscription profiles](docs.html#profiles): named per-subscription model presets (OpenCode Go/Zen, ChatGPT, GitHub Copilot)
 - [Verify the flow](docs.html#verify)

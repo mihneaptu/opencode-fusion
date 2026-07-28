@@ -103,6 +103,7 @@
             <li><a href="index.html">Home</a></li>
             <li><a href="#install-opencode">OpenCode</a></li>
             <li><a href="#customize">Customize</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
           </ul>
           <a class="btn btn-primary btn-sm" href="index.html#get-started">Get started</a>
           <a class="gh-btn" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer" aria-label="Star opencode-fusion on GitHub">
@@ -120,8 +121,11 @@
             aria-label="Toggle color theme"
             title="Toggle color theme"
           >
+            <!-- Crescent: the terminator arc's radius must be >= half the
+                 distance between its endpoints, or SVG scales it up and the
+                 curve flattens into a semicircle (a fat blob, not a crescent). -->
             <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5Z"/>
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>
             </svg>
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="4"/>
@@ -407,6 +411,8 @@
           <p>
             <a href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">GitHub repository</a>
             ·
+            <a href="changelog.html">Changelog</a>
+            ·
             <a href="llms.txt">llms.txt</a>
             ·
             <a href="index.html">Back to home</a>
@@ -446,6 +452,7 @@
         <nav class="footer-nav" aria-label="Footer">
           <a href="index.html">Home</a>
           <a href="docs.html">Docs</a>
+          <a href="changelog.html">Changelog</a>
           <a href="index.html#get-started">Get started</a>
           <a class="footer-nav-ext" href="https://github.com/mihneaptu/opencode-fusion" target="_blank" rel="noopener noreferrer">
             GitHub

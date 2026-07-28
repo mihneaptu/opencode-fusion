@@ -24,6 +24,7 @@
   "scripts": {
     "test": "node --test",
     "test:integration": "node scripts/run-integration.js",
+    "build:changelog": "node scripts/build-changelog.js",
     "check-install": "node scripts/check-install.js",
     "check-profiles": "node scripts/check-profiles.js"
   }

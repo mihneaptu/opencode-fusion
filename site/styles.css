@@ -1937,7 +1937,10 @@ html[data-theme="dark"] .term {
 .docs-section p + p {
   margin-top: var(--space-md);
 }
-.docs-section a:not(.copy-btn):not(.btn) {
+/* .docs-hero is included because the changelog's intro paragraphs come from
+   CHANGELOG.md and carry links; without it those would render as bare text. */
+.docs-section a:not(.copy-btn):not(.btn),
+.docs-hero a:not(.copy-btn):not(.btn) {
   color: var(--accent-strong);
   text-decoration: underline;
   text-decoration-thickness: 1px;
@@ -1947,7 +1950,8 @@ html[data-theme="dark"] .term {
   transition: text-decoration-color var(--dur-fast) var(--ease),
               text-decoration-thickness var(--dur-fast) var(--ease);
 }
-.docs-section a:not(.copy-btn):not(.btn):hover {
+.docs-section a:not(.copy-btn):not(.btn):hover,
+.docs-hero a:not(.copy-btn):not(.btn):hover {
   text-decoration-thickness: 2px;
   text-decoration-color: currentColor;
 }
@@ -2112,6 +2116,109 @@ html[data-theme="dark"] .term {
   text-underline-offset: 0.15em;
 }
 
+/* ---- Changelog -------------------------------------------------------- */
+/* Same editorial shell as the docs page (.docs-section rhythm, .docs-list
+   bullets); these rules only add the release header row and the small
+   Added/Changed/Fixed group labels. Markup is generated from CHANGELOG.md by
+   scripts/build-changelog.js. */
+.docs-hero-note + .docs-hero-note {
+  margin-top: var(--space-2xs) !important;
+}
+/* The docs lead is a one-line summary at 40ch; this one is a paragraph from
+   CHANGELOG.md, so it gets the prose measure instead of wrapping five times. */
+.changelog-page .docs-lead {
+  max-width: 54ch;
+}
+/* Inline code appears in the intro too, where .docs-section's rule does not
+   reach. Values match that rule so both surfaces render identically. */
+.docs-hero code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--text-high);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 0.08em 0.35em;
+  border-radius: 5px;
+  font-variant-ligatures: none;
+  overflow-wrap: anywhere;
+}
+/* Release version + date + tag on one baseline; wraps to two lines on narrow
+   screens rather than shrinking the version. */
+.release-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+/* Scoped under .release so these out-specify the shared `.docs-section h2/h3`
+   rules (one class + one type beats a lone class), which otherwise win on
+   font-size, color, and margins. */
+.release .release-version {
+  font-size: var(--step-2);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-high);
+  /* Spacing for the whole header row belongs to .release-head. */
+  margin-bottom: 0;
+  font-variant-numeric: tabular-nums;
+}
+.release-date {
+  font-size: var(--step--1);
+  color: var(--text-low);
+  font-variant-numeric: tabular-nums;
+}
+/* Tags sit on the text baseline like the date, not on the flex baseline of
+   their own padded box. */
+.release-tag {
+  align-self: center;
+}
+/* Group label (Added / Changed / ...): a quiet mono eyebrow, not a heading
+   that competes with the version above it. */
+.release-group + .release-group {
+  margin-top: var(--space-lg);
+}
+.release .release-group-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-low);
+  /* .release-group owns the spacing between groups. */
+  margin-top: 0;
+  margin-bottom: var(--space-sm);
+}
+/* Kind coloring, keyed off the heading text so a new section in CHANGELOG.md
+   still renders (as the neutral default) instead of breaking the page. */
+.release .release-group-label[data-kind="added"] { color: var(--ok); }
+.release .release-group-label[data-kind="changed"] { color: var(--accent-strong); }
+.release .release-group-label[data-kind="fixed"] { color: var(--secondary); }
+.release-items {
+  /* The generated list is the section's own body copy, so it starts flush
+     under its label rather than carrying .docs-list's top margin. */
+  margin-top: 0;
+  gap: var(--space-sm);
+}
+.release-items li {
+  text-wrap: pretty;
+}
+.release-items code {
+  overflow-wrap: anywhere;
+}
+/* Release TOC entries stack version over date, so they need more room than
+   the single-line docs TOC links. */
+.docs-toc-nav-releases a {
+  padding-block: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.docs-toc-date {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--text-low);
+  letter-spacing: 0.01em;
+}
+
 @media (min-width: 900px) {
   .docs-shell {
     grid-template-columns: 11.5rem minmax(0, 1fr);
@@ -2122,6 +2229,11 @@ html[data-theme="dark"] .term {
     position: sticky;
     top: calc(var(--header-band) + var(--space-md));
     align-self: start;
+    /* A long release list must scroll inside the sticky rail instead of
+       running past the viewport with its tail unreachable. */
+    max-height: calc(100vh - var(--header-band) - var(--space-xl));
+    overflow-y: auto;
+    scrollbar-width: thin;
   }
   .docs-article {
     max-width: 42rem;
@@ -2206,9 +2318,11 @@ html[data-theme="dark"] .term {
   .feature-item-wide .feature-desc { max-width: 60ch; }
 }
 
-/* Mobile nav: collapse below 900px - the full desktop nav needs ~900px
-   before "How it works" stops wrapping inside the cluster pill. */
-@media (max-width: 899px) {
+/* Mobile nav: collapse below 940px. The two header pills plus the widest nav
+   row (5 items on index.html, through "Changelog") need ~930px; below that the
+   right pill runs past the rail and the page scrolls sideways. Measured, not
+   guessed - the old 900px was tuned when the nav had one item fewer. */
+@media (max-width: 939px) {
   .nav-toggle { display: inline-flex; }
   .nav {
     /* The cluster pill's backdrop-filter makes it the containing block, so
