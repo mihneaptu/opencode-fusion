@@ -690,6 +690,70 @@ describe('design.md skill-selection contract', () => {
   });
 });
 
+// Four prompts, the README, and the docs site all once explained the chaining
+// rule the same wrong way: that a chained line matches no pattern and is
+// blocked as a whole. Probed against opencode 1.18.7, the permission layer
+// matches each command in the line separately and denies the call only when one
+// of them fails - `git status && git log` runs when both are allowlisted, while
+// `git status | findstr x` is denied because the pipe consumer is its own
+// command. The advice (one command per call) is unchanged; only the reason was
+// wrong, and it was wrong identically in five places, which is exactly how a
+// correction rots back in. This pins the false explanation out of every surface
+// that carries it, prompts and user-facing docs alike.
+describe('chaining explanation contract', () => {
+  const repoRoot = path.join(__dirname, '..');
+  const surfaces = {
+    'agent/build.md': agents.build.body,
+    'agent/plan.md': agents.plan.body,
+    'agent/reviewer.md': agents.reviewer.body,
+    'README.md': fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8'),
+    'site/docs.html': fs.readFileSync(path.join(repoRoot, 'site', 'docs.html'), 'utf8'),
+  };
+
+  // Phrases that only ever appear in the disproven explanation.
+  const FALSE_CLAIMS = [
+    'matched alone',
+    'matches no pattern',
+    'breaks the match',
+    'blocks the entire line',
+    'blocks the whole line',
+    'not match any single pattern',
+    'matches each command individually',
+    'allowlist matches each command individually',
+  ];
+
+  for (const [name, text] of Object.entries(surfaces)) {
+    test(`${name} does not restate the disproven chaining explanation`, () => {
+      const found = FALSE_CLAIMS.filter((claim) => bodyHasAny(text, [claim]));
+      assert.deepEqual(
+        found,
+        [],
+        `contract violated: ${name} restates the disproven chaining explanation (${found.join(', ')}). opencode matches each command in a chained line separately and denies the call if any one of them fails; it does not fail to match the line as a whole.`
+      );
+    });
+  }
+
+  test('the prompts that restrict bash explain chaining the corrected way', () => {
+    for (const name of ['build', 'plan', 'reviewer']) {
+      const text = agents[name].body;
+      assert.ok(
+        bodyHasAny(text, [
+          'least-allowed segment',
+          'matched segment by segment',
+          'segment by segment',
+          'matches each command in the line separately',
+          'each command in the line is matched separately',
+        ]),
+        `contract violated: agent/${name}.md must explain that a chained line is matched segment by segment, not that the line fails to match`
+      );
+      assert.ok(
+        bodyHasAny(text, ['consumer', 'pipe']),
+        `contract violated: agent/${name}.md must keep the pipe case, which is the denial the agents actually hit`
+      );
+    }
+  });
+});
+
 // agent/ is pinned closed above and profiles/ in profiles.test.js, so a stray
 // file in either fails immediately. commands/ and plugins/ reach the user only
 // through the installer's EXTRAS map, so an unregistered file there would ship

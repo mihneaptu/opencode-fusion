@@ -34,15 +34,17 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   not chain commands, and prefer the tool `workdir` parameter over `cd` or
   flag-first forms. Plan hit both limits in live use and recovered by retrying,
   which cost a round trip each time.
-- Corrected what chaining actually does, in `build.md`, `plan.md`, `reviewer.md`,
-  README, and `site/docs.html`. All of them said a chained line matches no pattern and is blocked
-  outright. Probed against opencode 1.18.7 through the integration harness, the
-  permission layer matches each command in the line separately and denies the
-  call only if one of them fails: `git status --short && git log -1` runs when
-  both are allowlisted, while `git status --short | findstr README` is denied
-  because the pipe consumer counts as its own command. The advice to run one
-  command per call is unchanged - a denial then names the command responsible -
-  but the stated reason was wrong.
+- Corrected what chaining actually does, in `build.md`, `plan.md`,
+  `reviewer.md`, README, and `site/docs.html`. All of them said a chained line
+  matches no pattern and is blocked outright. Probed against opencode 1.18.7
+  through the integration harness, the permission layer matches each command in
+  the line separately and denies the call only if one of them fails:
+  `git status --short && git log -1` runs when both are allowlisted, while
+  `git status --short | findstr README` is denied because the pipe consumer
+  counts as its own command. The advice to run one command per call is
+  unchanged - a denial then names the command responsible - but the stated
+  reason was wrong. A contract test now pins the disproven wording out of all
+  five surfaces, so the correction cannot rot back in one file at a time.
 - `plan.md` and `reviewer.md` now state that a denied command is a boundary
   rather than a puzzle: find an allowed command that answers the same question,
   or report which one you would need, instead of hunting for a variant that
