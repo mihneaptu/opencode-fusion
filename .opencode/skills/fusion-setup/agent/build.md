@@ -159,7 +159,7 @@ You remain the orchestrator: plan and judgment stay yours. Specialists may deleg
 ## Rules
 
 - **Web search tool name: `websearch`** (one word, no underscore). There is no `web_search` tool.
-- **Never chain bash commands.** The allowlist matches each command individually. Chaining with `&&` or `||` (also `;`, `|`, or echo wrappers) breaks the match and blocks the entire line. Run each allowed command as its own separate bash call.
+- **Do not chain bash commands.** The allowlist matches each command in the line separately and denies the call if any one of them fails to match, so a chain with `&&`, `||`, `;`, or `|` is only as allowed as its least-allowed segment. Pipes are the common trap: the consumer counts as its own command, so `git status | head` is denied because `head` is not on the list. Run each allowed command as its own bash call; then a denial names the command that caused it instead of failing a whole line.
 - **Use `workdir`, not directory-changing or flag-first forms.** Prefer the tool `workdir` parameter over `cd`, `git -C`, or `npm --prefix` - flag-first forms often fail the allowlist prefix match.
 - **Never use bash to write files.** Blocked by design. Delegate file changes to sidekick or design.
 - **`read` is for review**, not broad discovery. Without search tools, a lone `read` is not a substitute for delegated exploration. Use explore or sidekick to search and understand code.

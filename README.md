@@ -215,7 +215,7 @@ Editing this file by hand is fine and loses nothing, but the installer records a
 
 ### Adjust the bash allowlist
 
-The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit the installed `~/.config/opencode/agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually: do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
+The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit the installed `~/.config/opencode/agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command in a chained line separately and denies the call if any one of them fails to match, so a chain is only as allowed as its least-allowed segment. `git status && git log` runs when both are allowlisted; `git status | head` does not, because the pipe consumer counts as its own command and `head` is not on the list. The agent prompts tell the agents to run one command per call anyway, so a denial names the command that caused it.
 
 > [!NOTE]
 > Editing an installed prompt makes it yours. The installer records a hash of every file it writes, and a reapply refuses rather than overwrite a file that changed - deliberately, so your customization is never silently clobbered. There is no `--adopt` override for prompts (unlike `opencode.json`). To hand the file back to the installer, restore the bundled copy from `.opencode/skills/fusion-setup/agent/` first. Keep a note of your edit either way, since a reapply that does succeed installs the bundled version.
@@ -343,7 +343,7 @@ The model id may be wrong or changed. Confirm the exact `provider-id/model-id` a
 
 First check whether the block is actually expected: commands outside the allowlist (searches like `git ls-files`, file writes, `git checkout`) are *meant* to be denied, and the agent recovers by reading or delegating; see [Verify it works](#verify-it-works).
 
-If an *allowlisted* command gets blocked, the usual cause is chaining: the allowlist matches whole commands against fixed patterns, so `&&`, `||`, `;`, `|`, or wrapping in `echo` breaks the match and blocks the line. Run each allowed command as its own separate call.
+If an *allowlisted* command gets blocked, the usual cause is chaining. Each command in the line is matched separately and the call is denied if any one of them fails, so one unlisted segment sinks the whole line - most often a pipe consumer like `head` or `grep`, or an `echo` wrapper. Run each allowed command as its own separate call, and the denial will name the command responsible.
 
 ### A search reports "zero matches" for something that exists
 
