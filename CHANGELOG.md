@@ -35,7 +35,7 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   flag-first forms. Plan hit both limits in live use and recovered by retrying,
   which cost a round trip each time.
 - Corrected what chaining actually does, in `build.md`, `plan.md`, `reviewer.md`,
-  and README. All four said a chained line matches no pattern and is blocked
+  README, and `site/docs.html`. All of them said a chained line matches no pattern and is blocked
   outright. Probed against opencode 1.18.7 through the integration harness, the
   permission layer matches each command in the line separately and denies the
   call only if one of them fails: `git status --short && git log -1` runs when
