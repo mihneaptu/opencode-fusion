@@ -17,6 +17,16 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   that selects a subset of roles leaves the other managed files as an earlier
   bundle installed them.
 - Repository, homepage, issue-tracker, and keyword metadata in `package.json`.
+- The bash allowlist's JS assumption is now documented. The shipped
+  verification commands (`npm test`, `npm run lint`, `npm run build`,
+  `npx tsc --noEmit`, `npx vitest run`) only exist in a Node toolchain, so on
+  any other stack the main agent could not verify its own work and got denied on
+  the command it should have been running. README now names the replacement
+  entries per stack (Python, Rust, Go, Make), and Step 5 of the setup skill
+  tells the installer to raise it. The git half of the allowlist is unchanged
+  and needs no substitution. No entries were added to the bundled prompts: a
+  shipped allowlist entry for a command the user's project does not define could
+  never match.
 
 ### Changed
 
@@ -35,6 +45,9 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   prompts are expected to load under `opencode2` unconverted; V1 plugins do not
   run there, three top-level keys have no native equivalent, and subagents do
   not inherit a parent agent's permissions.
+- `vision.md`'s clipboard instructions no longer assume Windows. The
+  save-to-file hint now covers macOS and Linux alongside Win+Shift+S, and tells
+  the agent to ask for a path rather than guess the user's desktop environment.
 
 ### Compatibility
 

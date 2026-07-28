@@ -217,6 +217,32 @@ Editing this file by hand is fine and loses nothing, but the installer records a
 
 The main agent's bash is allowlisted to verification and git commands (`npm run lint`, `npm test`, `git diff`, `git status`, `git log`, `git show`, `git add`); `git commit` and `git push` prompt for per-command approval, and force/mirror/delete-ref pushes are denied. Edit the installed `~/.config/opencode/agent/build.md` to add or remove allowed commands in the `permission.bash` section. Keep `"*": "deny"` first so unlisted commands are blocked by default, and keep the specific push denies *after* `"git push*"`; opencode resolves overlapping patterns by last-match-wins. Note that the allowlist matches each command individually: do not chain commands with `&&`, `||`, `;`, or `|`, because the chain will not match any single pattern and gets blocked.
 
+> [!IMPORTANT]
+> **The shipped verification commands assume a Node/JavaScript project.** The
+> git half of the allowlist is universal, but `npm test`, `npm run lint`,
+> `npm run build`, `npx tsc --noEmit`, and `npx vitest run` only exist in a JS
+> toolchain. On any other stack the main agent cannot run your tests, and you
+> will see it denied on the command you expect it to use. Replace those entries
+> with your own, keeping `"*": "deny"` first:
+>
+> | Stack | Entries to use instead |
+> |---|---|
+> | Python | `"pytest*"`, `"ruff check*"`, `"mypy*"` |
+> | Rust | `"cargo test*"`, `"cargo clippy*"`, `"cargo check*"` |
+> | Go | `"go test*"`, `"go build*"`, `"go vet*"` |
+> | Make-driven | `"make test*"`, `"make lint*"`, `"make build*"` |
+>
+> Two rules carry over whatever you pick. Keep the commands read-only or
+> idempotent - the point is that the main agent can verify without being able to
+> mutate, so a formatter that rewrites files (`ruff format`, `cargo fmt`,
+> `gofmt -w`) belongs with the sidekick, not here. And add a matching `deny` for
+> any flag that turns a check into a write, the way the shipped list denies
+> `npm run lint --fix` and `npx vitest run -u`; snapshot updates and autofix are
+> the usual offenders.
+>
+> Apply the same edit to `plan.md` and `reviewer.md` if you installed those
+> roles - they carry their own allowlists with the same JS assumption.
+
 > [!NOTE]
 > Editing an installed prompt makes it yours. The installer records a hash of every file it writes, and a reapply refuses rather than overwrite a file that changed - deliberately, so your customization is never silently clobbered. There is no `--adopt` override for prompts (unlike `opencode.json`). To hand the file back to the installer, restore the bundled copy from `.opencode/skills/fusion-setup/agent/` first. Keep a note of your edit either way, since a reapply that does succeed installs the bundled version.
 
