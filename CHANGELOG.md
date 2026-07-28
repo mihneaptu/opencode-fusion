@@ -6,7 +6,7 @@ installed copy can be traced back to the release that applied it.
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.1.0 - 2026-07-28
 
 ### Added
 
@@ -17,29 +17,6 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and fails when the committed page has drifted, so this file stays the single
   source of truth. The renderer supports only the markdown used here and fails
   loudly on anything else, rather than printing literal markup on the site.
-
-### Changed
-
-- The mobile nav now collapses below 940px instead of 900px. The new Changelog
-  link makes the widest desktop nav row need about 930px, and between the old
-  breakpoint and that width the right-hand header pill ran past the rail and
-  gave every page a horizontal scroll. A test pins the breakpoint against the
-  measured width.
-
-### Fixed
-
-- The theme toggle's moon rendered as a lopsided blob rather than a crescent.
-  Its inner arc asked for radius 7 across endpoints 16.3 apart; per the SVG
-  spec a radius too small to span its endpoints is scaled up until it fits, so
-  the terminator became a semicircle mirroring the outer edge and the shape
-  lost its taper. It also overflowed the top and right of its 24x24 viewBox.
-  Replaced with a crescent whose arcs are geometrically consistent, on all
-  three pages.
-
-## 1.1.0 - 2026-07-27
-
-### Added
-
 - The skill bundle now has a version. `install.js` records `bundleVersion` in
   `.fusion-install.json` and prints it in the apply plan, and `/fusion-status`
   reports it, so an installed copy can be traced back to the release that
@@ -134,6 +111,27 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `vision.md`'s clipboard instructions no longer assume Windows. The
   save-to-file hint now covers macOS and Linux alongside Win+Shift+S, and tells
   the agent to ask for a path rather than guess the user's desktop environment.
+- The bundled profiles ship refreshed model picks. `opencode-go` leads with
+  Kimi K3 and reviews with Grok 4.5; `opencode-zen` sidekicks with GPT-5.6 Luna;
+  `github-copilot` moves its sidekick and explore roles from GPT-5.4 Mini to
+  GPT-5.6 Luna; `chatgpt` gains a GPT-5.6 Terra reviewer. Only new installs and
+  reapplies pick these up - an existing `opencode.json` keeps the models it was
+  installed with until you reconfigure.
+- The mobile nav now collapses below 940px instead of 900px. The new Changelog
+  link makes the widest desktop nav row need about 930px, and between the old
+  breakpoint and that width the right-hand header pill ran past the rail and
+  gave every page a horizontal scroll. A test pins the breakpoint against the
+  measured width.
+
+### Fixed
+
+- The theme toggle's moon rendered as a lopsided blob rather than a crescent.
+  Its inner arc asked for radius 7 across endpoints 16.3 apart; per the SVG
+  spec a radius too small to span its endpoints is scaled up until it fits, so
+  the terminator became a semicircle mirroring the outer edge and the shape
+  lost its taper. It also overflowed the top and right of its 24x24 viewBox.
+  Replaced with a crescent whose arcs are geometrically consistent, on all
+  three pages.
 
 ### Compatibility
 

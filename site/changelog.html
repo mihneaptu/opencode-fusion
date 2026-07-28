@@ -117,8 +117,7 @@
              changelog, then run `npm run build:changelog`. -->
         <nav class="docs-toc-nav docs-toc-nav-releases">
           <!-- generated:toc:start -->
-          <a href="#unreleased">Unreleased<span class="docs-toc-date">in progress</span></a>
-          <a href="#v1-1-0">1.1.0<span class="docs-toc-date">Jul 27, 2026</span></a>
+          <a href="#v1-1-0">1.1.0<span class="docs-toc-date">Jul 28, 2026</span></a>
           <a href="#v1-0-0">1.0.0</a>
           <!-- generated:toc:end -->
         </nav>
@@ -136,40 +135,16 @@
         </header>
 
         <!-- generated:releases:start -->
-        <section id="unreleased" class="docs-section release">
-          <div class="release-head">
-            <h2 class="release-version">Unreleased</h2>
-            <span class="pill release-tag">In progress</span>
-          </div>
-          <div class="release-group">
-            <h3 class="release-group-label" data-kind="added">Added</h3>
-            <ul class="docs-list release-items">
-              <li>The docs site has a changelog page. <code>site/changelog.html</code> is generated from this file by <code>scripts/build-changelog.js</code> (<code>npm run build:changelog</code>) and committed, because GitHub Pages serves <code>site/</code> verbatim and this file lives outside <code>site/</code>, so the page cannot fetch it at runtime. <code>npm test</code> re-renders and fails when the committed page has drifted, so this file stays the single source of truth. The renderer supports only the markdown used here and fails loudly on anything else, rather than printing literal markup on the site.</li>
-            </ul>
-          </div>
-          <div class="release-group">
-            <h3 class="release-group-label" data-kind="changed">Changed</h3>
-            <ul class="docs-list release-items">
-              <li>The mobile nav now collapses below 940px instead of 900px. The new Changelog link makes the widest desktop nav row need about 930px, and between the old breakpoint and that width the right-hand header pill ran past the rail and gave every page a horizontal scroll. A test pins the breakpoint against the measured width.</li>
-            </ul>
-          </div>
-          <div class="release-group">
-            <h3 class="release-group-label" data-kind="fixed">Fixed</h3>
-            <ul class="docs-list release-items">
-              <li>The theme toggle’s moon rendered as a lopsided blob rather than a crescent. Its inner arc asked for radius 7 across endpoints 16.3 apart; per the SVG spec a radius too small to span its endpoints is scaled up until it fits, so the terminator became a semicircle mirroring the outer edge and the shape lost its taper. It also overflowed the top and right of its 24x24 viewBox. Replaced with a crescent whose arcs are geometrically consistent, on all three pages.</li>
-            </ul>
-          </div>
-        </section>
-
         <section id="v1-1-0" class="docs-section release">
           <div class="release-head">
             <h2 class="release-version">1.1.0</h2>
-            <time class="release-date" datetime="2026-07-27">July 27, 2026</time>
+            <time class="release-date" datetime="2026-07-28">July 28, 2026</time>
             <span class="pill pill-main release-tag">Latest</span>
           </div>
           <div class="release-group">
             <h3 class="release-group-label" data-kind="added">Added</h3>
             <ul class="docs-list release-items">
+              <li>The docs site has a changelog page. <code>site/changelog.html</code> is generated from this file by <code>scripts/build-changelog.js</code> (<code>npm run build:changelog</code>) and committed, because GitHub Pages serves <code>site/</code> verbatim and this file lives outside <code>site/</code>, so the page cannot fetch it at runtime. <code>npm test</code> re-renders and fails when the committed page has drifted, so this file stays the single source of truth. The renderer supports only the markdown used here and fails loudly on anything else, rather than printing literal markup on the site.</li>
               <li>The skill bundle now has a version. <code>install.js</code> records <code>bundleVersion</code> in <code>.fusion-install.json</code> and prints it in the apply plan, and <code>/fusion-status</code> reports it, so an installed copy can be traced back to the release that applied it. Like <code>installedAt</code>, it records the most recent apply: a reapply that selects a subset of roles leaves the other managed files as an earlier bundle installed them.</li>
               <li>Repository, homepage, issue-tracker, and keyword metadata in <code>package.json</code>.</li>
               <li>The bash allowlist’s JS assumption is now documented. The shipped verification commands (<code>npm test</code>, <code>npm run lint</code>, <code>npm run build</code>, <code>npx tsc --noEmit</code>, <code>npx vitest run</code>) only exist in a Node toolchain, so on any other stack the main agent could not verify its own work and got denied on the command it should have been running. README now names the verification tools per stack (Python, Rust, Go, Make), advises an exact pattern over a trailing <code>*</code> because <code>*</code> matches the whole rest of the command and a broad <code>&quot;ruff check*&quot;</code> also permits the file-rewriting <code>--fix</code> and <code>--add-noqa</code>, spells out that a narrowing deny must follow the allow it narrows because matching is last-match-wins, and records which of the five entries each role actually ships - <code>plan.md</code> has no <code>npm run build*</code>, and <code>reviewer.md</code> has neither that nor <code>npx tsc --noEmit*</code>, while <code>build.md</code> also allows the read-only <code>npm --version*</code>. It also says why the shipped JS entries keep a trailing <code>*</code> despite that advice: <code>npm test</code> and <code>npm run lint</code> take project-specific arguments, so pinning them exactly would deny the run the user wants. Step 5 of the setup skill tells the installer to raise it, and both note that the prompts are global rather than per project, so a multi-stack user should add entries alongside the JS ones instead of replacing them. The git half of the allowlist is unchanged and needs no substitution. No entries were added to the bundled prompts: a shipped entry for a command the user’s project does not define cannot verify that project, and only broadens a security-sensitive list.</li>
@@ -188,6 +163,14 @@
               <li>The harness config now sets <code>subagent_depth: 2</code>, matching what the installer forces on every real install. Without it the suite exercised a nesting limit no Fusion user runs under, so a delegation regression could have passed.</li>
               <li>The Limitations section now states what opencode 2.0 does and does not carry over. v2 translates v1-shaped configuration in memory, so the config and agent prompts are expected to load under <code>opencode2</code> unconverted; V1 plugins do not run there, three top-level keys have no native equivalent, and subagents do not inherit a parent agent’s permissions.</li>
               <li><code>vision.md</code>’s clipboard instructions no longer assume Windows. The save-to-file hint now covers macOS and Linux alongside Win+Shift+S, and tells the agent to ask for a path rather than guess the user’s desktop environment.</li>
+              <li>The bundled profiles ship refreshed model picks. <code>opencode-go</code> leads with Kimi K3 and reviews with Grok 4.5; <code>opencode-zen</code> sidekicks with GPT-5.6 Luna; <code>github-copilot</code> moves its sidekick and explore roles from GPT-5.4 Mini to GPT-5.6 Luna; <code>chatgpt</code> gains a GPT-5.6 Terra reviewer. Only new installs and reapplies pick these up - an existing <code>opencode.json</code> keeps the models it was installed with until you reconfigure.</li>
+              <li>The mobile nav now collapses below 940px instead of 900px. The new Changelog link makes the widest desktop nav row need about 930px, and between the old breakpoint and that width the right-hand header pill ran past the rail and gave every page a horizontal scroll. A test pins the breakpoint against the measured width.</li>
+            </ul>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="fixed">Fixed</h3>
+            <ul class="docs-list release-items">
+              <li>The theme toggle’s moon rendered as a lopsided blob rather than a crescent. Its inner arc asked for radius 7 across endpoints 16.3 apart; per the SVG spec a radius too small to span its endpoints is scaled up until it fits, so the terminator became a semicircle mirroring the outer edge and the shape lost its taper. It also overflowed the top and right of its 24x24 viewBox. Replaced with a crescent whose arcs are geometrically consistent, on all three pages.</li>
             </ul>
           </div>
           <div class="release-group">
