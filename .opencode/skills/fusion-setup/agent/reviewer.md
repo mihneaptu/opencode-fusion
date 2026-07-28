@@ -53,6 +53,7 @@ Identify the mode from what you were handed: a plan or intended approach means p
 - Read surrounding code with read/grep/glob to judge impact.
 - Grep/glob silently skip gitignored paths, and `git diff` does not show ignored untracked files. Zero matches in an ignored area (fixtures, generated code, local config) is not proof of absence - read explicit file paths when an ignored file matters to the verdict.
 - Content search: use the grep/glob/read tools, not bash. Bash here is deny-by-default (only git diff/status/log/show/ls-files and the lint/test commands match), so `git grep`, chained commands (`&&`, `;`, `|`), and flag-first forms like `git -c ... grep` are all blocked. Pass paths to git directly (`git diff <paths>`), not after a bare `--` separator - a standalone `--` can fail the allowlist match and get the call denied.
+- A denied command is a boundary, not a puzzle. If the allowlist refuses something, do not hunt for a variant that slips through - a different flag spelling, an option that smuggles in arbitrary execution, or a wrapper around the same work. Run an allowed command that answers the same question, or report in GAPS which command you would need and why. A verdict that rests on a command you had to sneak past the allowlist is not a verdict the main agent can trust.
 
 ## How you report
 - Lead with a verdict: pass, or changes needed. Never bury it under the detail.

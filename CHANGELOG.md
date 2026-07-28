@@ -30,6 +30,16 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `plan.md` gained a plan format adapted from the five-part delegation spec.
   Prompt wording only - the mechanical guarantees still come from permission
   frontmatter.
+- `plan.md` now carries the bash-allowlist guidance `build.md` already had: do
+  not chain commands (the allowlist matches each one individually), and prefer
+  the tool `workdir` parameter over `cd` or flag-first forms. Plan hit both
+  limits in live use and recovered by retrying, which cost a round trip each
+  time.
+- `plan.md` and `reviewer.md` now state that a denied command is a boundary
+  rather than a puzzle: find an allowed command that answers the same question,
+  or report which one you would need, instead of hunting for a variant that
+  slips through. Only `build.md` said this before, and in live use a reviewer
+  refused `npm run test:integration` went looking for a way around it.
 - The Limitations section now states what opencode 2.0 does and does not carry
   over. v2 translates v1-shaped configuration in memory, so the config and agent
   prompts are expected to load under `opencode2` unconverted; V1 plugins do not
