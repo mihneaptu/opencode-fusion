@@ -43,8 +43,21 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   beta. `FUSION_OPENCODE_BIN` selects which binary the integration harness
   spawns, and the harness adapts its arguments: v2's `run` has no directory flag,
   so the project directory is passed as the child process working directory, and
-  `--auto` is required because v2 otherwise rejects every permission request.
-  Explicit `deny` rules stay enforced, which is what the tests assert.
+  `--auto` is required because v2 otherwise rejects every permission request,
+  `--standalone` because v2 otherwise reuses a shared background service that
+  cannot start under the harness's throwaway HOME. Explicit `deny` rules stay
+  enforced, which is what the tests assert.
+- The enforcement suite now resolves the two tools v2 renamed (`bash` ->
+  `shell`, `task` -> `subagent`, whose delegation argument moved from
+  `subagent_type` to `agent`) so one set of assertions covers both binaries.
+  Every other tool it names - `read`, `edit`, `write`, `grep`, `glob` - kept its
+  v1 name under v2.
+- The suite refuses to pass vacuously. Each "denied tool is absent" assertion
+  now also requires that an unrestricted agent is offered that tool, so an
+  absence caused by a release dropping the tool is reported as inconclusive
+  instead of green. This immediately caught `apply_patch` and `list`, which no
+  tested release offers to anyone; they are now asserted defensively rather than
+  counted as evidence of enforcement.
 
 ### Changed
 
@@ -78,6 +91,9 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   or report which one you would need, instead of hunting for a variant that
   slips through. Only `build.md` said this before, and in live use a reviewer
   refused `npm run test:integration` went looking for a way around it.
+- The harness config now sets `subagent_depth: 2`, matching what the installer
+  forces on every real install. Without it the suite exercised a nesting limit
+  no Fusion user runs under, so a delegation regression could have passed.
 - The Limitations section now states what opencode 2.0 does and does not carry
   over. v2 translates v1-shaped configuration in memory, so the config and agent
   prompts are expected to load under `opencode2` unconverted; V1 plugins do not

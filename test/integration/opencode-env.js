@@ -18,11 +18,30 @@ function opencodeBin() {
   return bin && bin.trim() ? bin.trim() : 'opencode';
 }
 
-/** The v2 beta's `run` has no directory flag and rejects permission requests
-    unless --auto is passed, so the two binaries need different argument
-    shapes. Keyed off the binary name because v2 ships as `opencode2`. */
+/** The v2 beta's `run` has no directory flag, rejects permission requests
+    unless --auto is passed, and defaults to a shared background service that
+    cannot start under a throwaway HOME - so it also needs --standalone. Keyed
+    off the binary name because v2 ships as `opencode2`. */
 function isV2(bin) {
   return /(^|[\\/])opencode2(\.exe)?$/i.test(bin);
+}
+
+// v2 renamed two tools this suite drives. Everything else the tests name -
+// read, edit, write, grep, glob - kept its v1 name, which is what makes the
+// "denied tools are absent" assertions still mean something under v2.
+const V2_TOOL_NAMES = { bash: 'shell', task: 'subagent' };
+
+/** The name the binary under test exposes for a v1 tool name. */
+function toolName(v1Name, bin = opencodeBin()) {
+  return isV2(bin) ? (V2_TOOL_NAMES[v1Name] ?? v1Name) : v1Name;
+}
+
+/** Arguments for a delegation call. v2's `subagent` takes `agent` where v1's
+    `task` took `subagent_type`; description and prompt are unchanged. */
+function taskArgs({ agent, description, prompt }, bin = opencodeBin()) {
+  return isV2(bin)
+    ? { agent, description, prompt }
+    : { subagent_type: agent, description, prompt };
 }
 
 const repoRoot = path.join(__dirname, '..', '..');
@@ -86,6 +105,10 @@ async function createEnv(baseURL) {
     model: 'fake/fake-model',
     small_model: 'fake/fake-model',
     enabled_providers: ['fake'],
+    // The installer forces this to at least 2 (build -> sidekick -> read-only
+    // helper). Omitting it here let the harness pass against a nesting limit
+    // no real Fusion install runs under.
+    subagent_depth: 2,
     provider: {
       fake: {
         npm: '@ai-sdk/openai-compatible',
@@ -142,7 +165,15 @@ function runOpencode({ agent, message, envInfo, timeoutMs = 120000 }) {
     const bin = opencodeBin();
     const command = (
       isV2(bin)
-        ? [bin, 'run', `--agent ${agent}`, '--log-level error', '--auto', `"${message}"`]
+        ? [
+            bin,
+            'run',
+            '--standalone',
+            `--agent ${agent}`,
+            '--log-level error',
+            '--auto',
+            `"${message}"`,
+          ]
         : [
             bin,
             'run',
@@ -194,4 +225,12 @@ function opencodeAvailable() {
   return probe.status === 0;
 }
 
-module.exports = { createEnv, runOpencode, opencodeAvailable, opencodeBin, isV2 };
+module.exports = {
+  createEnv,
+  runOpencode,
+  opencodeAvailable,
+  opencodeBin,
+  isV2,
+  toolName,
+  taskArgs,
+};
