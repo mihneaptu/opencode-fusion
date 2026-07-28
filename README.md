@@ -219,29 +219,56 @@ The main agent's bash is allowlisted to verification and git commands (`npm run 
 
 > [!IMPORTANT]
 > **The shipped verification commands assume a Node/JavaScript project.** The
-> git half of the allowlist is universal, but `npm test`, `npm run lint`,
-> `npm run build`, `npx tsc --noEmit`, and `npx vitest run` only exist in a JS
+> git half of the allowlist is universal, but the JS entries only exist in a JS
 > toolchain. On any other stack the main agent cannot run your tests, and you
-> will see it denied on the command you expect it to use. Replace those entries
-> with your own, keeping `"*": "deny"` first:
+> will see it denied on the command you expect it to use.
 >
-> | Stack | Entries to use instead |
-> |---|---|
-> | Python | `"pytest*"`, `"ruff check*"`, `"mypy*"` |
-> | Rust | `"cargo test*"`, `"cargo clippy*"`, `"cargo check*"` |
-> | Go | `"go test*"`, `"go build*"`, `"go vet*"` |
-> | Make-driven | `"make test*"`, `"make lint*"`, `"make build*"` |
+> Each role ships its own subset, so check the file you are editing rather than
+> assuming all three match:
 >
-> Two rules carry over whatever you pick. Keep the commands read-only or
-> idempotent - the point is that the main agent can verify without being able to
-> mutate, so a formatter that rewrites files (`ruff format`, `cargo fmt`,
-> `gofmt -w`) belongs with the sidekick, not here. And add a matching `deny` for
-> any flag that turns a check into a write, the way the shipped list denies
-> `npm run lint --fix` and `npx vitest run -u`; snapshot updates and autofix are
-> the usual offenders.
+> | Entry | `build.md` | `plan.md` | `reviewer.md` |
+> |---|---|---|---|
+> | `"npm run lint*"` | yes | yes | yes |
+> | `"npm test*"` | yes | yes | yes |
+> | `"npx vitest run*"` | yes | yes | yes |
+> | `"npx tsc --noEmit*"` | yes | yes | no |
+> | `"npm run build*"` | yes | no | no |
 >
-> Apply the same edit to `plan.md` and `reviewer.md` if you installed those
-> roles - they carry their own allowlists with the same JS assumption.
+> Replace the entries the file actually has, keeping `"*": "deny"` first. These
+> are starting points, not audited allowlists - read the flags your own tools
+> accept before pasting:
+>
+> | Stack | Allow | Deny after it |
+> |---|---|---|
+> | Python | `"pytest*"`, `"ruff check*"`, `"mypy*"` | `"pytest *--snapshot-update*"`, `"ruff check *--fix*"`, `"mypy *--install-types*"` |
+> | Rust | `"cargo test*"`, `"cargo clippy*"`, `"cargo check*"` | `"cargo clippy *--fix*"`, `"cargo *--config *"` |
+> | Go | `"go test*"`, `"go vet*"` | `"go test *-exec*"`, `"go test *-o *"` |
+> | Make-driven | `"make test*"`, `"make lint*"` | whatever your recipes shell out to |
+>
+> Three rules carry over whatever you pick.
+>
+> Keep the commands read-only or idempotent. The point is that the main agent
+> can verify without being able to mutate, so a formatter that rewrites files
+> (`ruff format`, `cargo fmt`, `gofmt -w`) belongs with the sidekick, not here.
+> For the same reason `go build` and a `build` Make target are not on the list
+> above: `go build` writes an executable, and a Make recipe does whatever the
+> project defined it to do. Add either one only after reading what it runs.
+>
+> Add a matching `deny` for any flag that turns a check into a write, the way
+> the shipped list denies `npm run lint --fix` and `npx vitest run -u`. Snapshot
+> updates and autofix are the usual offenders, and a bare `*` in your allow
+> pattern matches the whole rest of the command - so `"ruff check*"` on its own
+> permits `ruff check --fix`.
+>
+> Put those denies *after* the allow they narrow. opencode resolves overlapping
+> patterns by last-match-wins, so a deny listed above its allow is silently
+> overridden.
+>
+> One more thing worth knowing: these prompts install globally to
+> `~/.config/opencode/agent/`, not per project. If you work across several
+> stacks with one opencode install, add your stack's entries alongside the JS
+> ones instead of replacing them - otherwise the next Node project you open
+> cannot verify itself.
 
 > [!NOTE]
 > Editing an installed prompt makes it yours. The installer records a hash of every file it writes, and a reapply refuses rather than overwrite a file that changed - deliberately, so your customization is never silently clobbered. There is no `--adopt` override for prompts (unlike `opencode.json`). To hand the file back to the installer, restore the bundled copy from `.opencode/skills/fusion-setup/agent/` first. Keep a note of your edit either way, since a reapply that does succeed installs the bundled version.
