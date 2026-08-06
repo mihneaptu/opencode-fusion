@@ -6,6 +6,19 @@ installed copy can be traced back to the release that applied it.
 
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- The generic model table now recommends DeepSeek V4 Flash instead of Grok 4.5
+  for the fast, read-only `explore` role. Grok 4.5 remains the suggested
+  `sidekick`: implementation quality matters more there because it owns edits
+  and commands. Subscription profiles are unchanged; the `opencode-go` profile
+  already uses DeepSeek V4 Flash for both high-volume roles to fit Go's
+  usage-based limits.
+- The repository map no longer claims fixed model choices for the gitignored
+  local `opencode.json`, whose contents are intentionally developer-specific.
+
 ## 1.1.0 - 2026-07-28
 
 ### Added

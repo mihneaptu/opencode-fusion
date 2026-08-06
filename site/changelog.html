@@ -117,6 +117,7 @@
              changelog, then run `npm run build:changelog`. -->
         <nav class="docs-toc-nav docs-toc-nav-releases">
           <!-- generated:toc:start -->
+          <a href="#unreleased">Unreleased<span class="docs-toc-date">in progress</span></a>
           <a href="#v1-1-0">1.1.0<span class="docs-toc-date">Jul 28, 2026</span></a>
           <a href="#v1-0-0">1.0.0</a>
           <!-- generated:toc:end -->
@@ -135,6 +136,20 @@
         </header>
 
         <!-- generated:releases:start -->
+        <section id="unreleased" class="docs-section release">
+          <div class="release-head">
+            <h2 class="release-version">Unreleased</h2>
+            <span class="pill release-tag">In progress</span>
+          </div>
+          <div class="release-group">
+            <h3 class="release-group-label" data-kind="changed">Changed</h3>
+            <ul class="docs-list release-items">
+              <li>The generic model table now recommends DeepSeek V4 Flash instead of Grok 4.5 for the fast, read-only <code>explore</code> role. Grok 4.5 remains the suggested <code>sidekick</code>: implementation quality matters more there because it owns edits and commands. Subscription profiles are unchanged; the <code>opencode-go</code> profile already uses DeepSeek V4 Flash for both high-volume roles to fit Go’s usage-based limits.</li>
+              <li>The repository map no longer claims fixed model choices for the gitignored local <code>opencode.json</code>, whose contents are intentionally developer-specific.</li>
+            </ul>
+          </div>
+        </section>
+
         <section id="v1-1-0" class="docs-section release">
           <div class="release-head">
             <h2 class="release-version">1.1.0</h2>

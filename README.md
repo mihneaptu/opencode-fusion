@@ -55,7 +55,7 @@ The diagram shows one delegation cycle: the main agent delegates exploration, pl
 | `build` | Main: plan, delegate, review | `agent.build.model` | core | `claude-opus-5` |
 | `plan` | Plan mode: same brain as build, plans but does not execute | `agent/plan.md` (file) | core | reuses main model |
 | `sidekick` | Execute edits and commands | `agent.sidekick.model` | core | `grok-4.5` |
-| `explore` | Fast read-only exploration (opencode's built-in agent; no prompt file) | `agent.explore.model` | core | `grok-4.5` |
+| `explore` | Fast read-only exploration (opencode's built-in agent; no prompt file) | `agent.explore.model` | core | `deepseek-v4-flash` |
 | `research` | Read-only external research (web, docs) | `agent.research.model` | optional | `claude-sonnet-5` |
 | `design` | Frontend/UI implementation | `agent.design.model` | optional | `kimi-k3` |
 | `reviewer` | Critique a plan before implementation; audit a diff before commit | `agent.reviewer.model` | optional | `gpt-5.6-sol` |
@@ -464,7 +464,7 @@ The rest of the repo supports it:
 |------|---------|
 | `scripts/check-profiles.js` | Live check that profile model ids still exist on models.dev (`npm run check-profiles`) |
 | `test/integration/` | Live enforcement tests: real opencode binary against a fake provider (`npm run test:integration`) |
-| `opencode.json` | Reference config (gitignored): Opus main, Grok 4.5 sidekick and explore |
+| `opencode.json` | Local reference config (gitignored); model choices vary by developer |
 | `flow-diagram.png` | Architecture diagram (Main Agent vs Sidekick swimlane) |
 | `LICENSE` | MIT license |
 
